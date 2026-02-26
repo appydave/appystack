@@ -1,6 +1,6 @@
 import express from 'express';
 import { createServer } from 'node:http';
-import { join, dirname } from 'node:path';
+import { join, dirname } from 'node:path'; // used for production static file serving below
 import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
 import helmet from 'helmet';
