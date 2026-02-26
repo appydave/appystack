@@ -1,6 +1,8 @@
+import { useState } from 'react';
+import ContactForm from '../components/ContactForm.js';
+import SocketDemo from '../components/SocketDemo.js';
 import StatusGrid from '../components/StatusGrid.js';
 import TechStackDisplay from '../components/TechStackDisplay.js';
-import SocketDemo from '../components/SocketDemo.js';
 
 const ASCII_BANNER = `     _                      ____  _             _
     / \\   _ __  _ __  _   _/ ___|| |_ __ _  ___| | __
@@ -10,6 +12,8 @@ const ASCII_BANNER = `     _                      ____  _             _
          |_|   |_|    |___/`;
 
 export default function LandingPage() {
+  const [showForm, setShowForm] = useState(false);
+
   return (
     <div className="min-h-screen">
       {/* Hero zone — retro terminal */}
@@ -46,6 +50,32 @@ export default function LandingPage() {
 
         <section>
           <TechStackDisplay />
+        </section>
+
+        <section>
+          <button
+            onClick={() => setShowForm((prev) => !prev)}
+            className="text-sm font-medium px-4 py-2 rounded transition-colors"
+            style={{
+              backgroundColor: 'var(--card-bg)',
+              border: '1px solid var(--card-border)',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            {showForm ? 'Hide example form' : 'Show example form'}
+          </button>
+
+          {showForm && (
+            <div
+              className="mt-4 rounded-xl p-6"
+              style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
+            >
+              <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+                React Hook Form + Zod
+              </h2>
+              <ContactForm />
+            </div>
+          )}
         </section>
       </main>
     </div>

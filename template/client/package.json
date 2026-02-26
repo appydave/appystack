@@ -18,9 +18,11 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-error-boundary": "^6.1.1",
+    "react-hook-form": "^7.71.2",
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@tailwindcss/vite": "^4.1.18",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -30,6 +32,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^4.0.18",
     "jsdom": "^26.1.0",
+    "msw": "^2.12.10",
     "tailwindcss": "^4.1.18",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"
