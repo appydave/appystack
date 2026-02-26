@@ -1,5 +1,14 @@
 {
   "extends": "@appydave/appystack-config/typescript/react",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@components/*": ["src/components/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@pages/*": ["src/pages/*"],
+      "@utils/*": ["src/utils/*"]
+    }
+  },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
 }

@@ -25,7 +25,7 @@
     "customize": "tsx scripts/customize.ts"
   },
   "devDependencies": {
-    "@appydave/appystack-config": "file:../config",
+    "@appydave/appystack-config": "^1.0.0",
     "@clack/prompts": "^1.0.1",
     "@eslint/js": "^9.17.0",
     "@playwright/test": "^1.58.2",
