@@ -290,8 +290,14 @@ export const apiLimiter = rateLimit({
 });
 ```
 
+## Operational Notes
+
+- **Husky init won't work from template/** — `template/` is nested inside the repo, not the git root. `npx husky init` fails. Create `.husky/pre-commit` manually instead. When developers use the template as their own project root, `npm install` → `prepare` script registers hooks correctly.
+- **Express 5: req.query is read-only** — Direct assignment `req.query = value` throws TypeError. Use `Object.assign(req.query, value)` to mutate in place. Fixed in validate.ts (WU-13).
+
 ## Anti-Patterns — DO NOT DO THESE
 
+- **NO `npx husky init`** — Won't work from template/ (not the git root). Create `.husky/` and `pre-commit` manually.
 - **NO vi.mock() for hooks** — Test hooks against real lightweight servers, not mocks
 - **NO vi.mock() for fetch** — Use real HTTP calls in tests (Supertest or real server on port 0)
 - **NO jest.fn()** — This project uses Vitest. Use `vi.fn()`
