@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import express from 'express';
 import type { Server } from 'node:http';
@@ -106,5 +106,41 @@ describe('StatusGrid', () => {
     await waitFor(() => expect(screen.getByText('Mode: test')).toBeInTheDocument(), {
       timeout: 5000,
     });
+  });
+});
+
+describe('StatusGrid — error state (server unreachable)', () => {
+  beforeAll(() => {
+    // Override fetch to simulate a server that is completely unreachable
+    vi.stubGlobal('fetch', () => Promise.reject(new Error('Network error')));
+  });
+
+  afterAll(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('shows error fallback for API Health card', async () => {
+    render(<StatusGrid />);
+    await waitFor(
+      () => {
+        // When health is null and there is an error, the fallback paragraph should appear
+        // StatusGrid renders "Unable to reach server" or the error message
+        const errorTexts = screen.queryAllByText(/Network error|Unable to reach server/);
+        expect(errorTexts.length).toBeGreaterThan(0);
+      },
+      { timeout: 5000 }
+    );
+  });
+
+  it('shows error fallback for Environment card when info is null', async () => {
+    render(<StatusGrid />);
+    await waitFor(
+      () => {
+        // When info is null, both Environment and Runtime cards show the error
+        const errorTexts = screen.queryAllByText(/Network error|No data/);
+        expect(errorTexts.length).toBeGreaterThan(0);
+      },
+      { timeout: 5000 }
+    );
   });
 });

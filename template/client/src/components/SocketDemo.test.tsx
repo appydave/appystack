@@ -1,8 +1,31 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+
+// Hoisted mutable state so vi.mock factory can reference it
+const mockSocketState = vi.hoisted(() => ({
+  socket: null as { once: ReturnType<typeof vi.fn>; emit: ReturnType<typeof vi.fn> } | null,
+  connected: false,
+  mockOnce: vi.fn(),
+  mockEmit: vi.fn(),
+}));
+
+vi.mock('../hooks/useSocket.js', () => ({
+  useSocket: () => ({
+    socket: mockSocketState.socket,
+    connected: mockSocketState.connected,
+  }),
+}));
+
 import SocketDemo from './SocketDemo.js';
 
-describe('SocketDemo', () => {
+describe('SocketDemo — disconnected (default)', () => {
+  beforeEach(() => {
+    mockSocketState.socket = null;
+    mockSocketState.connected = false;
+    mockSocketState.mockOnce.mockReset();
+    mockSocketState.mockEmit.mockReset();
+  });
+
   it('renders the Socket.io Demo heading', () => {
     render(<SocketDemo />);
     expect(screen.getByText('Socket.io Demo')).toBeInTheDocument();
@@ -15,7 +38,6 @@ describe('SocketDemo', () => {
 
   it('renders the Send Ping button disabled when disconnected', () => {
     render(<SocketDemo />);
-    // On initial render, connected=false so the button is disabled
     const button = screen.getByRole('button', { name: 'Send Ping' });
     expect(button).toBeDisabled();
   });
@@ -28,5 +50,76 @@ describe('SocketDemo', () => {
   it('does not show pong response before any ping is sent', () => {
     render(<SocketDemo />);
     expect(screen.queryByText(/server:pong received/)).not.toBeInTheDocument();
+  });
+});
+
+describe('SocketDemo — connected state', () => {
+  beforeEach(() => {
+    mockSocketState.mockOnce.mockReset();
+    mockSocketState.mockEmit.mockReset();
+    mockSocketState.socket = {
+      once: mockSocketState.mockOnce,
+      emit: mockSocketState.mockEmit,
+    };
+    mockSocketState.connected = true;
+  });
+
+  it('shows connected status when socket is connected', () => {
+    render(<SocketDemo />);
+    expect(screen.getByText('Status: connected')).toBeInTheDocument();
+  });
+
+  it('button is enabled when connected', () => {
+    render(<SocketDemo />);
+    const button = screen.getByRole('button', { name: 'Send Ping' });
+    expect(button).not.toBeDisabled();
+  });
+
+  it('sendPing calls socket.once and socket.emit when clicked', async () => {
+    render(<SocketDemo />);
+    const button = screen.getByRole('button', { name: 'Send Ping' });
+
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    expect(mockSocketState.mockOnce).toHaveBeenCalledTimes(1);
+    expect(mockSocketState.mockEmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows waiting state after ping is sent', async () => {
+    // mockOnce never fires, so waiting=true persists
+    mockSocketState.mockOnce.mockImplementation(() => {});
+
+    render(<SocketDemo />);
+    const button = screen.getByRole('button', { name: 'Send Ping' });
+
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    expect(screen.getByText('Waiting for pong...')).toBeInTheDocument();
+  });
+
+  it('shows pong response after server:pong event fires', async () => {
+    let pongHandler: ((data: { message: string; timestamp: string }) => void) | null = null;
+    mockSocketState.mockOnce.mockImplementation(
+      (_event: string, handler: (data: { message: string; timestamp: string }) => void) => {
+        pongHandler = handler;
+      }
+    );
+
+    render(<SocketDemo />);
+    const button = screen.getByRole('button', { name: 'Send Ping' });
+
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    await act(async () => {
+      pongHandler?.({ message: 'pong', timestamp: new Date().toISOString() });
+    });
+
+    expect(screen.getByText(/server:pong received/)).toBeInTheDocument();
   });
 });
