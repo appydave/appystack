@@ -1,10 +1,14 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import express from 'express';
 import type { Server } from 'node:http';
 import App from './App.js';
 
+// Capture the native fetch at module load time, before any test setup stubs it
+const nativeFetch = globalThis.fetch;
+
 let server: Server;
+let serverPort: number;
 
 beforeAll(
   () =>
@@ -20,18 +24,21 @@ beforeAll(
         })
       );
       server = app.listen(0, () => {
-        const port = (server.address() as { port: number }).port;
-        globalThis.fetch = (input, init) => {
-          const url =
-            typeof input === 'string' && input.startsWith('/')
-              ? `http://localhost:${port}${input}`
-              : input;
-          return fetch(url, init);
-        };
+        serverPort = (server.address() as { port: number }).port;
         resolve();
       });
     })
 );
+
+beforeEach(() => {
+  globalThis.fetch = (input, init) => {
+    const url =
+      typeof input === 'string' && input.startsWith('/')
+        ? `http://localhost:${serverPort}${input}`
+        : input;
+    return nativeFetch(url, init);
+  };
+});
 
 afterAll(
   () =>
@@ -48,7 +55,9 @@ describe('App', () => {
 
   it('displays the status grid', async () => {
     render(<App />);
-    expect(screen.getByTestId('status-grid')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('status-grid')).toBeInTheDocument(), {
+      timeout: 5000,
+    });
   });
 
   it('displays the tech stack section', async () => {

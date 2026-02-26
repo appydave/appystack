@@ -99,13 +99,12 @@ describe('useSocket', () => {
       { timeout: 5000 }
     );
 
+    // Capture the socket instance before unmounting so we can verify it is disconnectable
+    const socket = result.current.socket;
+    expect(typeof socket?.disconnect).toBe('function');
+
     act(() => {
       unmount();
     });
-
-    // After unmount, the hook cleanup disconnects the socket
-    // We verify the server-side count drops — the hook itself is gone
-    // so we just confirm it unmounted without errors
-    expect(true).toBe(true);
   });
 });

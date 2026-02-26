@@ -1,13 +1,15 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import express from 'express';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { useServerStatus } from './useServerStatus.js';
 
+// Capture the native fetch at module load time, before any test setup stubs it
+const nativeFetch = globalThis.fetch;
+
 let server: Server;
 let serverPort: number;
-let originalFetch: typeof globalThis.fetch;
 
 beforeAll(() => {
   return new Promise<void>((resolve) => {
@@ -36,26 +38,24 @@ beforeAll(() => {
 
     server = app.listen(0, () => {
       serverPort = (server.address() as AddressInfo).port;
-
-      // Route relative fetch calls to the real test server
-      originalFetch = globalThis.fetch;
-      globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
-        const url =
-          typeof input === 'string' && input.startsWith('/')
-            ? `http://localhost:${serverPort}${input}`
-            : input;
-        return originalFetch(url, init);
-      };
-
       resolve();
     });
   });
 });
 
+// Route relative fetch calls to the real test server; runs after setup.ts beforeEach stub
+beforeEach(() => {
+  globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    const url =
+      typeof input === 'string' && input.startsWith('/')
+        ? `http://localhost:${serverPort}${input}`
+        : input;
+    return nativeFetch(url, init);
+  };
+});
+
 afterAll(() => {
   return new Promise<void>((resolve) => {
-    // Restore original fetch
-    globalThis.fetch = originalFetch;
     server.close(() => resolve());
   });
 });

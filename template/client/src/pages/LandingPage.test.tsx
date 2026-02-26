@@ -1,12 +1,15 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import express from 'express';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import LandingPage from './LandingPage.js';
 
+// Capture the native fetch at module load time, before any test setup stubs it
+const nativeFetch = globalThis.fetch;
+
 let server: Server;
-let originalFetch: typeof globalThis.fetch;
+let serverPort: number;
 
 beforeAll(() => {
   return new Promise<void>((resolve) => {
@@ -30,25 +33,24 @@ beforeAll(() => {
     });
 
     server = app.listen(0, () => {
-      const port = (server.address() as AddressInfo).port;
-
-      originalFetch = globalThis.fetch;
-      globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
-        const url =
-          typeof input === 'string' && input.startsWith('/')
-            ? `http://localhost:${port}${input}`
-            : input;
-        return originalFetch(url, init);
-      };
-
+      serverPort = (server.address() as AddressInfo).port;
       resolve();
     });
   });
 });
 
+beforeEach(() => {
+  globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    const url =
+      typeof input === 'string' && input.startsWith('/')
+        ? `http://localhost:${serverPort}${input}`
+        : input;
+    return nativeFetch(url, init);
+  };
+});
+
 afterAll(() => {
   return new Promise<void>((resolve) => {
-    globalThis.fetch = originalFetch;
     server.close(() => resolve());
   });
 });
