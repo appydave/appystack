@@ -1,40 +1,58 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import express from 'express';
+import type { Server } from 'node:http';
 import App from './App.js';
 
-// Mock hooks to avoid real network calls
-vi.mock('./hooks/useServerStatus.js', () => ({
-  useServerStatus: () => ({
-    health: { status: 'ok', timestamp: new Date().toISOString() },
-    info: {
-      nodeVersion: 'v22.0.0',
-      environment: 'test',
-      port: 5501,
-      clientUrl: 'http://localhost:5500',
-      uptime: 42,
-    },
-    loading: false,
-    error: null,
-  }),
-}));
+let server: Server;
 
-vi.mock('./hooks/useSocket.js', () => ({
-  useSocket: () => ({ socket: null, connected: true }),
-}));
+beforeAll(
+  () =>
+    new Promise<void>((resolve) => {
+      const app = express();
+      app.get('/health', (_, res) =>
+        res.json({ status: 'ok', timestamp: new Date().toISOString() })
+      );
+      app.get('/api/info', (_, res) =>
+        res.json({
+          status: 'ok',
+          data: { nodeVersion: 'test', environment: 'test', port: 0, clientUrl: '', uptime: 0 },
+        })
+      );
+      server = app.listen(0, () => {
+        const port = (server.address() as { port: number }).port;
+        globalThis.fetch = (input, init) => {
+          const url =
+            typeof input === 'string' && input.startsWith('/')
+              ? `http://localhost:${port}${input}`
+              : input;
+          return fetch(url, init);
+        };
+        resolve();
+      });
+    })
+);
+
+afterAll(
+  () =>
+    new Promise<void>((resolve) => {
+      server?.close(() => resolve());
+    })
+);
 
 describe('App', () => {
-  it('renders the tagline', () => {
+  it('renders the tagline', async () => {
     render(<App />);
     expect(screen.getByText(/Production-ready RVETS stack boilerplate/)).toBeInTheDocument();
   });
 
-  it('displays the status grid', () => {
+  it('displays the status grid', async () => {
     render(<App />);
     expect(screen.getByTestId('status-grid')).toBeInTheDocument();
   });
 
-  it('displays the tech stack section', () => {
+  it('displays the tech stack section', async () => {
     render(<App />);
-    expect(screen.getByTestId('tech-stack')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('tech-stack')).toBeInTheDocument());
   });
 });
