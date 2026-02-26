@@ -1,5 +1,6 @@
 import StatusGrid from '../components/StatusGrid.js';
 import TechStackDisplay from '../components/TechStackDisplay.js';
+import SocketDemo from '../components/SocketDemo.js';
 
 const ASCII_BANNER = `     _                      ____  _             _
     / \\   _ __  _ __  _   _/ ___|| |_ __ _  ___| | __
@@ -34,6 +35,13 @@ export default function LandingPage() {
             System Status
           </h2>
           <StatusGrid />
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>
+            Socket.io
+          </h2>
+          <SocketDemo />
         </section>
 
         <section>
