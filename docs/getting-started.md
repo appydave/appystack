@@ -56,6 +56,7 @@ It rewrites all package names, ports, and references in one pass.
 **5. Start developing**
 
 ```bash
+npm run build   # compile shared package first (required on fresh install)
 npm run dev
 ```
 
@@ -117,6 +118,7 @@ git commit -m "feat: initial commit from AppyStack template"
 **5. Start developing**
 
 ```bash
+npm run build   # compile shared package first (required on fresh install)
 npm run dev
 ```
 
