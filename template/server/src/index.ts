@@ -1,5 +1,7 @@
 import express from 'express';
 import { createServer } from 'node:http';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -13,6 +15,9 @@ import healthRouter from './routes/health.js';
 import infoRouter from './routes/info.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '@appystack-template/shared';
 import { SOCKET_EVENTS } from '@appystack-template/shared';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
@@ -38,7 +43,18 @@ app.use(apiLimiter);
 app.use(healthRouter);
 app.use(infoRouter);
 
-// 404 catch-all — must be after all routes
+// Production static file serving — serve the built client app
+if (env.isProduction) {
+  const clientDist = join(__dirname, '../../client/dist');
+  app.use(express.static(clientDist));
+
+  // SPA fallback — serve index.html for all non-API routes
+  app.get('*', (_req, res) => {
+    res.sendFile(join(clientDist, 'index.html'));
+  });
+}
+
+// 404 catch-all — must be after all routes (only reached in non-production for unknown API routes)
 app.use((_req, res) => {
   res.status(404).json({
     status: 'error',
