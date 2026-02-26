@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import App from '../App.js';
+import App from './App.js';
 
 // Mock hooks to avoid real network calls
-vi.mock('../hooks/useServerStatus.js', () => ({
+vi.mock('./hooks/useServerStatus.js', () => ({
   useServerStatus: () => ({
     health: { status: 'ok', timestamp: new Date().toISOString() },
     info: {
@@ -18,7 +18,7 @@ vi.mock('../hooks/useServerStatus.js', () => ({
   }),
 }));
 
-vi.mock('../hooks/useSocket.js', () => ({
+vi.mock('./hooks/useSocket.js', () => ({
   useSocket: () => ({ socket: null, connected: true }),
 }));
 
