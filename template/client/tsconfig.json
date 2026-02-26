@@ -1,0 +1,5 @@
+{
+  "extends": "@appydave/appystack-config/typescript/react",
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}

@@ -1,0 +1,72 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What is AppyStack?
+
+AppyStack is a shared configuration package and architecture reference for the RVETS stack (React, Vite, Express, TypeScript, Socket.io). It provides reusable ESLint, TypeScript, Vitest, and Prettier configs consumed by production apps (FliGen, FliHub, FliDeck, Storyline App).
+
+**Jump alias**: `japp-stack`
+
+## Repository Structure
+
+This is NOT an application — it's a config package + documentation hub.
+
+- `config/` — The `@appydave/appystack-config` npm package (currently published as `@flivideo/config`, pending rename)
+  - `eslint/base.config.js` — ESLint 9 flat config for Node/server projects
+  - `eslint/react.config.js` — ESLint 9 flat config for React projects (extends base + adds React/hooks rules)
+  - `vitest/server.config.ts` — Vitest config for server-side testing
+  - `typescript/base.json` — Base TypeScript config (ES2022, bundler resolution, strict)
+  - `typescript/react.json` — Extends base with DOM libs, JSX, noEmit
+  - `typescript/node.json` — Extends base with outDir/rootDir for compilation
+  - `prettier/.prettierrc` — Prettier settings (single quotes, semi, 100 width)
+  - `prettier/.prettierignore` — Standard ignore patterns
+- `docs/` — Primary documentation
+  - `architecture.md` — Complete AppyStack architecture guide (tech choices, patterns, pitfalls)
+  - `requirements.md` — Setup checklist, verification procedures, dependency matrix
+  - `plans/` — Claude Code planning documents (auto-generated via `.claude/settings.json`)
+  - `historical/` — Reference only. Imported from other systems (FliVideo planning docs, post-mortems, external repo analysis). Do not treat as source of truth; use `architecture.md` and `requirements.md` instead.
+
+## How Consumer Projects Use This
+
+**Target** (after npm publish):
+```bash
+npm install --save-dev @appydave/appystack-config
+```
+
+**Current** (local file reference, pre-publish):
+```bash
+npm install --save-dev file:/Users/davidcruwys/dev/ad/apps/appystack/config
+```
+
+Consumer usage:
+```javascript
+// eslint.config.js
+import appyConfig from '@appydave/appystack-config/eslint/react';
+export default [...appyConfig];
+```
+
+```json
+// tsconfig.json
+{ "extends": "@appydave/appystack-config/typescript/react" }
+```
+
+```json
+// package.json
+{ "prettier": "@appydave/appystack-config/prettier" }
+```
+
+## Key Architecture Decisions
+
+- **ESLint 9 flat config only** — No `.eslintrc.*` files. ESLint 9 silently ignores legacy configs. No `--ext` flag.
+- **TailwindCSS v4 syntax** — Uses `@import "tailwindcss"` and `@source` directive, NOT v3's `@tailwind` directives.
+- **npm workspaces** — Consumer apps use client/server/shared three-package monorepo pattern.
+- **Port convention** — Client: `5X00`, Server: `5X01`. Allocated in 100s (5100-5499 used).
+
+## npm Publishing
+
+The config package will be published as `@appydave/appystack-config` on npm (public). Currently `config/package.json` still says `@flivideo/config` — this needs renaming as part of the publish work. Full details including target package.json, org setup, publishing workflow, consumer migration steps, and automated CI publishing are in `docs/architecture.md` under "npm Publishing".
+
+## File Naming Convention
+
+Use `kebab-case` for markdown files (e.g., `architecture.md`). UPPERCASE only for standard repo files: README.md, CHANGELOG.md, CONTRIBUTING.md, LICENSE.md, CLAUDE.md.

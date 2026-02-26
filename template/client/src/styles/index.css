@@ -1,0 +1,24 @@
+@import 'tailwindcss';
+
+@source "../";
+
+:root {
+  --terminal-green: #22c55e;
+  --terminal-green-dim: #16a34a;
+  --dark-bg: #0f172a;
+  --card-bg: #1e293b;
+  --card-border: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --status-red: #ef4444;
+}
+
+body {
+  margin: 0;
+  background-color: var(--dark-bg);
+  color: var(--text-primary);
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
