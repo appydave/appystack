@@ -68,7 +68,16 @@ app.use(errorHandler);
 
 // Socket.io
 io.on('connection', (socket) => {
-  // TODO: Add socket.handshake.auth.token verification here
+  // Auth pattern — uncomment and adapt for your app:
+  // const token = socket.handshake.auth.token as string | undefined;
+  // if (!token) { socket.disconnect(); return; }
+  // try {
+  //   const payload = verifyToken(token); // replace with your JWT verify function
+  //   socket.data.userId = payload.sub;
+  // } catch {
+  //   socket.disconnect();
+  //   return;
+  // }
   logger.info({ socketId: socket.id }, 'Client connected');
 
   socket.on(SOCKET_EVENTS.CLIENT_PING, () => {
