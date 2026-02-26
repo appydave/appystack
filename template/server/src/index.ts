@@ -8,13 +8,16 @@ import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { apiLimiter } from './middleware/rateLimiter.js';
 import healthRouter from './routes/health.js';
 import infoRouter from './routes/info.js';
+import type { ServerToClientEvents, ClientToServerEvents } from '@appystack-template/shared';
+import { SOCKET_EVENTS } from '@appystack-template/shared';
 
 const app = express();
 const httpServer = createServer(app);
 
-const io = new Server(httpServer, {
+const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
     origin: env.CLIENT_URL,
     methods: ['GET', 'POST'],
@@ -27,6 +30,9 @@ app.use(compression());
 app.use(cors({ origin: env.CLIENT_URL }));
 app.use(express.json());
 app.use(requestLogger);
+
+// Rate limiting — apply before all routes
+app.use(apiLimiter);
 
 // Routes
 app.use(healthRouter);
@@ -46,10 +52,12 @@ app.use(errorHandler);
 
 // Socket.io
 io.on('connection', (socket) => {
+  // TODO: Add socket.handshake.auth.token verification here
   logger.info({ socketId: socket.id }, 'Client connected');
 
-  socket.on('client:ping', () => {
-    socket.emit('server:pong', {
+  socket.on(SOCKET_EVENTS.CLIENT_PING, () => {
+    logger.info({ socketId: socket.id }, 'Received client:ping');
+    socket.emit(SOCKET_EVENTS.SERVER_PONG, {
       message: 'pong',
       timestamp: new Date().toISOString(),
     });
