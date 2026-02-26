@@ -7,6 +7,7 @@ import cors from 'cors';
 import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { requestLogger } from './middleware/requestLogger.js';
+import { errorHandler } from './middleware/errorHandler.js';
 import healthRouter from './routes/health.js';
 import infoRouter from './routes/info.js';
 
@@ -31,12 +32,24 @@ app.use(requestLogger);
 app.use(healthRouter);
 app.use(infoRouter);
 
+// 404 catch-all — must be after all routes
+app.use((_req, res) => {
+  res.status(404).json({
+    status: 'error',
+    error: 'Not found',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Global error handler — must be last middleware (4 params)
+app.use(errorHandler);
+
 // Socket.io
 io.on('connection', (socket) => {
   logger.info({ socketId: socket.id }, 'Client connected');
 
   socket.on('client:ping', () => {
-    socket.emit('server:message', {
+    socket.emit('server:pong', {
       message: 'pong',
       timestamp: new Date().toISOString(),
     });
