@@ -1,34 +1,25 @@
-# @flivideo/config
+# @appydave/appystack-config
 
-Shared configuration for **FliStack** - the FliVideo technology stack.
-
-## What is FliStack?
-
-FliStack is the standardized technology stack used across all FliVideo projects:
-
-- **RVETS Core**: React, Vite, Express, TypeScript, Socket.io
-- **Quality Tools**: Vitest, ESLint, Prettier, Zod, Pino
-
-This package provides shared, battle-tested configurations for all quality tooling.
+Shared ESLint, TypeScript, Vitest, and Prettier configurations for the AppyStack RVETS stack (React, Vite, Express, TypeScript, Socket.io).
 
 ## Installation
 
 ```bash
-npm install --save-dev @flivideo/config
+npm install --save-dev @appydave/appystack-config
 ```
 
 ## Usage
 
 ### ESLint
 
-**For non-React projects (Node/server):**
+**For Node/server projects:**
 
 ```javascript
 // eslint.config.js
-import fliConfig from '@flivideo/config/eslint/base';
+import appyConfig from '@appydave/appystack-config/eslint/base';
 
 export default [
-  ...fliConfig,
+  ...appyConfig,
   // Add your custom rules here
 ];
 ```
@@ -37,10 +28,10 @@ export default [
 
 ```javascript
 // eslint.config.js
-import fliConfig from '@flivideo/config/eslint/react';
+import appyConfig from '@appydave/appystack-config/eslint/react';
 
 export default [
-  ...fliConfig,
+  ...appyConfig,
   // Add your custom rules here
 ];
 ```
@@ -52,10 +43,25 @@ export default [
 ```typescript
 // vitest.config.ts
 import { mergeConfig, defineConfig } from 'vitest/config';
-import fliConfig from '@flivideo/config/vitest/server';
+import appyConfig from '@appydave/appystack-config/vitest/server';
 
 export default mergeConfig(
-  fliConfig,
+  appyConfig,
+  defineConfig({
+    // Your custom config here
+  })
+);
+```
+
+**For client/React projects (jsdom environment):**
+
+```typescript
+// vitest.config.ts
+import { mergeConfig, defineConfig } from 'vitest/config';
+import appyConfig from '@appydave/appystack-config/vitest/client';
+
+export default mergeConfig(
+  appyConfig,
   defineConfig({
     // Your custom config here
   })
@@ -68,7 +74,7 @@ export default mergeConfig(
 
 ```json
 {
-  "extends": "@flivideo/config/typescript/react",
+  "extends": "@appydave/appystack-config/typescript/react",
   "compilerOptions": {
     // Your overrides here
   },
@@ -80,7 +86,7 @@ export default mergeConfig(
 
 ```json
 {
-  "extends": "@flivideo/config/typescript/node",
+  "extends": "@appydave/appystack-config/typescript/node",
   "compilerOptions": {
     // Your overrides here
   }
@@ -91,7 +97,7 @@ export default mergeConfig(
 
 ```json
 {
-  "extends": "@flivideo/config/typescript/base",
+  "extends": "@appydave/appystack-config/typescript/base",
   "compilerOptions": {
     // Your custom config here
   }
@@ -100,27 +106,35 @@ export default mergeConfig(
 
 ### Prettier
 
-**Option 1: Extend in package.json**
+**Option 1: Reference in package.json**
 
 ```json
 {
-  "prettier": "@flivideo/config/prettier"
+  "prettier": "@appydave/appystack-config/prettier"
 }
 ```
 
-**Option 2: Extend in .prettierrc**
+**Option 2: Reference in .prettierrc**
 
 ```json
-"@flivideo/config/prettier"
+"@appydave/appystack-config/prettier"
 ```
 
 **Option 3: Copy the .prettierignore**
 
 ```bash
-cp node_modules/@flivideo/config/prettier/.prettierignore .prettierignore
+cp node_modules/@appydave/appystack-config/prettier/.prettierignore .prettierignore
 ```
 
-## FliStack Philosophy
+## Philosophy
+
+### Why Share Configurations?
+
+1. **Consistency**: All AppyStack apps follow the same standards
+2. **Maintainability**: Update configs once, benefit everywhere
+3. **Onboarding**: New developers know the stack instantly
+4. **Best Practices**: Battle-tested configs from real projects
+5. **Time Savings**: No bikeshedding over formatting rules
 
 ### Technology Choices
 
@@ -130,29 +144,15 @@ cp node_modules/@flivideo/config/prettier/.prettierignore .prettierignore
 - **TypeScript**: Type safety across the entire stack
 - **Socket.io**: Real-time bidirectional communication
 - **Vitest**: Fast, modern test runner with great DX
-- **ESLint**: Code quality and consistency
+- **ESLint 9**: Flat config for code quality and consistency
 - **Prettier**: Automated code formatting
-- **Zod**: Runtime type validation
-- **Pino**: High-performance logging
 
-### Why Share Configurations?
+## Apps Using AppyStack
 
-1. **Consistency**: All FliVideo apps follow the same standards
-2. **Maintainability**: Update configs once, benefit everywhere
-3. **Onboarding**: New developers know the stack instantly
-4. **Best Practices**: Battle-tested configs from real projects
-5. **Time Savings**: No bikeshedding over formatting rules
-
-## Apps Using FliStack
-
-- **FliGen**: CLI generator for FliVideo projects
+- **FliHub**: Video asset management hub
+- **FliDeck**: Video production dashboard
 - **Storyline App**: Video content planning and review
-- **FliVideo Core**: Video asset management (planned)
 - **Agent Workflow Builder**: Multi-agent orchestration (planned)
-
-## Contributing
-
-Found a configuration issue? Open an issue or PR in the FliVideo monorepo.
 
 ## License
 
