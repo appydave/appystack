@@ -1,20 +1,15 @@
-```
-╔══════════════════════════════════════════════════════════════╗
-║                                                              ║
-║  ██████╗ ██╗   ██╗███████╗████████╗███████╗                 ║
-║  ██╔══██╗██║   ██║██╔════╝╚══██╔══╝██╔════╝                 ║
-║  ██████╔╝╚██╗ ██╔╝█████╗     ██║   ███████╗                 ║
-║  ██╔══██╗ ╚████╔╝ ██╔══╝     ██║   ╚════██║                 ║
-║  ██║  ██║  ╚██╔╝  ███████╗   ██║   ███████║                 ║
-║  ╚═╝  ╚═╝   ╚═╝   ╚══════╝   ╚═╝   ╚══════╝                 ║
-║                                                              ║
-║  AppyStack                                                   ║
-║  React · Vite · Express · TypeScript · Socket.io            ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
-```
-
 <div align="center">
+
+```
+ ██████╗ ██╗   ██╗███████╗████████╗███████╗
+ ██╔══██╗██║   ██║██╔════╝╚══██╔══╝██╔════╝
+ ██████╔╝╚██╗ ██╔╝█████╗     ██║   ███████╗
+ ██╔══██╗ ╚████╔╝ ██╔══╝     ██║   ╚════██║
+ ██║  ██║  ╚██╔╝  ███████╗   ██║   ███████║
+ ╚═╝  ╚═╝   ╚═╝   ╚══════╝   ╚═╝   ╚══════╝
+
+ AppyStack — React · Vite · Express · TypeScript · Socket.io
+```
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react&logoColor=black)
@@ -22,10 +17,30 @@
 ![Express](https://img.shields.io/badge/Express-5-000000?style=flat-square&logo=express&logoColor=white)
 ![Socket.io](https://img.shields.io/badge/Socket.io-4.8-010101?style=flat-square&logo=socketdotio&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)
+![Node](https://img.shields.io/badge/Node-22+-339933?style=flat-square&logo=node.js&logoColor=white)
 
 **Production-ready full-stack monorepo — real-time, type-safe, quality tooling from day one.**
 
 </div>
+
+---
+
+![AppyStack landing page](docs/screenshot.png)
+
+---
+
+## Table of Contents
+
+- [What Is AppyStack?](#what-is-appystack)
+- [Prerequisites](#prerequisites)
+- [The Architecture](#the-architecture)
+- [Quick Start](#quick-start)
+- [Repository Structure](#repository-structure)
+- [Using the Config Package](#using-the-config-package)
+- [Proven in Production](#proven-in-production)
+- [Philosophy](#philosophy)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
@@ -37,6 +52,13 @@ AppyStack is two things in one repository:
 |---|---|---|
 | `config/` | Shared ESLint, TypeScript, Vitest & Prettier configs | One source of truth across all your projects |
 | `template/` | RVETS monorepo boilerplate | Copy once, start building immediately |
+
+---
+
+## Prerequisites
+
+- **Node.js** 22 or higher
+- **npm** 10 or higher (comes with Node 22)
 
 ---
 
@@ -169,6 +191,23 @@ All ship with ✅ automated tests &nbsp;·&nbsp; ✅ CI/CD &nbsp;·&nbsp; ✅ ty
 - **Type safety** — shared interfaces flow from server to client via `shared/`
 - **Real-time built in** — Socket.io wired and working from the first commit
 - **Quality enforced** — linting, formatting, and tests are non-negotiable defaults
+
+---
+
+## Contributing
+
+Contributions are welcome. Please open an issue first to discuss what you'd like to change.
+
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feat/my-feature`)
+3. Commit your changes
+4. Open a pull request
+
+---
+
+## License
+
+MIT © [AppyDave](https://github.com/appydave)
 
 ---
 

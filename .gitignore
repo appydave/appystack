@@ -23,7 +23,7 @@ Thumbs.db
 raw.txt
 raw2.txt
 raw-ralph.txt
-*.png
+/*.png
 
 # Claude planning artifacts
 .claude/
