@@ -17,9 +17,15 @@ export function useServerStatus() {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
+    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]);
+
     async function fetchStatus() {
       try {
-        const [healthRes, infoRes] = await Promise.all([fetch('/health'), fetch('/api/info')]);
+        const [healthRes, infoRes] = await Promise.all([
+          fetch('/health', { signal }),
+          fetch('/api/info', { signal }),
+        ]);
 
         if (!healthRes.ok || !infoRes.ok) {
           throw new Error('Server returned an error');
@@ -35,6 +41,9 @@ export function useServerStatus() {
           error: null,
         });
       } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
         setStatus((prev) => ({
           ...prev,
           loading: false,
@@ -44,6 +53,10 @@ export function useServerStatus() {
     }
 
     fetchStatus();
+
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   return status;
