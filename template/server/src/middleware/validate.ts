@@ -5,7 +5,8 @@ export function validate(schema: { body?: z.ZodType; query?: z.ZodType; params?:
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       if (schema.body) req.body = schema.body.parse(req.body);
-      if (schema.query) req.query = schema.query.parse(req.query);
+      // Express 5: req.query is a getter — use Object.assign to mutate in place
+      if (schema.query) Object.assign(req.query, schema.query.parse(req.query));
       if (schema.params) req.params = schema.params.parse(req.params);
       next();
     } catch (err) {
