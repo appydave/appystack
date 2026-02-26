@@ -123,3 +123,38 @@ describe('SocketDemo — connected state', () => {
     expect(screen.getByText(/server:pong received/)).toBeInTheDocument();
   });
 });
+
+describe('SocketDemo — disconnect after connect', () => {
+  it('Send Ping button is disabled when socket disconnects', () => {
+    // Start disconnected — simulate a socket that has dropped
+    mockSocketState.socket = null;
+    mockSocketState.connected = false;
+
+    render(<SocketDemo />);
+    const button = screen.getByRole('button', { name: 'Send Ping' });
+    expect(button).toBeDisabled();
+  });
+
+  it('shows disconnected status text when socket is not connected', () => {
+    mockSocketState.socket = null;
+    mockSocketState.connected = false;
+
+    render(<SocketDemo />);
+    expect(screen.getByText('Status: disconnected')).toBeInTheDocument();
+  });
+
+  it('Send Ping button becomes enabled when socket reconnects', () => {
+    // Simulate reconnection: connected=true and socket object available
+    mockSocketState.mockOnce.mockReset();
+    mockSocketState.mockEmit.mockReset();
+    mockSocketState.socket = {
+      once: mockSocketState.mockOnce,
+      emit: mockSocketState.mockEmit,
+    };
+    mockSocketState.connected = true;
+
+    render(<SocketDemo />);
+    const button = screen.getByRole('button', { name: 'Send Ping' });
+    expect(button).not.toBeDisabled();
+  });
+});

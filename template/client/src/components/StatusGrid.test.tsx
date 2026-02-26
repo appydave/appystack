@@ -146,3 +146,36 @@ describe('StatusGrid — error state (server unreachable)', () => {
     );
   });
 });
+
+describe('StatusDot — isolation via StatusGrid', () => {
+  it('renders green indicator dots when server is reachable (ok=true)', async () => {
+    render(<StatusGrid />);
+    await waitFor(() => expect(screen.getByTestId('status-grid')).toBeInTheDocument(), {
+      timeout: 5000,
+    });
+    // After loading with a healthy server, API Health and info cards are ok=true
+    // StatusDot renders bg-green-500 when ok=true
+    const greenDots = document.querySelectorAll('.bg-green-500');
+    expect(greenDots.length).toBeGreaterThan(0);
+  });
+
+  it('renders red indicator dots when server is unreachable (ok=false)', async () => {
+    vi.stubGlobal('fetch', () => Promise.reject(new Error('Network error')));
+
+    render(<StatusGrid />);
+
+    // Wait for loading to complete (the loading text disappears)
+    await waitFor(
+      () => {
+        expect(screen.queryByText('Connecting to server...')).not.toBeInTheDocument();
+      },
+      { timeout: 5000 }
+    );
+
+    // StatusDot renders bg-red-500 when ok=false (health and info both null)
+    const redDots = document.querySelectorAll('.bg-red-500');
+    expect(redDots.length).toBeGreaterThan(0);
+
+    vi.unstubAllGlobals();
+  });
+});
