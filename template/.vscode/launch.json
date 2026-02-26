@@ -1,0 +1,59 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Server",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+      "args": ["${workspaceFolder}/server/src/index.ts"],
+      "cwd": "${workspaceFolder}/server",
+      "env": {
+        "NODE_ENV": "development",
+        "PORT": "5501",
+        "CLIENT_URL": "http://localhost:5500"
+      },
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/server/dist/**/*.js"],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Attach to Server",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/server/dist/**/*.js"],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Debug Client",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5500",
+      "webRoot": "${workspaceFolder}/client/src",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack:///./src/*": "${webRoot}/*"
+      }
+    },
+    {
+      "name": "Debug Current Test",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/vitest",
+      "args": ["run", "${relativeFile}"],
+      "cwd": "${workspaceFolder}",
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**"],
+      "smartStep": true
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack",
+      "configurations": ["Debug Server", "Debug Client"]
+    }
+  ]
+}
