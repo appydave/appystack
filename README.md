@@ -35,6 +35,7 @@
 - [Prerequisites](#prerequisites)
 - [The Architecture](#the-architecture)
 - [Quick Start](#quick-start)
+- [Getting Started Guide](docs/getting-started.md)
 - [Repository Structure](#repository-structure)
 - [Using the Config Package](#using-the-config-package)
 - [Proven in Production](#proven-in-production)
@@ -82,13 +83,35 @@ shared/   TypeScript interfaces only
 
 ## Quick Start
 
+Two ways to start a new project from AppyStack:
+
+### Option A — GitHub Template (recommended)
+
+1. Click **[Use this template](https://github.com/appydave/appystack/generate)** at the top of this page
+2. Name your new repo and create it
+3. Clone it and run:
+
 ```bash
-# Copy the template and start developing
-cp -r template/ my-new-app
-cd my-new-app
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
+cd YOUR_REPO/template
 npm install
+npm run customize    # rename project, set ports, update package scopes
 npm run dev
 ```
+
+### Option B — degit (no GitHub account needed)
+
+```bash
+npx degit appydave/appystack/template my-new-app
+cd my-new-app
+npm install
+npm run customize    # rename project, set ports, update package scopes
+npm run dev
+```
+
+> Full setup guide: [docs/getting-started.md](docs/getting-started.md)
+
+### Commands
 
 | Command | What it does |
 |---|---|
@@ -97,6 +120,7 @@ npm run dev
 | `npm test` | Run all tests |
 | `npm run lint` | ESLint across all workspaces |
 | `npm run typecheck` | TypeScript across all workspaces |
+| `npm run customize` | Interactive script — rename, set ports, update scopes |
 
 ---
 
@@ -126,16 +150,8 @@ appystack/
 
 ## Using the Config Package
 
-Install from npm (once published):
-
 ```bash
 npm install --save-dev @appydave/appystack-config
-```
-
-Or install locally via file reference:
-
-```bash
-npm install --save-dev file:/path/to/appystack/config
 ```
 
 ### ESLint
