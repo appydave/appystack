@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
+import type { ServerToClientEvents, ClientToServerEvents } from '@appystack-template/shared';
+
+export type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 export function useSocket() {
-  const socketRef = useRef<Socket | null>(null);
+  const socketRef = useRef<AppSocket | null>(null);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const socket = io({ transports: ['websocket', 'polling'] });
+    const socket: AppSocket = io({ transports: ['websocket', 'polling'] });
     socketRef.current = socket;
 
     socket.on('connect', () => setConnected(true));

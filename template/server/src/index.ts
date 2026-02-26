@@ -1,5 +1,7 @@
 import express from 'express';
 import { createServer } from 'node:http';
+import { join, dirname } from 'node:path'; // used for production static file serving below
+import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -7,13 +9,20 @@ import cors from 'cors';
 import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { requestLogger } from './middleware/requestLogger.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { apiLimiter } from './middleware/rateLimiter.js';
 import healthRouter from './routes/health.js';
 import infoRouter from './routes/info.js';
+import type { ServerToClientEvents, ClientToServerEvents } from '@appystack-template/shared';
+import { SOCKET_EVENTS } from '@appystack-template/shared';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
 
-const io = new Server(httpServer, {
+const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
     origin: env.CLIENT_URL,
     methods: ['GET', 'POST'],
@@ -27,16 +36,44 @@ app.use(cors({ origin: env.CLIENT_URL }));
 app.use(express.json());
 app.use(requestLogger);
 
+// Rate limiting — apply before all routes
+app.use(apiLimiter);
+
 // Routes
 app.use(healthRouter);
 app.use(infoRouter);
 
+// Production static file serving — serve the built client app
+if (env.isProduction) {
+  const clientDist = join(__dirname, '../../client/dist');
+  app.use(express.static(clientDist));
+
+  // SPA fallback — serve index.html for all non-API routes
+  app.get('*', (_req, res) => {
+    res.sendFile(join(clientDist, 'index.html'));
+  });
+}
+
+// 404 catch-all — must be after all routes (only reached in non-production for unknown API routes)
+app.use((_req, res) => {
+  res.status(404).json({
+    status: 'error',
+    error: 'Not found',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Global error handler — must be last middleware (4 params)
+app.use(errorHandler);
+
 // Socket.io
 io.on('connection', (socket) => {
+  // TODO: Add socket.handshake.auth.token verification here
   logger.info({ socketId: socket.id }, 'Client connected');
 
-  socket.on('client:ping', () => {
-    socket.emit('server:message', {
+  socket.on(SOCKET_EVENTS.CLIENT_PING, () => {
+    logger.info({ socketId: socket.id }, 'Received client:ping');
+    socket.emit(SOCKET_EVENTS.SERVER_PONG, {
       message: 'pong',
       timestamp: new Date().toISOString(),
     });
