@@ -21,10 +21,12 @@
     "format:check": "prettier --check .",
     "typecheck": "npm run typecheck -w shared -w server -w client",
     "clean": "rm -rf node_modules shared/dist server/dist client/dist",
-    "prepare": "husky"
+    "prepare": "husky",
+    "customize": "tsx scripts/customize.ts"
   },
   "devDependencies": {
     "@appydave/appystack-config": "file:../config",
+    "@clack/prompts": "^1.0.1",
     "@eslint/js": "^9.17.0",
     "@playwright/test": "^1.58.2",
     "@typescript-eslint/eslint-plugin": "^8.20.0",
