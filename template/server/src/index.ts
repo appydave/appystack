@@ -93,11 +93,14 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start server
-httpServer.listen(env.PORT, () => {
-  logger.info(`Server running on http://localhost:${env.PORT}`);
-  logger.info(`Client URL: ${env.CLIENT_URL}`);
-});
+// Start server — skip in test environment to prevent EADDRINUSE when multiple
+// test files import this module. Tests use supertest with app directly.
+if (!env.isTest) {
+  httpServer.listen(env.PORT, () => {
+    logger.info(`Server running on http://localhost:${env.PORT}`);
+    logger.info(`Client URL: ${env.CLIENT_URL}`);
+  });
+}
 
 // Graceful shutdown
 const shutdown = () => {

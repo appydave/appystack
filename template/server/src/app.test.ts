@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import type { AddressInfo } from 'node:net';
 import { io as ioc } from 'socket.io-client';
@@ -28,15 +28,25 @@ describe('Express app (via index.ts export)', () => {
 describe('Socket.io via httpServer export', () => {
   let port: number;
 
-  afterAll(() => {
-    // nothing to tear down — httpServer is managed by the module
+  beforeAll(async () => {
+    // In test mode index.ts skips auto-listen to prevent EADDRINUSE across
+    // parallel test files. Start the server on a random port here instead.
+    if (!httpServer.listening) {
+      await new Promise<void>((resolve) => httpServer.listen(0, resolve));
+    }
+    port = (httpServer.address() as AddressInfo).port;
+  });
+
+  afterAll(async () => {
+    if (httpServer.listening) {
+      await new Promise<void>((resolve, reject) =>
+        httpServer.close((err) => (err ? reject(err) : resolve()))
+      );
+    }
   });
 
   it('connects and receives server:pong after client:ping', () => {
     return new Promise<void>((resolve, reject) => {
-      // Use the already-listening httpServer (started by index.ts)
-      const addr = httpServer.address() as AddressInfo | null;
-      port = addr ? addr.port : 5501;
       const url = `http://localhost:${port}`;
 
       const client = ioc(url, { forceNew: true, transports: ['websocket'] });
@@ -65,8 +75,7 @@ describe('Socket.io via httpServer export', () => {
 
   it('can connect and disconnect cleanly', () => {
     return new Promise<void>((resolve, reject) => {
-      const addr = httpServer.address() as AddressInfo | null;
-      const url = `http://localhost:${addr ? addr.port : 5501}`;
+      const url = `http://localhost:${port}`;
 
       const client = ioc(url, { forceNew: true, transports: ['websocket'] });
 
