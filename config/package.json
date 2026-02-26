@@ -1,6 +1,6 @@
 {
   "name": "@appydave/appystack-config",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Shared ESLint, TypeScript, Vitest, and Prettier configs for AppyStack (RVETS stack)",
   "type": "module",
   "exports": {
@@ -9,8 +9,11 @@
     "./vitest/server": "./vitest/server.config.ts",
     "./vitest/client": "./vitest/client.config.ts",
     "./typescript/base": "./typescript/base.json",
+    "./typescript/base.json": "./typescript/base.json",
     "./typescript/react": "./typescript/react.json",
+    "./typescript/react.json": "./typescript/react.json",
     "./typescript/node": "./typescript/node.json",
+    "./typescript/node.json": "./typescript/node.json",
     "./prettier": "./prettier/.prettierrc"
   },
   "files": [
