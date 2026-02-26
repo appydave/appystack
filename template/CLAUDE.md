@@ -41,7 +41,7 @@ npm run typecheck     # TypeScript across all workspaces
 
 - **Shared types**: Define in `shared/src/types.ts`, import via `@appystack-template/shared`
 - **API routes**: Add to `server/src/routes/`, mount in `server/src/index.ts`
-- **Socket events**: Add to `SocketEvents` interface in shared, handle in `server/src/index.ts`
+- **Socket events**: Add to `ServerToClientEvents` / `ClientToServerEvents` in shared, handle in `server/src/index.ts`
 - **Components**: Place in `client/src/components/`, pages in `client/src/pages/`
 - **Styling**: TailwindCSS v4 with CSS variables in `client/src/styles/index.css`
 - **Environment**: Extend Zod schema in `server/src/config/env.ts`

@@ -20,7 +20,10 @@ export interface ServerInfo {
   uptime: number;
 }
 
-export interface SocketEvents {
+export interface ServerToClientEvents {
+  'server:pong': (data: { message: string; timestamp: string }) => void;
+}
+
+export interface ClientToServerEvents {
   'client:ping': () => void;
-  'server:message': (data: { message: string; timestamp: string }) => void;
 }
