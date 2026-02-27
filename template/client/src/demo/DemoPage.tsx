@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import ContactForm from '../components/ContactForm.js';
+import ContactForm from './ContactForm.js';
 import SocketDemo from './SocketDemo.js';
 import StatusGrid from './StatusGrid.js';
 import TechStackDisplay from './TechStackDisplay.js';

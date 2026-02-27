@@ -38,7 +38,7 @@ Both processes start concurrently. The client dev server proxies all `/api`, `/h
 
 ### `client/` — React app (port 5500)
 
-**Components** (`client/src/components/`):
+**Demo components** (`client/src/demo/`) — delete this entire folder when starting your app:
 
 | Component          | What it does                                                     |
 | ------------------ | ---------------------------------------------------------------- |
@@ -46,7 +46,12 @@ Both processes start concurrently. The client dev server proxies all `/api`, `/h
 | `TechStackDisplay` | Lists the tech stack — replace or delete for your app            |
 | `SocketDemo`       | Live ping/pong demo via Socket.io — shows real-time wiring works |
 | `ContactForm`      | Example form with React Hook Form + Zod validation               |
-| `ErrorFallback`    | Error boundary fallback UI                                       |
+
+**Components** (`client/src/components/`):
+
+| Component       | What it does                  |
+| --------------- | ----------------------------- |
+| `ErrorFallback` | Error boundary fallback UI    |
 
 **Hooks** (`client/src/hooks/`):
 

@@ -12,7 +12,7 @@ AppyStack is a shared configuration package and architecture reference for the R
 
 This is NOT an application — it's a config package + documentation hub.
 
-- `config/` — The `@appydave/appystack-config` npm package (currently published as `@flivideo/config`, pending rename)
+- `config/` — The `@appydave/appystack-config` npm package (published as v1.0.3 on npm)
   - `eslint/base.config.js` — ESLint 9 flat config for Node/server projects
   - `eslint/react.config.js` — ESLint 9 flat config for React projects (extends base + adds React/hooks rules)
   - `vitest/server.config.ts` — Vitest config for server-side testing
@@ -65,7 +65,7 @@ export default [...appyConfig];
 
 ## npm Publishing
 
-The config package will be published as `@appydave/appystack-config` on npm (public). Currently `config/package.json` still says `@flivideo/config` — this needs renaming as part of the publish work. Full details including target package.json, org setup, publishing workflow, consumer migration steps, and automated CI publishing are in `docs/architecture.md` under "npm Publishing".
+The config package is published as `@appydave/appystack-config` on npm (public, v1.0.3). Full details including publishing workflow, consumer migration steps, and automated CI publishing are in `docs/architecture.md` under "npm Publishing".
 
 ## File Naming Convention
 
