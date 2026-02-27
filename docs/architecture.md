@@ -758,14 +758,14 @@ The shared config package is published to npm under the `@appydave` scope so con
 | **Access** | Public |
 | **Source location** | `config/` directory in this repo |
 
-### Current State (needs migration)
+### Current State (migration complete — published)
 
-The `config/package.json` currently has:
-- `"name": "@flivideo/config"` — needs renaming to `@appydave/appystack-config`
-- `"version": "1.0.0"` — reset or keep depending on breaking changes
-- No `"files"` field — should be added to control what gets published
-- No `"repository"` field — should point to the GitHub repo
-- `"main": "index.js"` — no index.js exists, should be removed or an index created
+The `config/package.json` is fully renamed and published:
+- `"name": "@appydave/appystack-config"` — live on npm as of 2026-02-26
+- `"version": "1.0.3"` — current published version
+- `"files"` field present — controls published output
+- `"repository"` field present — points to GitHub repo
+- No `"main"` field — all exports via `"exports"` map
 
 ### Target package.json
 
@@ -892,30 +892,21 @@ npm install --save-dev file:/Users/davidcruwys/dev/ad/apps/appystack/config
 npm install --save-dev @appydave/appystack-config
 ```
 
-Consumer import paths change from `@flivideo/config/...` to `@appydave/appystack-config/...`:
+Consumer import paths use `@appydave/appystack-config/...` (migration from `@flivideo/config` is complete):
 
 ```javascript
-// eslint.config.js — BEFORE
-import fliConfig from '@flivideo/config/eslint/react';
-
-// eslint.config.js — AFTER
+// eslint.config.js
 import appyConfig from '@appydave/appystack-config/eslint/react';
 export default [...appyConfig];
 ```
 
 ```json
-// tsconfig.json — BEFORE
-{ "extends": "@flivideo/config/typescript/react" }
-
-// tsconfig.json — AFTER
+// tsconfig.json
 { "extends": "@appydave/appystack-config/typescript/react" }
 ```
 
 ```json
-// package.json prettier — BEFORE
-{ "prettier": "@flivideo/config/prettier" }
-
-// package.json prettier — AFTER
+// package.json prettier
 { "prettier": "@appydave/appystack-config/prettier" }
 ```
 
@@ -1015,6 +1006,91 @@ This is a separate effort from the config package. The config package should be 
 | **FliHub** | Video recording workflows | default/5101 | Monaco editor, file watching |
 | **FliDeck** | Presentation viewer | 5200/5201 | Config hot-reload, HTML parsing |
 | **Storyline App** | Video content planning | 5300/5301 | Image processing (Sharp), multi-project |
+
+---
+
+## Adding ShadCN/UI
+
+AppyStack ships with the `cn()` utility (`clsx` + `tailwind-merge`) and the `@/*` path alias pre-configured — the two prerequisites ShadCN requires. Adding ShadCN components to a consumer project is three commands.
+
+### Prerequisites (already in the template)
+
+- `clsx` + `tailwind-merge` installed, `src/lib/utils.ts` with `cn()` exported
+- `@/*` path alias in `vite.config.ts` and `tsconfig.json`
+- TailwindCSS v4 installed
+
+### Adding ShadCN to a consumer project
+
+After running `npm run customize`:
+
+```bash
+# 1. Initialise shadcn (run from the client/ workspace)
+cd client
+npx shadcn@latest init
+```
+
+Answer the prompts:
+- Style: **New York** (recommended) or Default
+- Base color: your choice
+- CSS variables: **yes**
+
+```bash
+# 2. Add components as needed
+npx shadcn@latest add button
+npx shadcn@latest add dialog
+npx shadcn@latest add form        # wraps react-hook-form (already installed)
+```
+
+```bash
+# 3. Use in your components
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+```
+
+### CSS variable integration
+
+ShadCN's `init` adds an `@theme inline` block to your CSS with OKLCH color variables. AppyStack's existing theme uses `--color-terminal-green`, `--color-dark-bg`, etc.
+
+**They coexist without conflict** — but you'll want to align them. Two options:
+
+**Option A — Keep AppyStack's dark theme, retheme ShadCN to match:**
+Override ShadCN's `--background` and `--foreground` in your CSS to match the dark palette. ShadCN components will then pick up your colours.
+
+```css
+/* In your index.css, after shadcn's @theme block: */
+@layer base {
+  :root {
+    --background: 222 47% 11%;     /* matches --dark-bg */
+    --foreground: 210 40% 95%;     /* matches --text-primary */
+    --card: 217 33% 17%;           /* matches --card-bg */
+    --border: 217 19% 27%;         /* matches --card-border */
+    --primary: 142 71% 45%;        /* matches --terminal-green */
+  }
+}
+```
+
+**Option B — Let ShadCN's theme take over, remove AppyStack's custom vars:**
+Delete the `@theme` block from `index.css` and use ShadCN's variables throughout. Start fresh with ShadCN's palette.
+
+### What stays, what changes
+
+| | Stays | Changes |
+|---|---|---|
+| `cn()` in `lib/utils.ts` | ✅ | — |
+| `@/*` path alias | ✅ | — |
+| Existing components | ✅ | — |
+| `components/ui/` | — | Created by shadcn init |
+| `index.css` | ✅ | Gets shadcn's `@theme inline` block added |
+| `components.json` | — | Created by shadcn init |
+
+### Why AppyStack doesn't pre-generate ShadCN components
+
+The template ships without pre-generated ShadCN components because:
+1. ShadCN's default palette (light/neutral grays) clashes with AppyStack's dark terminal theme out of the box
+2. Pre-generated components without the CLI context make it hard to add more later
+3. Component choices are per-project — not every app needs the same set
+
+The `cn()` utility and path alias give you the foundation. ShadCN components are one `npx shadcn@latest add` away.
 
 ---
 

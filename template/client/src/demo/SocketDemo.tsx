@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { SOCKET_EVENTS } from '@appystack-template/shared';
 import { useSocket } from '../hooks/useSocket.js';
+import { cn } from '@/lib/utils.js';
 
 interface PongResponse {
   message: string;
@@ -40,11 +41,10 @@ export default function SocketDemo() {
         <button
           onClick={sendPing}
           disabled={!connected || waiting}
-          className="px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{
-            backgroundColor: connected ? 'var(--terminal-green)' : 'var(--card-border)',
-            color: connected ? 'var(--dark-bg)' : 'var(--text-secondary)',
-          }}
+          className={cn(
+            'px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+            connected ? 'bg-terminal-green text-dark-bg' : 'bg-card-border text-text-secondary'
+          )}
         >
           {waiting ? 'Waiting for pong...' : 'Send Ping'}
         </button>

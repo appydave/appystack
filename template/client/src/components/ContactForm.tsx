@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { cn } from '@/lib/utils.js';
 
 const schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -34,10 +35,10 @@ export default function ContactForm() {
           type="text"
           placeholder="Your name"
           {...register('name')}
-          className="w-full px-3 py-2 rounded text-sm bg-dark-bg text-text-primary"
-          style={{
-            border: errors.name ? '1px solid #f87171' : '1px solid var(--card-border)',
-          }}
+          className={cn(
+            'w-full px-3 py-2 rounded text-sm bg-dark-bg text-text-primary border',
+            errors.name ? 'border-status-red' : 'border-card-border'
+          )}
         />
         {errors.name && (
           <span role="alert" className="text-red-400 text-xs mt-1 block">
@@ -55,10 +56,10 @@ export default function ContactForm() {
           type="email"
           placeholder="you@example.com"
           {...register('email')}
-          className="w-full px-3 py-2 rounded text-sm bg-dark-bg text-text-primary"
-          style={{
-            border: errors.email ? '1px solid #f87171' : '1px solid var(--card-border)',
-          }}
+          className={cn(
+            'w-full px-3 py-2 rounded text-sm bg-dark-bg text-text-primary border',
+            errors.email ? 'border-status-red' : 'border-card-border'
+          )}
         />
         {errors.email && (
           <span role="alert" className="text-red-400 text-xs mt-1 block">
@@ -76,10 +77,10 @@ export default function ContactForm() {
           rows={4}
           placeholder="Your message..."
           {...register('message')}
-          className="w-full px-3 py-2 rounded text-sm resize-none bg-dark-bg text-text-primary"
-          style={{
-            border: errors.message ? '1px solid #f87171' : '1px solid var(--card-border)',
-          }}
+          className={cn(
+            'w-full px-3 py-2 rounded text-sm resize-none bg-dark-bg text-text-primary border',
+            errors.message ? 'border-status-red' : 'border-card-border'
+          )}
         />
         {errors.message && (
           <span role="alert" className="text-red-400 text-xs mt-1 block">
