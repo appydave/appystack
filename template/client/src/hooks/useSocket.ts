@@ -8,7 +8,7 @@ export type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 // Resolve the socket URL at connection time so test environments can set window.location first.
 // Override via VITE_SOCKET_URL env var if a different server is needed.
-function getSocketUrl(): string {
+export function getSocketUrl(): string {
   return (import.meta.env.VITE_SOCKET_URL as string | undefined) ?? window.location.origin;
 }
 

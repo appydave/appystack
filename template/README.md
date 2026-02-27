@@ -49,9 +49,9 @@ Both processes start concurrently. The client dev server proxies all `/api`, `/h
 
 **Components** (`client/src/components/`):
 
-| Component       | What it does                  |
-| --------------- | ----------------------------- |
-| `ErrorFallback` | Error boundary fallback UI    |
+| Component       | What it does               |
+| --------------- | -------------------------- |
+| `ErrorFallback` | Error boundary fallback UI |
 
 **Hooks** (`client/src/hooks/`):
 

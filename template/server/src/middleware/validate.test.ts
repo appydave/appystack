@@ -67,7 +67,7 @@ describe('validate middleware — body', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.status).toBe('error');
-    expect(Array.isArray(res.body.error)).toBe(true);
+    expect(typeof res.body.error).toBe('string');
     expect(res.body.timestamp).toBeDefined();
   });
 
@@ -76,7 +76,7 @@ describe('validate middleware — body', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.status).toBe('error');
-    expect(Array.isArray(res.body.error)).toBe(true);
+    expect(typeof res.body.error).toBe('string');
   });
 });
 
@@ -88,7 +88,7 @@ describe('validate middleware — query', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.status).toBe('error');
-    expect(Array.isArray(res.body.error)).toBe(true);
+    expect(typeof res.body.error).toBe('string');
   });
 
   it('returns 400 when required query parameter is missing', async () => {
@@ -115,6 +115,99 @@ describe('validate middleware — params', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.status).toBe('error');
-    expect(Array.isArray(res.body.error)).toBe(true);
+    expect(typeof res.body.error).toBe('string');
+  });
+});
+
+// Multi-schema validation: body + query validated together in a single middleware call
+const multiBodySchema = z.object({ name: z.string().min(1) });
+const multiQuerySchema = z.object({ page: z.string().regex(/^\d+$/, 'must be digits only') });
+
+function buildMultiSchemaApp() {
+  const app = express();
+  app.use(express.json());
+  app.post('/multi', validate({ body: multiBodySchema, query: multiQuerySchema }), (req, res) => {
+    res.json({ name: req.body.name, page: req.query['page'] });
+  });
+  return withErrorHandler(app);
+}
+
+describe('validate middleware — multi-schema (body + query)', () => {
+  const app = buildMultiSchemaApp();
+
+  it('passes when both body and query satisfy their schemas', async () => {
+    const res = await request(app)
+      .post('/multi?page=1')
+      .send({ name: 'Widget' })
+      .set('Content-Type', 'application/json');
+
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe('Widget');
+    expect(res.body.page).toBe('1');
+  });
+
+  it('returns 400 when body fails validation but query is valid', async () => {
+    const res = await request(app)
+      .post('/multi?page=1')
+      .send({ name: '' })
+      .set('Content-Type', 'application/json');
+
+    expect(res.status).toBe(400);
+    expect(res.body.status).toBe('error');
+    expect(typeof res.body.error).toBe('string');
+  });
+
+  it('returns 400 when query fails validation but body is valid', async () => {
+    const res = await request(app)
+      .post('/multi?page=abc')
+      .send({ name: 'Widget' })
+      .set('Content-Type', 'application/json');
+
+    expect(res.status).toBe(400);
+    expect(res.body.status).toBe('error');
+    expect(typeof res.body.error).toBe('string');
+  });
+
+  it('returns 400 when both body and query fail validation', async () => {
+    const res = await request(app)
+      .post('/multi?page=abc')
+      .send({ name: '' })
+      .set('Content-Type', 'application/json');
+
+    expect(res.status).toBe(400);
+    expect(res.body.status).toBe('error');
+    expect(typeof res.body.error).toBe('string');
+  });
+});
+
+// Non-Zod error propagation: schema throws a plain Error → next(err) rather than 400
+function buildThrowingApp() {
+  const throwingSchema = {
+    parse: () => {
+      throw new Error('unexpected schema failure');
+    },
+  } as unknown as z.ZodType;
+
+  const app = express();
+  app.use(express.json());
+  app.post('/throw', validate({ body: throwingSchema }), (_req, res) => {
+    res.json({ ok: true });
+  });
+  return withErrorHandler(app);
+}
+
+describe('validate middleware — non-Zod error propagation', () => {
+  const app = buildThrowingApp();
+
+  it('calls next(err) and reaches the error handler when schema throws a plain Error', async () => {
+    const res = await request(app)
+      .post('/throw')
+      .send({ any: 'data' })
+      .set('Content-Type', 'application/json');
+
+    // The catch-all error handler (added by withErrorHandler) returns 500 for non-Zod errors
+    expect(res.status).toBe(500);
+    expect(res.body.status).toBe('error');
+    expect(res.body.error).toBe('unexpected schema failure');
   });
 });

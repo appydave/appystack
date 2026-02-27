@@ -12,5 +12,6 @@ describe('GET /health', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
     expect(res.body.timestamp).toBeDefined();
+    expect(res.body.data.status).toBe('ok');
   });
 });

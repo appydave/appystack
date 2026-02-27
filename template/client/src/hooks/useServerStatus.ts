@@ -35,11 +35,11 @@ export function useServerStatus() {
           throw new Error('Server returned an error');
         }
 
-        const health: HealthResponse = await healthRes.json();
+        const healthBody = await healthRes.json();
         const infoBody = await infoRes.json();
 
         setStatus({
-          health,
+          health: healthBody.data,
           info: infoBody.data,
           loading: false,
           error: null,

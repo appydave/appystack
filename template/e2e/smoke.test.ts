@@ -83,8 +83,8 @@ test('at least one status card is visible', async ({ page }) => {
   await page.goto(`http://localhost:${CLIENT_PORT}`);
   await page.waitForLoadState('networkidle');
   // The status grid renders cards for server health info
-  const cards = page.locator('[class*="rounded"]');
-  await expect(cards.first()).toBeVisible();
+  const statusGrid = page.locator('[data-testid="status-grid"]');
+  await expect(statusGrid).toBeVisible();
 });
 
 test('/health endpoint returns 200', async () => {

@@ -8,10 +8,9 @@ export interface ApiResponse<T = unknown> {
   timestamp: string;
 }
 
-/** Response shape for the /health endpoint. */
+/** Response shape for the /health endpoint data payload. */
 export interface HealthResponse {
   status: 'ok';
-  timestamp: string;
 }
 
 /** Server metadata returned by the /api/info endpoint. */

@@ -21,8 +21,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Validate package contents
+        working-directory: config
+        run: npm pack --dry-run
 
       - name: Publish to npm
         run: npm publish --access public --provenance

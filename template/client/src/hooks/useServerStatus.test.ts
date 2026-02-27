@@ -16,7 +16,7 @@ beforeAll(() => {
     const app = express();
 
     app.get('/health', (_req, res) => {
-      res.json({ status: 'ok', timestamp: new Date().toISOString() });
+      res.json({ status: 'ok', data: { status: 'ok' }, timestamp: new Date().toISOString() });
     });
 
     app.get('/api/info', (_req, res) => {
@@ -76,7 +76,6 @@ describe('useServerStatus', () => {
 
     expect(result.current.health).not.toBeNull();
     expect(result.current.health?.status).toBe('ok');
-    expect(typeof result.current.health?.timestamp).toBe('string');
   });
 
   it('fetches /api/info and sets info state', async () => {

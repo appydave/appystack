@@ -41,7 +41,6 @@ export default function StatusGrid() {
         {health ? (
           <>
             <p>Status: {health.status}</p>
-            <p>Timestamp: {new Date(health.timestamp).toLocaleTimeString()}</p>
           </>
         ) : (
           <p className="text-red-400">{error || 'Unable to reach server'}</p>

@@ -11,9 +11,10 @@ export function validate(schema: { body?: z.ZodType; query?: z.ZodType; params?:
       next();
     } catch (err) {
       if (err instanceof ZodError) {
+        const message = err.errors.map((e) => e.message).join('; ');
         res
           .status(400)
-          .json({ status: 'error', error: err.errors, timestamp: new Date().toISOString() });
+          .json({ status: 'error', error: message, timestamp: new Date().toISOString() });
         return;
       }
       next(err);

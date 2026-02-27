@@ -48,6 +48,10 @@ npm run typecheck     # TypeScript across all workspaces
 - **Socket events**: Add to `ServerToClientEvents` / `ClientToServerEvents` in shared, handle in `server/src/index.ts`
 - **Components**: Place in `client/src/components/`, pages in `client/src/pages/`
 - **Demo components**: Live in `client/src/demo/` — delete the entire folder when starting your app
+  - The `demo/` folder (StatusGrid, TechStackDisplay, SocketDemo, ContactForm) is intentionally untested
+  - It is scaffolding designed to be deleted when building a real app
+  - Tests for demo/ components would be maintenance debt on throwaway code
+  - When you delete `demo/`, delete any test files associated with it
 - **Styling**: TailwindCSS v4 with CSS variables in `client/src/styles/index.css`
 - **Environment**: Extend Zod schema in `server/src/config/env.ts`
 
@@ -72,3 +76,39 @@ Search for `TODO` to find all customization points:
 ESLint config imports from `@appydave/appystack-config/eslint/react` (3-line config — migration complete as of Wave 2).
 
 TypeScript configs extend from `@appydave/appystack-config/typescript/{base,node,react}`.
+
+## For Consumer Apps (After Customizing This Template)
+
+This CLAUDE.md describes the template as-shipped. Once you've built on top of it, update this section so AI coding agents understand your specific setup.
+
+### Database (update if applicable)
+
+- ORM/driver: \***\*\_\_\_\*\***
+- Schema location: \***\*\_\_\_\*\***
+- Migration command: \***\*\_\_\_\*\***
+- Test strategy: \***\*\_\_\_\*\***
+
+### Authentication (update if applicable)
+
+- Approach: \***\*\_\_\_\*\***
+- Token storage: \***\*\_\_\_\*\***
+- Protected route middleware: \***\*\_\_\_\*\***
+- Socket.io auth: \***\*\_\_\_\*\***
+
+### State Management (update if applicable)
+
+- Library: \***\*\_\_\_\*\***
+- Store location: \***\*\_\_\_\*\***
+- Key patterns: \***\*\_\_\_\*\***
+
+### Custom Middleware (update if applicable)
+
+List any middleware added beyond the defaults (helmet, compression, cors, requestLogger, rateLimiter, errorHandler):
+
+- ***
+
+### Additional Environment Variables
+
+Document any env vars added beyond NODE_ENV, PORT, CLIENT_URL, VITE_API_URL, VITE_APP_NAME:
+
+- ***

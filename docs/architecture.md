@@ -26,6 +26,61 @@ AppyStack is a production-ready full-stack architecture for building real-time w
 
 ---
 
+## Table of Contents
+
+- [What is AppyStack?](#what-is-appystack)
+- [Capabilities & Limitations](#capabilities--limitations)
+- [Core Architecture](#core-architecture)
+- [Technology Stack](#technology-stack)
+- [Configuration Patterns](#configuration-patterns)
+- [Environment Validation (Zod)](#environment-validation-zod)
+- [Structured Logging (Pino)](#structured-logging-pino)
+- [Real-time Architecture (Socket.io)](#real-time-architecture-socketio)
+- [Testing Patterns](#testing-patterns)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Common Pitfalls](#common-pitfalls)
+- [Comparison with Other Stacks](#comparison-with-other-stacks)
+- [When to Use AppyStack](#when-to-use-appystack)
+- [Security](#security)
+- [npm Publishing (@appydave/appystack-config)](#npm-publishing-appydaveappystack-config)
+- [Roadmap](#roadmap)
+- [Production Apps](#production-apps)
+- [Adding ShadCN/UI](#adding-shadcnui)
+
+---
+
+## Capabilities & Limitations
+
+### What AppyStack Includes
+- TypeScript end-to-end with shared types across client, server, and shared packages
+- REST API with Zod request validation and structured error responses
+- Real-time bidirectional communication via Socket.io
+- Structured logging with Pino and pino-http
+- Environment variable validation with Zod at startup
+- Production Docker build with multi-stage Dockerfile
+- CI/CD workflow (GitHub Actions) with lint, typecheck, build, unit, coverage, and E2E checks
+- Test coverage >80% on lines/statements
+- Shared ESLint, TypeScript, Vitest, and Prettier configs via @appydave/appystack-config
+
+### What AppyStack Does NOT Include
+
+These are intentionally out of scope — add them yourself:
+
+| Concern | Choose your own |
+|---------|----------------|
+| Database / ORM | Prisma, Drizzle, Kysely, raw SQL |
+| Authentication | JWT, OAuth 2.0, sessions, Passport.js |
+| State management | Zustand, Redux, TanStack Query, React Context |
+| API documentation | Swagger/OpenAPI, tRPC |
+| File uploads | multer, busboy |
+| Email | Resend, Nodemailer, SendGrid |
+| Background jobs | BullMQ, pg-boss, cron |
+| GraphQL | Not applicable — AppyStack is REST + Socket.io |
+
+This is not a limitation — it's a deliberate boundary. AppyStack gives you a production-ready foundation; you layer in what your app actually needs.
+
+---
+
 ## Core Architecture
 
 ### Monorepo Structure
@@ -779,6 +834,7 @@ The `config/package.json` is fully renamed and published:
     "./eslint/base": "./eslint/base.config.js",
     "./eslint/react": "./eslint/react.config.js",
     "./vitest/server": "./vitest/server.config.ts",
+    "./vitest/client": "./vitest/client.config.ts",
     "./typescript/base": "./typescript/base.json",
     "./typescript/react": "./typescript/react.json",
     "./typescript/node": "./typescript/node.json",
