@@ -27,4 +27,8 @@ raw-ralph.txt
 
 # Claude planning artifacts
 .claude/
+
+# Exception: template ships with skills for app recipe discovery
+!template/.claude/
+!template/.claude/**
 .playwright-mcp/
