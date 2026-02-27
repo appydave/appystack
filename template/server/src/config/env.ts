@@ -17,6 +17,10 @@ if (!parsed.success) {
   process.exit(1);
 }
 
+/**
+ * Validated server environment configuration loaded from .env via Zod.
+ * Includes NODE_ENV, PORT, CLIENT_URL, and derived boolean flags (isDevelopment, isProduction, isTest).
+ */
 export const env = {
   ...parsed.data,
   isDevelopment: parsed.data.NODE_ENV === 'development',

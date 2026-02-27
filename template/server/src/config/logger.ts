@@ -1,6 +1,7 @@
 import pino from 'pino';
 import { env } from './env.js';
 
+/** Pino logger instance. Uses pino-pretty in development; JSON output in production/test. */
 export const logger = pino({
   level: env.isDevelopment ? 'debug' : 'info',
   ...(env.isDevelopment && {

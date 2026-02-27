@@ -8,6 +8,10 @@ interface ServerStatus {
   error: string | null;
 }
 
+/**
+ * Fetches server health (/health) and metadata (/api/info) on mount.
+ * @returns health status, server info, loading flag, and error string
+ */
 export function useServerStatus() {
   const [status, setStatus] = useState<ServerStatus>({
     health: null,

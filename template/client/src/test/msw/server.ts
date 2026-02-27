@@ -1,5 +1,5 @@
 import { setupServer } from 'msw/node';
-import { http, HttpResponse, passthrough } from 'msw';
+import { http, passthrough } from 'msw';
 import { handlers } from './handlers.js';
 
 // Pass socket.io requests through without interception.
