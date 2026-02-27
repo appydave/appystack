@@ -51,33 +51,19 @@ const techStack: TechCategory[] = [
 export default function TechStackDisplay() {
   return (
     <div data-testid="tech-stack">
-      <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>
-        Tech Stack
-      </h2>
+      <h2 className="text-2xl font-bold mb-6 text-text-primary">Tech Stack</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {techStack.map((category) => (
-          <div
-            key={category.title}
-            className="rounded-xl p-5"
-            style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
-          >
-            <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--terminal-green)' }}>
-              {category.title}
-            </h3>
+          <div key={category.title} className="rounded-xl p-5 bg-card-bg border border-card-border">
+            <h3 className="text-lg font-semibold mb-3 text-terminal-green">{category.title}</h3>
             <ul className="space-y-2">
               {category.items.map((item) => (
                 <li key={item.name}>
-                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                    {item.name}
-                  </span>
+                  <span className="font-medium text-text-primary">{item.name}</span>
                   {item.version !== '-' && (
-                    <span className="text-xs ml-1" style={{ color: 'var(--text-secondary)' }}>
-                      v{item.version}
-                    </span>
+                    <span className="text-xs ml-1 text-text-secondary">v{item.version}</span>
                   )}
-                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    {item.description}
-                  </p>
+                  <p className="text-xs text-text-secondary">{item.description}</p>
                 </li>
               ))}
             </ul>

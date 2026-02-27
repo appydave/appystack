@@ -2,7 +2,19 @@
 
 @source "../";
 
+@theme {
+  --color-terminal-green: #22c55e;
+  --color-terminal-green-dim: #16a34a;
+  --color-dark-bg: #0f172a;
+  --color-card-bg: #1e293b;
+  --color-card-border: #334155;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-status-red: #ef4444;
+}
+
 :root {
+  /* kept for non-Tailwind usage (inline SVG, canvas, etc.) */
   --terminal-green: #22c55e;
   --terminal-green-dim: #16a34a;
   --dark-bg: #0f172a;

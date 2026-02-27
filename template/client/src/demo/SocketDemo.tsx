@@ -26,20 +26,15 @@ export default function SocketDemo() {
   };
 
   return (
-    <div
-      className="rounded-xl p-5"
-      style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
-    >
+    <div className="rounded-xl p-5 bg-card-bg border border-card-border">
       <div className="flex items-center gap-2 mb-3">
         <span
           className={`inline-block w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}
         />
-        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-          Socket.io Demo
-        </h3>
+        <h3 className="text-lg font-semibold text-text-primary">Socket.io Demo</h3>
       </div>
 
-      <div className="text-sm space-y-3" style={{ color: 'var(--text-secondary)' }}>
+      <div className="text-sm space-y-3 text-text-secondary">
         <p>Status: {connected ? 'connected' : 'disconnected'}</p>
 
         <button
@@ -55,14 +50,9 @@ export default function SocketDemo() {
         </button>
 
         {lastPong && (
-          <div
-            className="mt-3 p-3 rounded text-sm"
-            style={{ backgroundColor: 'var(--dark-bg)', border: '1px solid var(--terminal-green)' }}
-          >
-            <p style={{ color: 'var(--terminal-green)' }}>
-              server:pong received — {lastPong.message}
-            </p>
-            <p className="mt-1" style={{ color: 'var(--terminal-green-dim)' }}>
+          <div className="mt-3 p-3 rounded text-sm bg-dark-bg border border-terminal-green">
+            <p className="text-terminal-green">server:pong received — {lastPong.message}</p>
+            <p className="mt-1 text-terminal-green-dim">
               {new Date(lastPong.timestamp).toLocaleTimeString()}
             </p>
           </div>

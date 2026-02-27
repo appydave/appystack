@@ -48,19 +48,19 @@ afterAll(
 );
 
 describe('App', () => {
-  it('renders the tagline', async () => {
+  it('renders the tagline from LandingPage', async () => {
     render(<App />);
     expect(screen.getByText(/Production-ready RVETS stack boilerplate/)).toBeInTheDocument();
   });
 
-  it('displays the status grid', async () => {
+  it('displays the status grid from DemoPage (DEV mode)', async () => {
     render(<App />);
     await waitFor(() => expect(screen.getByTestId('status-grid')).toBeInTheDocument(), {
       timeout: 5000,
     });
   });
 
-  it('displays the tech stack section', async () => {
+  it('displays the tech stack section from DemoPage (DEV mode)', async () => {
     render(<App />);
     await waitFor(() => expect(screen.getByTestId('tech-stack')).toBeInTheDocument());
   });

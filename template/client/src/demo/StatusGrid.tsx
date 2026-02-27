@@ -17,19 +17,12 @@ function StatusCard({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className="rounded-xl p-5"
-      style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
-    >
+    <div className="rounded-xl p-5 bg-card-bg border border-card-border">
       <div className="flex items-center gap-2 mb-3">
         <StatusDot ok={ok} />
-        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-          {title}
-        </h3>
+        <h3 className="text-lg font-semibold text-text-primary">{title}</h3>
       </div>
-      <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-        {children}
-      </div>
+      <div className="text-sm text-text-secondary">{children}</div>
     </div>
   );
 }
@@ -39,11 +32,7 @@ export default function StatusGrid() {
   const { connected } = useSocket();
 
   if (loading) {
-    return (
-      <div className="text-center py-8" style={{ color: 'var(--text-secondary)' }}>
-        Connecting to server...
-      </div>
-    );
+    return <div className="text-center py-8 text-text-secondary">Connecting to server...</div>;
   }
 
   return (

@@ -26,11 +26,7 @@ export default function ContactForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4 max-w-md">
       <div>
-        <label
-          htmlFor="name"
-          className="block text-sm font-medium mb-1"
-          style={{ color: 'var(--text-secondary)' }}
-        >
+        <label htmlFor="name" className="block text-sm font-medium mb-1 text-text-secondary">
           Name
         </label>
         <input
@@ -38,11 +34,9 @@ export default function ContactForm() {
           type="text"
           placeholder="Your name"
           {...register('name')}
-          className="w-full px-3 py-2 rounded text-sm"
+          className="w-full px-3 py-2 rounded text-sm bg-dark-bg text-text-primary"
           style={{
-            backgroundColor: 'var(--dark-bg)',
             border: errors.name ? '1px solid #f87171' : '1px solid var(--card-border)',
-            color: 'var(--text-primary)',
           }}
         />
         {errors.name && (
@@ -53,11 +47,7 @@ export default function ContactForm() {
       </div>
 
       <div>
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium mb-1"
-          style={{ color: 'var(--text-secondary)' }}
-        >
+        <label htmlFor="email" className="block text-sm font-medium mb-1 text-text-secondary">
           Email
         </label>
         <input
@@ -65,11 +55,9 @@ export default function ContactForm() {
           type="email"
           placeholder="you@example.com"
           {...register('email')}
-          className="w-full px-3 py-2 rounded text-sm"
+          className="w-full px-3 py-2 rounded text-sm bg-dark-bg text-text-primary"
           style={{
-            backgroundColor: 'var(--dark-bg)',
             border: errors.email ? '1px solid #f87171' : '1px solid var(--card-border)',
-            color: 'var(--text-primary)',
           }}
         />
         {errors.email && (
@@ -80,11 +68,7 @@ export default function ContactForm() {
       </div>
 
       <div>
-        <label
-          htmlFor="message"
-          className="block text-sm font-medium mb-1"
-          style={{ color: 'var(--text-secondary)' }}
-        >
+        <label htmlFor="message" className="block text-sm font-medium mb-1 text-text-secondary">
           Message
         </label>
         <textarea
@@ -92,11 +76,9 @@ export default function ContactForm() {
           rows={4}
           placeholder="Your message..."
           {...register('message')}
-          className="w-full px-3 py-2 rounded text-sm resize-none"
+          className="w-full px-3 py-2 rounded text-sm resize-none bg-dark-bg text-text-primary"
           style={{
-            backgroundColor: 'var(--dark-bg)',
             border: errors.message ? '1px solid #f87171' : '1px solid var(--card-border)',
-            color: 'var(--text-primary)',
           }}
         />
         {errors.message && (
@@ -108,11 +90,7 @@ export default function ContactForm() {
 
       <button
         type="submit"
-        className="px-4 py-2 rounded text-sm font-medium transition-colors"
-        style={{
-          backgroundColor: 'var(--terminal-green)',
-          color: 'var(--dark-bg)',
-        }}
+        className="px-4 py-2 rounded text-sm font-medium transition-colors bg-terminal-green text-dark-bg"
       >
         Send
       </button>
