@@ -20,7 +20,9 @@ describe('logger', () => {
     await import('./logger.js?' + Date.now());
 
     expect(mockPino).toHaveBeenCalledOnce();
-    const callArg = (mockPino.mock.calls[0] as unknown as [{ level: string; transport?: { target: string } }])[0];
+    const callArg = (
+      mockPino.mock.calls[0] as unknown as [{ level: string; transport?: { target: string } }]
+    )[0];
     expect(callArg.level).toBe('debug');
     expect(callArg.transport).toBeDefined();
     expect(callArg.transport?.target).toBe('pino-pretty');
@@ -34,7 +36,9 @@ describe('logger', () => {
     await import('./logger.js?' + Date.now());
 
     expect(mockPino).toHaveBeenCalledOnce();
-    const callArg = (mockPino.mock.calls[0] as unknown as [{ level: string; transport?: unknown }])[0];
+    const callArg = (
+      mockPino.mock.calls[0] as unknown as [{ level: string; transport?: unknown }]
+    )[0];
     expect(callArg.level).toBe('info');
     expect(callArg.transport).toBeUndefined();
   });
