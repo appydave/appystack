@@ -1049,28 +1049,15 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 ### CSS variable integration
 
-ShadCN's `init` adds an `@theme inline` block to your CSS with OKLCH color variables. AppyStack's existing theme uses `--color-terminal-green`, `--color-dark-bg`, etc.
+AppyStack's `index.css` already uses ShadCN's semantic variable naming with OKLCH values: `--color-background`, `--color-foreground`, `--color-card`, `--color-border`, `--color-primary`, `--color-primary-foreground`, `--color-muted`, `--color-muted-foreground`, `--color-destructive`, and `--color-destructive-foreground`.
 
-**They coexist without conflict** — but you'll want to align them. Two options:
+**The integration is seamless.** Running `shadcn init` writes these same variable names — there is no conflicting layer to reconcile.
 
-**Option A — Keep AppyStack's dark theme, retheme ShadCN to match:**
-Override ShadCN's `--background` and `--foreground` in your CSS to match the dark palette. ShadCN components will then pick up your colours.
+When `shadcn init` prompts to overwrite the CSS variables:
+- Choose **yes** to adopt ShadCN's default OKLCH palette (light/neutral grays by default)
+- Choose **no** (or restore after) to keep AppyStack's dark terminal theme — the OKLCH values from the template's `@theme` block are what give it the dark palette
 
-```css
-/* In your index.css, after shadcn's @theme block: */
-@layer base {
-  :root {
-    --background: 222 47% 11%;     /* matches --dark-bg */
-    --foreground: 210 40% 95%;     /* matches --text-primary */
-    --card: 217 33% 17%;           /* matches --card-bg */
-    --border: 217 19% 27%;         /* matches --card-border */
-    --primary: 142 71% 45%;        /* matches --terminal-green */
-  }
-}
-```
-
-**Option B — Let ShadCN's theme take over, remove AppyStack's custom vars:**
-Delete the `@theme` block from `index.css` and use ShadCN's variables throughout. Start fresh with ShadCN's palette.
+ShadCN components like `Button`, `Dialog`, and `Input` automatically use `--primary`, `--card`, and `--border`, and will therefore inherit whichever theme is in the `@theme` block.
 
 ### What stays, what changes
 

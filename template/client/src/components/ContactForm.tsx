@@ -27,7 +27,7 @@ export default function ContactForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4 max-w-md">
       <div>
-        <label htmlFor="name" className="block text-sm font-medium mb-1 text-text-secondary">
+        <label htmlFor="name" className="block text-sm font-medium mb-1 text-muted-foreground">
           Name
         </label>
         <input
@@ -36,8 +36,8 @@ export default function ContactForm() {
           placeholder="Your name"
           {...register('name')}
           className={cn(
-            'w-full px-3 py-2 rounded text-sm bg-dark-bg text-text-primary border',
-            errors.name ? 'border-status-red' : 'border-card-border'
+            'w-full px-3 py-2 rounded text-sm bg-background text-foreground border',
+            errors.name ? 'border-destructive' : 'border-border'
           )}
         />
         {errors.name && (
@@ -48,7 +48,7 @@ export default function ContactForm() {
       </div>
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-1 text-text-secondary">
+        <label htmlFor="email" className="block text-sm font-medium mb-1 text-muted-foreground">
           Email
         </label>
         <input
@@ -57,8 +57,8 @@ export default function ContactForm() {
           placeholder="you@example.com"
           {...register('email')}
           className={cn(
-            'w-full px-3 py-2 rounded text-sm bg-dark-bg text-text-primary border',
-            errors.email ? 'border-status-red' : 'border-card-border'
+            'w-full px-3 py-2 rounded text-sm bg-background text-foreground border',
+            errors.email ? 'border-destructive' : 'border-border'
           )}
         />
         {errors.email && (
@@ -69,7 +69,7 @@ export default function ContactForm() {
       </div>
 
       <div>
-        <label htmlFor="message" className="block text-sm font-medium mb-1 text-text-secondary">
+        <label htmlFor="message" className="block text-sm font-medium mb-1 text-muted-foreground">
           Message
         </label>
         <textarea
@@ -78,8 +78,8 @@ export default function ContactForm() {
           placeholder="Your message..."
           {...register('message')}
           className={cn(
-            'w-full px-3 py-2 rounded text-sm resize-none bg-dark-bg text-text-primary border',
-            errors.message ? 'border-status-red' : 'border-card-border'
+            'w-full px-3 py-2 rounded text-sm resize-none bg-background text-foreground border',
+            errors.message ? 'border-destructive' : 'border-border'
           )}
         />
         {errors.message && (
@@ -91,7 +91,7 @@ export default function ContactForm() {
 
       <button
         type="submit"
-        className="px-4 py-2 rounded text-sm font-medium transition-colors bg-terminal-green text-dark-bg"
+        className="px-4 py-2 rounded text-sm font-medium transition-colors bg-primary text-primary-foreground"
       >
         Send
       </button>
