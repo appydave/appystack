@@ -1,0 +1,39 @@
+{
+  "name": "create-appystack",
+  "version": "0.1.0",
+  "description": "Scaffold a new AppyStack RVETS project — React, Vite, Express, TypeScript, Socket.io",
+  "type": "module",
+  "bin": {
+    "create-appystack": "bin/index.js"
+  },
+  "files": [
+    "bin/",
+    "template/"
+  ],
+  "scripts": {
+    "sync": "node scripts/sync-template.js",
+    "prepublishOnly": "node scripts/sync-template.js"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "David Cruwys",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/appydave/appystack.git"
+  },
+  "keywords": [
+    "appystack",
+    "create",
+    "scaffold",
+    "react",
+    "vite",
+    "express",
+    "typescript",
+    "socket.io"
+  ]
+}
