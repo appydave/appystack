@@ -1,6 +1,6 @@
 {
   "name": "create-appystack",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Scaffold a new AppyStack RVETS project — React, Vite, Express, TypeScript, Socket.io",
   "type": "module",
   "bin": {

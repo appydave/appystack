@@ -117,19 +117,32 @@ function applyCustomizations(root, { name, scope, serverPort, clientPort, desc }
   walkAndReplace(root);
 }
 
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const flags = {};
+  let name = null;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--scope' && args[i + 1]) { flags.scope = args[++i]; }
+    else if (args[i] === '--port' && args[i + 1]) { flags.port = args[++i]; }
+    else if (args[i] === '--description' && args[i + 1]) { flags.description = args[++i]; }
+    else if (!args[i].startsWith('--') && !name) { name = args[i]; }
+  }
+  return { name, ...flags };
+}
+
 async function main() {
-  const argName = process.argv[2];
+  const cli = parseArgs();
 
   intro('create-appystack');
 
   // --- Project name ---
   let projectName;
-  if (argName) {
-    if (!/^[a-z0-9-]+$/.test(argName.trim())) {
+  if (cli.name) {
+    if (!/^[a-z0-9-]+$/.test(cli.name.trim())) {
       console.error('Error: project name must use lowercase letters, numbers, and hyphens only');
       process.exit(1);
     }
-    projectName = argName.trim();
+    projectName = cli.name.trim();
   } else {
     const result = await text({
       message: 'Project name (e.g. my-app)',
@@ -152,31 +165,51 @@ async function main() {
   }
 
   // --- Package scope ---
-  const scopeResult = await text({
-    message: 'Package scope (e.g. @myorg)',
-    placeholder: '@myorg',
-    validate(value) {
-      if (!value || value.trim().length === 0) return 'Package scope is required';
-      if (!value.trim().startsWith('@')) return 'Scope must start with @';
-      if (!/^@[a-z0-9-]+$/.test(value.trim())) return 'Use @lowercase-letters-numbers-hyphens only';
-    },
-  });
-  if (isCancel(scopeResult)) { cancel('Cancelled.'); process.exit(0); }
-  const packageScope = scopeResult.trim();
+  let packageScope;
+  if (cli.scope) {
+    const s = cli.scope.trim();
+    if (!s.startsWith('@') || !/^@[a-z0-9-]+$/.test(s)) {
+      console.error('Error: --scope must be like @myorg (lowercase letters, numbers, hyphens)');
+      process.exit(1);
+    }
+    packageScope = s;
+  } else {
+    const scopeResult = await text({
+      message: 'Package scope (e.g. @myorg)',
+      placeholder: '@myorg',
+      validate(value) {
+        if (!value || value.trim().length === 0) return 'Package scope is required';
+        if (!value.trim().startsWith('@')) return 'Scope must start with @';
+        if (!/^@[a-z0-9-]+$/.test(value.trim())) return 'Use @lowercase-letters-numbers-hyphens only';
+      },
+    });
+    if (isCancel(scopeResult)) { cancel('Cancelled.'); process.exit(0); }
+    packageScope = scopeResult.trim();
+  }
 
   // --- Client port ---
-  const clientPortResult = await text({
-    message: 'Client port',
-    placeholder: '5500',
-    initialValue: '5500',
-    validate(value) {
-      const port = Number(value);
-      if (!Number.isInteger(port) || port < 1 || port > 65535)
-        return 'Enter a valid port number (1–65535)';
-    },
-  });
-  if (isCancel(clientPortResult)) { cancel('Cancelled.'); process.exit(0); }
-  const clientPort = clientPortResult.trim();
+  let clientPort;
+  if (cli.port) {
+    const p = Number(cli.port);
+    if (!Number.isInteger(p) || p < 1 || p > 65534) {
+      console.error('Error: --port must be a valid port number (1–65534)');
+      process.exit(1);
+    }
+    clientPort = String(p);
+  } else {
+    const clientPortResult = await text({
+      message: 'Client port',
+      placeholder: '5500',
+      initialValue: '5500',
+      validate(value) {
+        const port = Number(value);
+        if (!Number.isInteger(port) || port < 1 || port > 65535)
+          return 'Enter a valid port number (1–65535)';
+      },
+    });
+    if (isCancel(clientPortResult)) { cancel('Cancelled.'); process.exit(0); }
+    clientPort = clientPortResult.trim();
+  }
 
   // --- Server port (defaults to client port + 1) ---
   const serverPortResult = await text({
@@ -193,15 +226,20 @@ async function main() {
   const serverPort = serverPortResult.trim();
 
   // --- Description ---
-  const descResult = await text({
-    message: 'Project description',
-    placeholder: 'My awesome app',
-    validate(value) {
-      if (!value || value.trim().length === 0) return 'Description is required';
-    },
-  });
-  if (isCancel(descResult)) { cancel('Cancelled.'); process.exit(0); }
-  const description = descResult.trim();
+  let description;
+  if (cli.description) {
+    description = cli.description.trim();
+  } else {
+    const descResult = await text({
+      message: 'Project description',
+      placeholder: 'My awesome app',
+      validate(value) {
+        if (!value || value.trim().length === 0) return 'Description is required';
+      },
+    });
+    if (isCancel(descResult)) { cancel('Cancelled.'); process.exit(0); }
+    description = descResult.trim();
+  }
 
   // --- Copy template ---
   const s = spinner();
