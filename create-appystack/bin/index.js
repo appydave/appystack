@@ -4,7 +4,7 @@
  * Usage: npx create-appystack [project-name]
  */
 import { intro, outro, text, cancel, isCancel, spinner } from '@clack/prompts';
-import { readFileSync, writeFileSync, cpSync, existsSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, cpSync, existsSync, rmSync, readdirSync, statSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -98,6 +98,23 @@ function applyCustomizations(root, { name, scope, serverPort, clientPort, desc }
   let indexHtml = readFile(root, 'client/index.html');
   indexHtml = replaceAll(indexHtml, `<title>${oldTitle}</title>`, `<title>${name}</title>`);
   writeFile(root, 'client/index.html', indexHtml);
+
+  // All .ts / .tsx source files — replace remaining scope references in imports
+  function walkAndReplace(dir) {
+    for (const entry of readdirSync(dir)) {
+      if (entry === 'node_modules') continue;
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) {
+        walkAndReplace(full);
+      } else if (/\.(ts|tsx)$/.test(entry)) {
+        const content = readFileSync(full, 'utf-8');
+        if (content.includes(oldScope)) {
+          writeFileSync(full, replaceAll(content, oldScope, scope), 'utf-8');
+        }
+      }
+    }
+  }
+  walkAndReplace(root);
 }
 
 async function main() {
