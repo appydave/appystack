@@ -32,16 +32,16 @@ Recipes are:
 - `references/nav-shell.md` — full nav-shell recipe spec
 - `references/file-crud.md` — full file-crud recipe spec
 
-**Sample data patterns** (for file-crud — real domain examples):
-- `samples/support-signal.md` — NDIS/disability support app (5 entities)
-- `samples/youtube-launch-optimizer.md` — YouTube content production (5 entities)
+**Domain samples** (for file-crud — example domains to draw entity/field inspiration from):
+- `domains/care-provider-operations.md` — residential care provider (6 entities: Company, Site, User, Participant, Incident, Moment)
+- `domains/youtube-launch-optimizer.md` — YouTube content production (5 entities: Channel, Video, Script, ThumbnailVariant, LaunchTask)
 
 ---
 
 ## Flow
 
 1. **Identify** which recipe(s) fit. If intent is unclear, ask: "What kind of app are you building?" and present the table above.
-2. **For file-crud**: ask if a sample data pattern applies, or collect entity details directly.
+2. **For file-crud**: ask if a domain sample applies, or collect entity details directly.
 3. **Load** the relevant reference file(s). Load both if combining.
 4. **Generate** a concrete build prompt — specific file structure, component names, data shapes, event names — tailored to this project. Not generic, not boilerplate descriptions.
 5. **Present** the prompt: "Here's what I'll build: ..." Show the specifics.
