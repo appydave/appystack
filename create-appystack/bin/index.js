@@ -147,20 +147,6 @@ async function main() {
   if (isCancel(scopeResult)) { cancel('Cancelled.'); process.exit(0); }
   const packageScope = scopeResult.trim();
 
-  // --- Server port ---
-  const serverPortResult = await text({
-    message: 'Server port',
-    placeholder: '5501',
-    initialValue: '5501',
-    validate(value) {
-      const port = Number(value);
-      if (!Number.isInteger(port) || port < 1 || port > 65535)
-        return 'Enter a valid port number (1–65535)';
-    },
-  });
-  if (isCancel(serverPortResult)) { cancel('Cancelled.'); process.exit(0); }
-  const serverPort = serverPortResult.trim();
-
   // --- Client port ---
   const clientPortResult = await text({
     message: 'Client port',
@@ -174,6 +160,20 @@ async function main() {
   });
   if (isCancel(clientPortResult)) { cancel('Cancelled.'); process.exit(0); }
   const clientPort = clientPortResult.trim();
+
+  // --- Server port (defaults to client port + 1) ---
+  const serverPortResult = await text({
+    message: 'Server port',
+    placeholder: String(Number(clientPort) + 1),
+    initialValue: String(Number(clientPort) + 1),
+    validate(value) {
+      const port = Number(value);
+      if (!Number.isInteger(port) || port < 1 || port > 65535)
+        return 'Enter a valid port number (1–65535)';
+    },
+  });
+  if (isCancel(serverPortResult)) { cancel('Cancelled.'); process.exit(0); }
+  const serverPort = serverPortResult.trim();
 
   // --- Description ---
   const descResult = await text({
