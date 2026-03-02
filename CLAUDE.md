@@ -12,8 +12,8 @@ AppyStack is a shared configuration package and architecture reference for the R
 
 This is NOT an application — it's a config package + documentation hub.
 
-- `create-appystack/` — The `create-appystack` npm package (published as v0.1.0 on npm)
-  - `bin/index.js` — CLI entry point (`npx create-appystack my-app`)
+- `create-appystack/` — The `create-appystack` npm package (published as v0.1.3 on npm)
+  - `bin/index.js` — CLI entry point (see usage below)
   - `scripts/sync-template.js` — Copies `../template/` → `./template/` (run before publish)
   - `template/` — Committed copy of root `template/` (synced, excludes node_modules/dist/coverage)
   - To publish: `cd create-appystack && npm publish --access public`
@@ -27,22 +27,28 @@ This is NOT an application — it's a config package + documentation hub.
   - `typescript/node.json` — Extends base with outDir/rootDir for compilation
   - `prettier/.prettierrc` — Prettier settings (single quotes, semi, 100 width)
   - `prettier/.prettierignore` — Standard ignore patterns
-- `docs/` — Primary documentation
-  - `architecture.md` — Complete AppyStack architecture guide (tech choices, patterns, pitfalls)
-  - `requirements.md` — Setup checklist, verification procedures, dependency matrix
-  - `plans/` — Claude Code planning documents (auto-generated via `.claude/settings.json`)
-  - `historical/` — Reference only. Imported from other systems (FliVideo planning docs, post-mortems, external repo analysis). Do not treat as source of truth; use `architecture.md` and `requirements.md` instead.
+- `docs/` — Primary documentation (see `docs/README.md` for full index)
+  - **Guides**: `getting-started.md`, `first-feature.md`, `testing-guide.md`, `troubleshooting.md`
+  - **Reference**: `architecture.md`, `requirements.md`, `environment.md`, `api-design.md`, `socket-io.md`, `authentication.md`, `extending-configs.md`, `deployment.md`, `database.md`
+  - `plans/` — Claude Code planning documents
+  - `historical/` — Reference only. Do not treat as source of truth.
 
-## How Consumer Projects Use This
+## Scaffolding a New Project
 
-**Target** (after npm publish):
 ```bash
-npm install --save-dev @appydave/appystack-config
+# Interactive (prompts for scope, ports, description)
+npx create-appystack@latest my-app
+
+# One-liner with flags (server port defaults to --port + 1)
+npx create-appystack@latest my-app --scope @myorg --port 5500 --description "My app"
 ```
 
-**Current** (local file reference, pre-publish):
+Flags: `--scope @myorg`, `--port <client-port>`, `--description "..."`. Server port always prompts (pre-filled as port+1).
+
+## How Consumer Projects Use @appydave/appystack-config
+
 ```bash
-npm install --save-dev file:/Users/davidcruwys/dev/ad/apps/appystack/config
+npm install --save-dev @appydave/appystack-config
 ```
 
 Consumer usage:
@@ -74,7 +80,7 @@ export default [...appyConfig];
 Two packages on npm under the `klueless-io` account:
 
 - **`@appydave/appystack-config`** — v1.0.3 — shared ESLint/TS/Vitest/Prettier configs
-- **`create-appystack`** — v0.1.0 — scaffolding CLI (`npx create-appystack my-app`)
+- **`create-appystack`** — v0.1.3 — scaffolding CLI (`npx create-appystack@latest my-app`)
 
 **Token:** The `appydave-publish` granular token in `~/.npmrc` expires **31 May 2026**.
 Rotate at: npmjs.com → Account → Access Tokens → Generate New Token → Granular, Read+write, All packages, Bypass 2FA, 90-day expiry.

@@ -31,18 +31,38 @@ Recipes are:
 **Reference files:**
 - `references/nav-shell.md` — full nav-shell recipe spec
 - `references/file-crud.md` — full file-crud recipe spec
+- `references/domain-dsl.md` — format spec for writing a domain DSL from scratch
 
-**Domain samples** (for file-crud — example domains to draw entity/field inspiration from):
-- `domains/care-provider-operations.md` — residential care provider (6 entities: Company, Site, User, Participant, Incident, Moment)
-- `domains/youtube-launch-optimizer.md` — YouTube content production (5 entities: Channel, Video, Script, ThumbnailVariant, LaunchTask)
+---
+
+## Domain DSLs
+
+Domain DSLs are structured markdown files that define every entity in a specific application domain — fields, types, namish fields, relationships, entity classification, and suggested nav mapping. They are the **input** to the `file-crud` recipe (and optionally `nav-shell`).
+
+**Available domain DSLs:**
+
+| Domain | Entities | Application type |
+|--------|----------|-----------------|
+| `care-provider-operations` | Company, Site, User, Participant, Incident, Moment | NDIS/disability care management |
+| `youtube-launch-optimizer` | Channel, Video, Script, ThumbnailVariant, LaunchTask | YouTube content production pipeline |
+
+**Domain files:**
+- `domains/care-provider-operations.md` — 6-entity residential care domain (NDIS context, Australian)
+- `domains/youtube-launch-optimizer.md` — 5-entity YouTube production domain
+- `references/domain-dsl.md` — format spec: how to write a new domain DSL from scratch
+
+**When to use a domain DSL:**
+- When building a `file-crud` app, load a domain DSL instead of collecting entity details manually
+- When the app's domain closely matches an existing DSL — use it as-is or adapt it
+- When the domain is new — use `references/domain-dsl.md` to write one first, then run the recipe
 
 ---
 
 ## Flow
 
-1. **Identify** which recipe(s) fit. If intent is unclear, ask: "What kind of app are you building?" and present the table above.
-2. **For file-crud**: ask if a domain sample applies, or collect entity details directly.
-3. **Load** the relevant reference file(s). Load both if combining.
+1. **Identify** which recipe(s) fit. If intent is unclear, ask: "What kind of app are you building?" and present the recipes table above.
+2. **For file-crud**: check if a domain DSL matches or nearly matches. If yes, load it. If not, either adapt one or collect entity details directly.
+3. **Load** the relevant reference file(s). Load both if combining recipes. Load the domain DSL if using one.
 4. **Generate** a concrete build prompt — specific file structure, component names, data shapes, event names — tailored to this project. Not generic, not boilerplate descriptions.
 5. **Present** the prompt: "Here's what I'll build: ..." Show the specifics.
 6. **Ask**: "Shall I go ahead?"

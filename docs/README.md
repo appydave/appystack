@@ -2,6 +2,14 @@
 
 > Reference guides for the AppyStack RVETS template and config package.
 
+## Quick Start
+
+```bash
+npx create-appystack@latest my-app
+# or with flags:
+npx create-appystack@latest my-app --scope @myorg --port 5500 --description "My app"
+```
+
 ## Guides
 
 | Guide | What it covers |
@@ -24,3 +32,16 @@
 | [Extending Configs](./extending-configs.md) | How to customise ESLint, TypeScript, Vitest, and Prettier configs |
 | [Deployment](./deployment.md) | Build, production configuration, and deploy workflows |
 | [Database](./database.md) | Where and how to integrate any database: env schema, shutdown hook, query structure, test patterns |
+
+## Recipes (Claude Code Skill)
+
+Recipes scaffold specific app architectures on top of the RVETS template. Available via `/recipe` in any project created with `create-appystack`.
+
+| Recipe / DSL | What it covers |
+|---|---|
+| `nav-shell` | Left-sidebar navigation shell — header, collapsible sidebar, view switching |
+| `file-crud` | JSON file-based persistence — no database, real-time Socket.io sync, chokidar watcher |
+| `nav-shell` + `file-crud` | Complete CRUD app with nav and file persistence |
+| [Domain DSL format](../template/.claude/skills/recipe/references/domain-dsl.md) | How to write a domain DSL — entity fields, namish fields, relationships, nav mapping |
+| [care-provider-operations](../template/.claude/skills/recipe/domains/care-provider-operations.md) | Example domain: NDIS residential care (6 entities) |
+| [youtube-launch-optimizer](../template/.claude/skills/recipe/domains/youtube-launch-optimizer.md) | Example domain: YouTube content production pipeline (5 entities) |

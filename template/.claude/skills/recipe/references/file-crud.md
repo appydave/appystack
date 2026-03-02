@@ -258,14 +258,14 @@ The file-based persistence layer also enables a local-first workflow:
 
 ---
 
-## Sample Data Patterns
+## Domain DSL Examples
 
-Domain-specific entity setups for common application types. See the `samples/` folder:
+Domain-specific entity definitions for common application types. See the `domains/` folder:
 
-- [`samples/support-signal.md`](../samples/support-signal.md) — NDIS/disability support: Company, Site, User, Incident, MomentThatMatters
-- [`samples/youtube-launch-optimizer.md`](../samples/youtube-launch-optimizer.md) — YouTube content: Channel, Video, Script, ThumbnailVariant, LaunchTask
+- [`domains/care-provider-operations.md`](../domains/care-provider-operations.md) — NDIS/disability care: Company, Site, User, Participant, Incident, Moment (6 entities)
+- [`domains/youtube-launch-optimizer.md`](../domains/youtube-launch-optimizer.md) — YouTube content production: Channel, Video, Script, ThumbnailVariant, LaunchTask (5 entities)
 
-Each sample defines: entity names, namish fields, key domain fields, relationships, and suggested nav mapping. Use a sample as the input to the recipe's entity questions.
+Each domain DSL defines: entity names, namish fields, key domain fields, relationships, entity classification, and suggested nav mapping. Load one as-is, adapt it, or write your own — see [`references/domain-dsl.md`](./domain-dsl.md) for the format spec.
 
 ---
 
