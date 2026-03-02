@@ -12,6 +12,12 @@ AppyStack is a shared configuration package and architecture reference for the R
 
 This is NOT an application — it's a config package + documentation hub.
 
+- `create-appystack/` — The `create-appystack` npm package (published as v0.1.0 on npm)
+  - `bin/index.js` — CLI entry point (`npx create-appystack my-app`)
+  - `scripts/sync-template.js` — Copies `../template/` → `./template/` (run before publish)
+  - `template/` — Committed copy of root `template/` (synced, excludes node_modules/dist/coverage)
+  - To publish: `cd create-appystack && npm publish --access public`
+  - To sync template after changes: `cd create-appystack && npm run sync`
 - `config/` — The `@appydave/appystack-config` npm package (published as v1.0.3 on npm)
   - `eslint/base.config.js` — ESLint 9 flat config for Node/server projects
   - `eslint/react.config.js` — ESLint 9 flat config for React projects (extends base + adds React/hooks rules)
@@ -65,7 +71,16 @@ export default [...appyConfig];
 
 ## npm Publishing
 
-The config package is published as `@appydave/appystack-config` on npm (public, v1.0.3). Full details including publishing workflow, consumer migration steps, and automated CI publishing are in `docs/architecture.md` under "npm Publishing".
+Two packages on npm under the `klueless-io` account:
+
+- **`@appydave/appystack-config`** — v1.0.3 — shared ESLint/TS/Vitest/Prettier configs
+- **`create-appystack`** — v0.1.0 — scaffolding CLI (`npx create-appystack my-app`)
+
+**Token:** The `appydave-publish` granular token in `~/.npmrc` expires **31 May 2026**.
+Rotate at: npmjs.com → Account → Access Tokens → Generate New Token → Granular, Read+write, All packages, Bypass 2FA, 90-day expiry.
+Then run: `npm set //registry.npmjs.org/:_authToken=<new-token>`
+
+Full publish workflow details in `docs/architecture.md` under "npm Publishing".
 
 ## File Naming Convention
 
