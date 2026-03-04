@@ -37,6 +37,7 @@
 - [Quick Start](#quick-start)
 - [Getting Started Guide](docs/getting-started.md)
 - [Repository Structure](#repository-structure)
+- [Recipes](#recipes)
 - [Using the Config Package](#using-the-config-package)
 - [Proven in Production](#proven-in-production)
 - [Philosophy](#philosophy)
@@ -137,14 +138,53 @@ appystack/
 ├── template/                 # RVETS boilerplate  (copy to start a new app)
 │   ├── client/               #   React 19 + Vite 7 + TailwindCSS v4
 │   ├── server/               #   Express 5 + Socket.io + Pino
-│   └── shared/               #   TypeScript interfaces only
+│   ├── shared/               #   TypeScript interfaces only
+│   └── .claude/skills/recipe/         #   Claude recipes (see Recipes section)
+│       ├── SKILL.md                   #     Recipe index + flow instructions
+│       ├── references/                #     One file per recipe spec
+│       │   ├── nav-shell.md           #       Visual shell recipe
+│       │   ├── file-crud.md           #       JSON file persistence recipe
+│       │   ├── api-endpoints.md       #       REST API + OpenAPI/Swagger recipe
+│       │   └── domain-dsl.md          #       Format spec for domain DSLs
+│       └── domains/                   #     Pre-built domain definitions
+│           ├── care-provider-operations.md
+│           └── youtube-launch-optimizer.md
 │
 └── docs/                     # Architecture decisions + implementation guides
     ├── architecture.md       #   Complete RVETS architecture reference
     ├── requirements.md       #   Setup checklist + verification procedures
+    ├── recipes.md            #   Recipe overview + index (see Recipes section)
     ├── review/               #   Research: testing, DX, security, sockets
     └── historical/           #   Post-mortems + implementation guides
 ```
+
+---
+
+## Recipes
+
+AppyStack includes a **recipe system** — app architecture patterns that Claude scaffolds into your project. Each recipe defines a specific structural shape (layout, data strategy, API exposure) that can be applied to a fresh template or an existing project.
+
+| Recipe | What it builds |
+|--------|----------------|
+| `nav-shell` | Left-sidebar navigation shell — collapsible sidebar, header, content area, context-aware menus |
+| `file-crud` | JSON file-based persistence — real-time Socket.io sync, chokidar watcher, no database required |
+| `api-endpoints` | REST API layer with OpenAPI/Swagger docs, API key auth, and CORS |
+
+Recipes are **composable** — combine `nav-shell` + `file-crud` for a complete CRUD app, add `api-endpoints` to make it externally accessible.
+
+**How to use:** Open your project in Claude Code and ask:
+> *"What recipes are available?"* or *"I want to build a CRUD app"* or *"scaffold a nav-shell app"*
+
+Claude will present the options, generate a concrete build prompt tailored to your project, and ask for confirmation before building.
+
+**Domain DSLs** — pre-built entity definitions for specific application domains — feed directly into the `file-crud` recipe:
+
+| Domain | Entities |
+|--------|----------|
+| `care-provider-operations` | Company, Site, User, Participant, Incident, Moment |
+| `youtube-launch-optimizer` | Channel, Video, Script, ThumbnailVariant, LaunchTask |
+
+→ Full recipe reference: [docs/recipes.md](docs/recipes.md)
 
 ---
 

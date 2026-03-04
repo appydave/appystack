@@ -22,15 +22,19 @@ Recipes are:
 |--------|----------------|
 | `nav-shell` | Left-sidebar navigation shell with header, collapsible sidebar, main content area, and optional footer. Menus can switch dynamically when sub-tools are active. Domain-agnostic layout scaffold. |
 | `file-crud` | JSON file-based persistence for one or more entities. Each record is a file named `{slug}-{id}.json`. Real-time Socket.io sync. No database required. Includes chokidar file watcher. |
+| `api-endpoints` | REST API layer with OpenAPI/Swagger documentation. Exposes entities as external-facing endpoints with API key auth and CORS. Layers on top of `file-crud`. |
 
 **Combinations:**
 - `nav-shell` + `file-crud` = complete CRUD app with sidebar nav and file persistence
 - `nav-shell` alone = visual shell, fill in data later
 - `file-crud` alone = data layer only, wire up your own UI
+- `file-crud` + `api-endpoints` = local file data + externally accessible API
+- All three = full-stack app with UI, persistence, and public API
 
 **Reference files:**
 - `references/nav-shell.md` — full nav-shell recipe spec
 - `references/file-crud.md` — full file-crud recipe spec
+- `references/api-endpoints.md` — REST API + OpenAPI/Swagger recipe spec
 - `references/domain-dsl.md` — format spec for writing a domain DSL from scratch
 
 ---
