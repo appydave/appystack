@@ -150,7 +150,7 @@ appystack/
 
 ## Recipes
 
-AppyStack includes a **recipe system** — app architecture patterns that Claude scaffolds into your project. Each recipe defines a specific structural shape (layout, data strategy, API exposure) that can be applied to a fresh template or an existing project.
+Every project scaffolded by `create-appystack` includes a **recipe system** — a Claude Code skill bundled at `.claude/skills/recipe/` in your new project. Recipes are app architecture patterns that Claude scaffolds into your project: layout, data strategy, API exposure.
 
 | Recipe | What it builds |
 |--------|----------------|
@@ -160,10 +160,12 @@ AppyStack includes a **recipe system** — app architecture patterns that Claude
 
 Recipes are **composable** — combine `nav-shell` + `file-crud` for a complete CRUD app, add `api-endpoints` to make it externally accessible.
 
-**How to use:** Open your project in Claude Code and ask:
-> *"What recipes are available?"* or *"I want to build a CRUD app"* or *"scaffold a nav-shell app"*
+**How to use:** Open your scaffolded project in Claude Code and ask naturally — no slash command needed. The recipe skill auto-triggers from phrases like:
+> *"What recipes are available?"* · *"I want to build a CRUD app"* · *"scaffold a nav-shell app"*
 
-Claude will present the options, generate a concrete build prompt tailored to your project, and ask for confirmation before building.
+Claude loads the recipe spec, generates a concrete build prompt tailored to your project's actual file structure and entity names, shows you what it will build, and asks for confirmation before making any changes.
+
+> The recipe skill only works inside projects created with `create-appystack` — it ships as part of the scaffold, not from this repo.
 
 **Domain DSLs** — pre-built entity definitions for specific application domains — feed directly into the `file-crud` recipe:
 
