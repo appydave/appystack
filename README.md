@@ -84,29 +84,18 @@ shared/   TypeScript interfaces only
 
 ## Quick Start
 
-Two ways to start a new project from AppyStack:
-
-### Option A — GitHub Template (recommended)
-
-1. Click **[Use this template](https://github.com/appydave/appystack/generate)** at the top of this page
-2. Name your new repo and create it
-3. Clone it and run:
-
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO/template
-npm install
-npm run customize    # rename project, set ports, update package scopes
-npm run dev
+# Interactive — prompts for scope, ports, description
+npx create-appystack@latest my-app
+
+# One-liner with flags (server port defaults to client port + 1)
+npx create-appystack@latest my-app --scope @myorg --port 5500 --description "My app"
 ```
 
-### Option B — degit (no GitHub account needed)
+Then:
 
 ```bash
-npx degit appydave/appystack/template my-new-app
-cd my-new-app
-npm install
-npm run customize    # rename project, set ports, update package scopes
+cd my-app
 npm run dev
 ```
 
@@ -121,7 +110,6 @@ npm run dev
 | `npm test` | Run all tests |
 | `npm run lint` | ESLint across all workspaces |
 | `npm run typecheck` | TypeScript across all workspaces |
-| `npm run customize` | Interactive script — rename, set ports, update scopes |
 
 ---
 

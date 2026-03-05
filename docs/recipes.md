@@ -13,9 +13,9 @@ Recipes are:
 
 | Recipe | What it builds | Reference |
 |--------|----------------|-----------|
-| `nav-shell` | Left-sidebar navigation shell — collapsible sidebar, header, content area, context-aware menus | [nav-shell.md](../.claude/skills/recipe/references/nav-shell.md) |
-| `file-crud` | JSON file-based persistence for one or more entities — real-time Socket.io sync, chokidar watcher, no database required | [file-crud.md](../.claude/skills/recipe/references/file-crud.md) |
-| `api-endpoints` | REST API layer with OpenAPI/Swagger documentation — exposes entities as external-facing endpoints with auth and CORS | [api-endpoints.md](../.claude/skills/recipe/references/api-endpoints.md) |
+| `nav-shell` | Left-sidebar navigation shell — collapsible sidebar, header, content area, context-aware menus | [nav-shell.md](../template/.claude/skills/recipe/references/nav-shell.md) |
+| `file-crud` | JSON file-based persistence for one or more entities — real-time Socket.io sync, chokidar watcher, no database required | [file-crud.md](../template/.claude/skills/recipe/references/file-crud.md) |
+| `api-endpoints` | REST API layer with OpenAPI/Swagger documentation — exposes entities as external-facing endpoints with auth and CORS | [api-endpoints.md](../template/.claude/skills/recipe/references/api-endpoints.md) |
 
 ---
 
@@ -36,8 +36,8 @@ Domain DSLs are structured markdown files that define application entities — f
 
 | Domain | Entities | File |
 |--------|----------|------|
-| `care-provider-operations` | Company, Site, User, Participant, Incident, Moment | [care-provider-operations.md](../.claude/skills/recipe/domains/care-provider-operations.md) |
-| `youtube-launch-optimizer` | Channel, Video, Script, ThumbnailVariant, LaunchTask | [youtube-launch-optimizer.md](../.claude/skills/recipe/domains/youtube-launch-optimizer.md) |
+| `care-provider-operations` | Company, Site, User, Participant, Incident, Moment | [care-provider-operations.md](../template/.claude/skills/recipe/domains/care-provider-operations.md) |
+| `youtube-launch-optimizer` | Channel, Video, Script, ThumbnailVariant, LaunchTask | [youtube-launch-optimizer.md](../template/.claude/skills/recipe/domains/youtube-launch-optimizer.md) |
 
 ---
 
