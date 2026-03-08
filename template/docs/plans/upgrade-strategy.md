@@ -75,7 +75,44 @@ git diff 548f6fa -- server/src/middleware/errorHandler.ts
    - Modified files → show diff, offer manual merge
 4. **Scaffold-time change:** `create-appystack` writes `appystack.json` with template version
 
+## Recipe Files — A Special Category
+
+Recipe reference files (`.claude/skills/recipe/references/*.md`) sit in an interesting middle ground:
+
+- **New recipe files** → always safe to add (they didn't exist before)
+- **SKILL.md** → may have project-specific additions (custom domain samples, app-specific notes) → treat as "project-owned", diff before overwrite
+- **Existing recipe reference files** → treat as auto-updatable if unchanged since scaffold
+
+### The Manual Sync Problem (Real Example — March 2026)
+
+When new recipes (`add-orm`, `add-auth`, etc.) were added to the AppyStack template, they were
+synced to Signal Studio using `cp` commands:
+
+```bash
+cp "$TEMPLATE/.claude/skills/recipe/SKILL.md" "$STUDIO/.claude/skills/recipe/SKILL.md"
+```
+
+**What went wrong:** This blindly overwrote Signal Studio's `SKILL.md` without checking if it had
+been customised since scaffold. It happened to be safe this time — but it could have silently
+deleted project-specific content.
+
+**What `npx appystack-upgrade` would have done instead:**
+1. `git diff <scaffold-commit> -- .claude/skills/recipe/SKILL.md`
+2. If modified → show diff, ask "merge manually or skip?"
+3. New recipe reference files → add automatically (they're net-new, no conflict possible)
+4. Never silently overwrite
+
+**Lesson:** Any manual file sync between template and consumer app is a preview of what the
+upgrade tool needs to do safely. Each time it happens manually, capture the case here.
+
+---
+
 ## What to do now
 
 Nothing — document this, then implement when 3+ consumer apps exist so you have real migration
 scenarios to test against. The classification above is the most important output of this doc.
+
+Consumer apps to test against (as of March 2026):
+- ThumbRack — `/Users/davidcruwys/dev/ad/apps/thumbrack`
+- Signal Studio — `/Users/davidcruwys/dev/clients/supportsignal/signal-studio`
+- One more needed before implementation begins
