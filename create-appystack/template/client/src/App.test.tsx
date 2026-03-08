@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import express from 'express';
 import type { Server } from 'node:http';
@@ -40,6 +40,10 @@ beforeEach(() => {
   };
 });
 
+afterEach(() => {
+  globalThis.fetch = nativeFetch;
+});
+
 afterAll(
   () =>
     new Promise<void>((resolve) => {
@@ -58,6 +62,10 @@ describe('App', () => {
     await waitFor(() => expect(screen.getByTestId('status-grid')).toBeInTheDocument(), {
       timeout: 5000,
     });
+    // Verify actual content is rendered inside the status grid, not just its presence
+    const grid = screen.getByTestId('status-grid');
+    expect(grid.textContent).toMatch(/API Health/);
+    expect(grid.textContent).toMatch(/WebSocket/);
   });
 
   it('displays the tech stack section from DemoPage (DEV mode)', async () => {

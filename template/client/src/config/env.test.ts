@@ -52,8 +52,7 @@ describe('clientEnv', () => {
   it('apiUrl defaults to empty string when VITE_API_URL is not set', async () => {
     // In the test environment, VITE_API_URL is not set, so default applies
     const { clientEnv } = await import(/* @vite-ignore */ './env.ts');
-    // The value is either '' (default) or whatever the test env has configured
-    expect(typeof clientEnv.apiUrl).toBe('string');
+    expect(clientEnv.apiUrl).toBe('');
   });
 
   it('appName defaults to "AppyStack" when VITE_APP_NAME is not set', async () => {

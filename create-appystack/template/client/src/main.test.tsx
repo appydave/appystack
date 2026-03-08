@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -41,6 +41,10 @@ beforeEach(() => {
         : input;
     return nativeFetch(url, init);
   };
+});
+
+afterEach(() => {
+  globalThis.fetch = nativeFetch;
 });
 
 afterAll(

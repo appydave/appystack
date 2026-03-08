@@ -82,9 +82,10 @@ describe('useSocket', () => {
       { timeout: 5000 }
     );
 
-    // After connecting, the socket should be accessible
+    // After connecting, the socket should be accessible and actually connected
     // Note: socketRef.current is returned; it may be set after the state update
     expect(result.current.socket).toBeDefined();
+    expect(result.current.socket?.connected).toBe(true);
 
     unmount();
   });

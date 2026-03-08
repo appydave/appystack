@@ -12,7 +12,7 @@ describe('GET /api/info', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
     expect(res.body.data).toBeDefined();
-    expect(res.body.data.nodeVersion).toMatch(/^v\d+/);
+    expect(res.body.data.nodeVersion).toMatch(/^v\d+\.\d+\.\d+/);
     expect(res.body.data.environment).toBeDefined();
     expect(res.body.data.port).toBeDefined();
     expect(res.body.data.uptime).toBeGreaterThanOrEqual(0);

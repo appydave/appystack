@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, afterAll, beforeEach } from 'vitest';
 import { httpServer } from './index.js';
 
+describe('signal handler registration', () => {
+  it('registers a SIGTERM listener on the process', () => {
+    expect(process.listenerCount('SIGTERM')).toBeGreaterThan(0);
+  });
+
+  it('registers a SIGINT listener on the process', () => {
+    expect(process.listenerCount('SIGINT')).toBeGreaterThan(0);
+  });
+});
+
 describe('graceful shutdown', () => {
   let exitSpy: ReturnType<typeof vi.spyOn>;
 

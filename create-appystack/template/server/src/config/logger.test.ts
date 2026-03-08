@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { logger } from './logger.js';
 
 describe('logger', () => {
@@ -13,5 +13,11 @@ describe('logger', () => {
     expect(typeof logger.child).toBe('function');
     const child = logger.child({ requestId: 'test-123' });
     expect(typeof child.info).toBe('function');
+  });
+
+  it('calling logger.info() does not throw', () => {
+    const spy = vi.spyOn(logger, 'info').mockImplementation(() => undefined as never);
+    expect(() => logger.info('test message')).not.toThrow();
+    spy.mockRestore();
   });
 });
