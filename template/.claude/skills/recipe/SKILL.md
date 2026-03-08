@@ -26,6 +26,10 @@ Recipes are:
 | `local-service` | Persistent local service management via Procfile + Overmind. Services survive terminal close. Optional Platypus `.app` launcher for Spotlight launch. Includes CLAUDE.md port-check rule to prevent AI agents from restarting running servers. |
 | `api-endpoints` | REST API layer with OpenAPI/Swagger documentation. Exposes entities as external-facing endpoints with API key auth and CORS. Layers on top of `file-crud`. |
 | `readme` | Generates a polished, app-specific README.md by reading the codebase and asking 5 targeted questions. Run at Stage 1 (after first recipes applied) and again at Stage 2 (when app is substantially complete). |
+| `add-orm` | Adds Prisma or Drizzle ORM to replace JSON file persistence. Advisory first — reads entities, explains trade-offs, asks which database, then generates a targeted migration. |
+| `add-auth` | JWT authentication + protected routes + optional Socket.io auth. Reads existing routes, asks what to protect and where users are stored, then generates auth middleware + login/me endpoints + client hooks. |
+| `add-tanstack-query` | Smart HTTP caching that complements Socket.io. Reads existing raw fetch hooks, replaces them with `useQuery`/`useMutation`, and generates the combined Query + Socket.io cache-invalidation pattern. |
+| `add-state` | Zustand store that replaces multiple React contexts. Reads existing context files, consolidates them into typed slices with optional persistence and DevTools. |
 
 **Combinations:**
 - `nav-shell` + `file-crud` = complete CRUD app with sidebar nav and file persistence
@@ -46,6 +50,10 @@ Recipes are:
 - `references/api-endpoints.md` — REST API + OpenAPI/Swagger recipe spec
 - `references/readme.md` — README generation spec (Stage 1 + Stage 2)
 - `references/domain-dsl.md` — format spec for writing a domain DSL from scratch
+- `references/add-orm.md` — Prisma or Drizzle ORM (replaces JSON file persistence)
+- `references/add-auth.md` — JWT authentication + protected routes + Socket.io auth
+- `references/add-tanstack-query.md` — smart HTTP caching (complements Socket.io, replaces raw fetch hooks)
+- `references/add-state.md` — Zustand store (replaces multiple React contexts)
 
 ---
 
