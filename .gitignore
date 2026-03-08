@@ -31,4 +31,6 @@ raw-ralph.txt
 # Exception: template ships with skills for app recipe discovery
 !template/.claude/
 !template/.claude/**
+!create-appystack/template/.claude/
+!create-appystack/template/.claude/**
 .playwright-mcp/
