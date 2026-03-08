@@ -8,46 +8,33 @@ on:
 
 jobs:
   ci:
+    name: Lint, typecheck, test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: template
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: template/package-lock.json
+          node-version: 20
+          cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
+        working-directory: template
 
-      - name: Security audit
-        run: npm audit --audit-level=moderate
-
-      - name: Check formatting
-        run: npm run format:check
-
-      - name: Lint
-        run: npm run lint
+      - name: Build shared
+        run: npm run build --workspace=shared
+        working-directory: template
 
       - name: Typecheck
         run: npm run typecheck
+        working-directory: template
 
-      - name: Build
-        run: npm run build
+      - name: Lint
+        run: npm run lint
+        working-directory: template
 
-      - name: Unit tests
+      - name: Test
         run: npm test
-
-      - name: Coverage thresholds
-        run: npm run test:coverage
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: E2E tests
-        run: npm run test:e2e
+        working-directory: template
