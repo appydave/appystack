@@ -27,6 +27,19 @@ server (Express 5 + Socket.io + Pino + Zod)   →  port 5501
 shared (TypeScript interfaces only)
 ```
 
+## Dev Server Management
+
+Before starting any dev server, check if it's already running:
+```bash
+lsof -i :CLIENT_PORT | grep LISTEN
+lsof -i :SERVER_PORT | grep LISTEN
+```
+If a process is listed, the service is UP — **do not restart it, do not change ports**.
+Never kill a running dev server unless explicitly asked.
+Never change port numbers from what is defined in `.env`.
+
+Replace `CLIENT_PORT` and `SERVER_PORT` with this project's actual ports (see `.env`).
+
 ## Commands
 
 ```bash
