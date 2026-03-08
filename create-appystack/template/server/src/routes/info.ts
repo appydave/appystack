@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { ServerInfo } from '@appystack-template/shared';
 import { env } from '../config/env.js';
 import { apiSuccess } from '../helpers/response.js';
+import { AppError } from '../helpers/AppError.js';
 
 const router = Router();
 
@@ -15,5 +16,12 @@ router.get('/api/info', (_req, res) => {
   };
   apiSuccess(res, data);
 });
+
+// Example: throw new AppError(404, 'Not found') in your routes — errorHandler catches it automatically.
+// router.get('/api/resource/:id', (req, res, next) => {
+//   const item = findById(req.params.id);
+//   if (!item) throw new AppError(404, `Resource ${req.params.id} not found`);
+//   apiSuccess(res, item);
+// });
 
 export default router;

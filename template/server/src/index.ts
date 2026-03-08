@@ -80,12 +80,15 @@ io.on('connection', (socket) => {
   // }
   logger.info({ socketId: socket.id }, 'Client connected');
 
-  socket.on(SOCKET_EVENTS.CLIENT_PING, () => {
-    logger.info({ socketId: socket.id }, 'Received client:ping');
-    socket.emit(SOCKET_EVENTS.SERVER_PONG, {
-      message: 'pong',
-      timestamp: new Date().toISOString(),
-    });
+  socket.on(SOCKET_EVENTS.CLIENT_PING, async () => {
+    try {
+      socket.emit(SOCKET_EVENTS.SERVER_PONG, {
+        message: 'pong',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      logger.error({ err }, 'Error handling client:ping');
+    }
   });
 
   socket.on('disconnect', () => {

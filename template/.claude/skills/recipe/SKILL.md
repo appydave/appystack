@@ -22,20 +22,27 @@ Recipes are:
 |--------|----------------|
 | `nav-shell` | Left-sidebar navigation shell with header, collapsible sidebar, main content area, and optional footer. Menus can switch dynamically when sub-tools are active. Domain-agnostic layout scaffold. |
 | `file-crud` | JSON file-based persistence for one or more entities. Each record is a file named `{slug}-{id}.json`. Real-time Socket.io sync. No database required. Includes chokidar file watcher. |
+| `entity-socket-crud` | Generic Socket.io CRUD pattern for any number of entities. One `entity:{operation}` contract, one `useEntity` hook, per-entity server handlers — all following the same structure. Discovered in Signal Studio production. Requires `file-crud` infrastructure. |
+| `local-service` | Persistent local service management via Procfile + Overmind. Services survive terminal close. Optional Platypus `.app` launcher for Spotlight launch. Includes CLAUDE.md port-check rule to prevent AI agents from restarting running servers. |
 | `api-endpoints` | REST API layer with OpenAPI/Swagger documentation. Exposes entities as external-facing endpoints with API key auth and CORS. Layers on top of `file-crud`. |
 | `readme` | Generates a polished, app-specific README.md by reading the codebase and asking 5 targeted questions. Run at Stage 1 (after first recipes applied) and again at Stage 2 (when app is substantially complete). |
 
 **Combinations:**
 - `nav-shell` + `file-crud` = complete CRUD app with sidebar nav and file persistence
+- `nav-shell` + `file-crud` + `entity-socket-crud` = complete multi-entity CRUD app with generic hook
 - `nav-shell` alone = visual shell, fill in data later
 - `file-crud` alone = data layer only, wire up your own UI
+- `file-crud` + `entity-socket-crud` = data layer + generic `useEntity` hook for all entities
 - `file-crud` + `api-endpoints` = local file data + externally accessible API
 - All three = full-stack app with UI, persistence, and public API
+- `local-service` = add to any combination to keep services running persistently
 - `readme` = run after any combination to document what was built
 
 **Reference files:**
 - `references/nav-shell.md` — full nav-shell recipe spec
 - `references/file-crud.md` — full file-crud recipe spec
+- `references/entity-socket-crud.md` — generic Socket.io CRUD pattern (useEntity hook, entity handlers, singleton socket)
+- `references/local-service.md` — unified startup via Procfile + Overmind, optional Platypus .app launcher
 - `references/api-endpoints.md` — REST API + OpenAPI/Swagger recipe spec
 - `references/readme.md` — README generation spec (Stage 1 + Stage 2)
 - `references/domain-dsl.md` — format spec for writing a domain DSL from scratch

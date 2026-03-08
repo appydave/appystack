@@ -1,41 +1,33 @@
 import { useEffect, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
-import type { Socket } from 'socket.io-client';
-import type { ServerToClientEvents, ClientToServerEvents } from '@appystack-template/shared';
-
-/** Typed Socket.io client instance for the AppyStack template event contracts. */
-export type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
-
-// Resolve the socket URL at connection time so test environments can set window.location first.
-// Override via VITE_SOCKET_URL env var if a different server is needed.
-export function getSocketUrl(): string {
-  return (import.meta.env.VITE_SOCKET_URL as string | undefined) ?? window.location.origin;
-}
+import { getEntitySocket } from '../lib/entitySocket.js';
+import type { AppSocket } from '../lib/entitySocket.js';
 
 /**
- * Socket.io connection hook for the AppyStack template.
- * @returns socket ref (null until connected) and connected boolean
+ * Socket.io connection hook — returns the shared entity socket singleton and its connected state.
+ * Uses the same connection as useEntity so the app maintains a single WebSocket.
+ * Never creates a new socket — always observes the singleton from entitySocket.ts.
+ * @returns socket ref and connected boolean
  */
 export function useSocket() {
   const socketRef = useRef<AppSocket | null>(null);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const socket: AppSocket = io(getSocketUrl(), {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5, // give up after 5 attempts; set to Infinity to retry forever
-      reconnectionDelay: 1000, // initial delay before first reconnect attempt (ms)
-      reconnectionDelayMax: 5000, // maximum delay between attempts (ms)
-      randomizationFactor: 0.5, // jitter factor to avoid thundering herd (0 = no jitter)
-    });
+    const socket = getEntitySocket();
     socketRef.current = socket;
 
-    socket.on('connect', () => setConnected(true));
-    socket.on('disconnect', () => setConnected(false));
+    const onConnect = () => setConnected(true);
+    const onDisconnect = () => setConnected(false);
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+
+    // Sync with current connection state immediately
+    if (socket.connected) setConnected(true);
 
     return () => {
-      socket.disconnect();
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
     };
   }, []);
 

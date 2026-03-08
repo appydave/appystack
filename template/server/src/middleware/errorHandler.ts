@@ -1,17 +1,9 @@
 import type { Request, Response, NextFunction } from 'express';
 import { logger } from '../config/logger.js';
+import { AppError } from '../helpers/AppError.js';
 
-export class AppError extends Error {
-  constructor(
-    public statusCode: number,
-    message: string,
-    public isOperational = true
-  ) {
-    super(message);
-    this.name = 'AppError';
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
+// Re-export so consumers can import AppError from either location.
+export { AppError };
 
 export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction) {
   const statusCode = err instanceof AppError ? err.statusCode : 500;
