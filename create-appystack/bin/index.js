@@ -99,6 +99,18 @@ function applyCustomizations(root, { name, scope, serverPort, clientPort, desc }
   indexHtml = replaceAll(indexHtml, `<title>${oldTitle}</title>`, `<title>${name}</title>`);
   writeFile(root, 'client/index.html', indexHtml);
 
+  // README.md
+  let readme = readFile(root, 'README.md');
+  readme = replaceAll(readme, '# [App Name]', `# ${name}`);
+  readme = replaceAll(readme, '> One line describing what this app is. Replace this.', `> ${desc}`);
+  readme = replaceAll(readme, `port ${oldClientPort}`, `port ${clientPort}`);
+  readme = replaceAll(readme, `port ${oldServerPort}`, `port ${serverPort}`);
+  readme = replaceAll(readme, `localhost:${oldClientPort}`, `localhost:${clientPort}`);
+  readme = replaceAll(readme, `localhost:${oldServerPort}`, `localhost:${serverPort}`);
+  readme = replaceAll(readme, `| Client (Vite)    | ${oldClientPort}`, `| Client (Vite)    | ${clientPort}`);
+  readme = replaceAll(readme, `| Server (Express) | ${oldServerPort}`, `| Server (Express) | ${serverPort}`);
+  writeFile(root, 'README.md', readme);
+
   // All .ts / .tsx source files — replace remaining scope references in imports
   function walkAndReplace(dir) {
     for (const entry of readdirSync(dir)) {

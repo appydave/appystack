@@ -73,7 +73,7 @@ export default [...appyConfig];
 - **ESLint 9 flat config only** — No `.eslintrc.*` files. ESLint 9 silently ignores legacy configs. No `--ext` flag.
 - **TailwindCSS v4 syntax** — Uses `@import "tailwindcss"` and `@source` directive, NOT v3's `@tailwind` directives.
 - **npm workspaces** — Consumer apps use client/server/shared three-package monorepo pattern.
-- **Port convention** — Client: `5X00`, Server: `5X01`. Allocated in 100s (5100-5499 used).
+- **Port convention** — Client: `5X00`, Server: `5X01`. Canonical registry: `~/dev/ad/brains/brand-dave/app-port-registry.md`. Check it before assigning ports — FliVideo suite uses 5100–5499, client apps use 6000–6999, template default is 5500/5501.
 
 ## npm Publishing
 

@@ -1,6 +1,17 @@
 # CLAUDE.md
 
-AI agent context for the AppyStack template project.
+AI agent context for an AppyStack project.
+
+## ⚠️ Already Inside an AppyStack Project
+
+This CLAUDE.md means you are **inside an existing AppyStack app**. Two skills exist for AppyStack — do not confuse them:
+
+| Skill | Purpose | Use when |
+|-------|---------|----------|
+| `recipe` | Scaffold features *within* this app | You're here, building something |
+| `create-appystack` | Create a *new* AppyStack project | Navigate to a parent dir first |
+
+**If asked to "create a new AppyStack app" while inside this project**: stop, remind the user to navigate up first, then use `create-appystack`.
 
 ## What Is This?
 

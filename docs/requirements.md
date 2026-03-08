@@ -298,15 +298,24 @@ The CI pipeline must run on every push to `main` and every pull request:
 
 ## Port Allocation Standards
 
+**Canonical registry**: `~/dev/ad/brains/brand-dave/app-port-registry.md` — single source of truth for all port assignments across the AppyDave ecosystem. Always check it before choosing ports for a new project.
+
 When creating a new AppyStack project:
 
-1. Choose the next available port range (100s increment)
-2. Client port = `5X00`
-3. Server port = `5X01`
-4. Document in project README and `.env.example`
-5. Configure in `client/vite.config.ts` and `server/src/config/env.ts`
+1. Read the registry to find the next available slot for your app category
+2. Client port = `5X00`, Server port = `5X01` (FliVideo suite pattern)
+3. Document in project README and `.env.example`
+4. Configure in `client/vite.config.ts` and `server/src/config/env.ts`
+5. Add the new entry to the registry
 
-**Currently allocated**: 5100-5499. Next available: 5500.
+**Registry summary** (as of 2026-03-08):
+
+| Range | Category | Next available |
+|-------|----------|----------------|
+| 5100–5499 | FliVideo suite (FliHub, FliDeck, Storyline, FliGen) | 5500/5501 |
+| 5500–5599 | AppyStack template zone (scaffold default — replace before deploy) | — |
+| 6000–6999 | Client work apps (+10 per client) | 6030/6031 |
+| 9500+ | POEM per-project installations | 9550 |
 
 ---
 
