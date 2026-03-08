@@ -1,16 +1,30 @@
 #!/usr/bin/env node
 /**
  * create-appystack CLI
- * Usage: npx create-appystack [project-name]
+ * Usage: npx create-appystack [project-name] [flags]
+ *
+ * Flags:
+ *   --scope        Package scope, e.g. @appydave
+ *   --port         Client port number
+ *   --server-port  Server port number
+ *   --description  One-line project description
+ *   --github-org   GitHub org or user to create the repo under
+ *   --public       Make the GitHub repo public (default: private)
+ *   --no-github    Skip GitHub repo creation entirely
  */
-import { intro, outro, text, cancel, isCancel, spinner } from '@clack/prompts';
+import { intro, outro, text, select, confirm, cancel, isCancel, spinner, note } from '@clack/prompts';
 import { readFileSync, writeFileSync, cpSync, existsSync, rmSync, readdirSync, statSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
+import { createConnection } from 'node:net';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_DIR = resolve(__dirname, '../template');
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function readFile(root, relPath) {
   return readFileSync(resolve(root, relPath), 'utf-8');
@@ -23,6 +37,36 @@ function writeFile(root, relPath, content) {
 function replaceAll(content, from, to) {
   return content.split(from).join(to);
 }
+
+function isPortInUse(port) {
+  return new Promise((resolve) => {
+    const conn = createConnection({ port: Number(port), host: '127.0.0.1' });
+    conn.on('connect', () => { conn.destroy(); resolve(true); });
+    conn.on('error', () => resolve(false));
+  });
+}
+
+function hasGhCli() {
+  try {
+    execSync('gh --version', { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function tryExec(cmd, opts = {}) {
+  try {
+    execSync(cmd, { stdio: 'pipe', ...opts });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, message: err.message };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Template customisation
+// ---------------------------------------------------------------------------
 
 const EXCLUDE = new Set(['node_modules', 'dist', 'coverage', 'test-results', '.git']);
 
@@ -63,35 +107,19 @@ function applyCustomizations(root, { name, scope, serverPort, clientPort, desc }
   // .env.example
   let envExample = readFile(root, '.env.example');
   envExample = replaceAll(envExample, `PORT=${oldServerPort}`, `PORT=${serverPort}`);
-  envExample = replaceAll(
-    envExample,
-    `CLIENT_URL=http://localhost:${oldClientPort}`,
-    `CLIENT_URL=http://localhost:${clientPort}`
-  );
+  envExample = replaceAll(envExample, `CLIENT_URL=http://localhost:${oldClientPort}`, `CLIENT_URL=http://localhost:${clientPort}`);
   writeFile(root, '.env.example', envExample);
 
   // server/src/config/env.ts
   let envTs = readFile(root, 'server/src/config/env.ts');
-  envTs = replaceAll(
-    envTs,
-    `PORT: z.coerce.number().default(${oldServerPort})`,
-    `PORT: z.coerce.number().default(${serverPort})`
-  );
-  envTs = replaceAll(
-    envTs,
-    `CLIENT_URL: z.string().default('http://localhost:${oldClientPort}')`,
-    `CLIENT_URL: z.string().default('http://localhost:${clientPort}')`
-  );
+  envTs = replaceAll(envTs, `PORT: z.coerce.number().default(${oldServerPort})`, `PORT: z.coerce.number().default(${serverPort})`);
+  envTs = replaceAll(envTs, `CLIENT_URL: z.string().default('http://localhost:${oldClientPort}')`, `CLIENT_URL: z.string().default('http://localhost:${clientPort}')`);
   writeFile(root, 'server/src/config/env.ts', envTs);
 
   // client/vite.config.ts
   let viteConfig = readFile(root, 'client/vite.config.ts');
   viteConfig = replaceAll(viteConfig, `port: ${oldClientPort}`, `port: ${clientPort}`);
-  viteConfig = replaceAll(
-    viteConfig,
-    `target: 'http://localhost:${oldServerPort}'`,
-    `target: 'http://localhost:${serverPort}'`
-  );
+  viteConfig = replaceAll(viteConfig, `target: 'http://localhost:${oldServerPort}'`, `target: 'http://localhost:${serverPort}'`);
   writeFile(root, 'client/vite.config.ts', viteConfig);
 
   // client/index.html
@@ -129,21 +157,34 @@ function applyCustomizations(root, { name, scope, serverPort, clientPort, desc }
   walkAndReplace(root);
 }
 
+// ---------------------------------------------------------------------------
+// Argument parsing
+// ---------------------------------------------------------------------------
+
 function parseArgs() {
   const args = process.argv.slice(2);
   const flags = {};
   let name = null;
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--scope' && args[i + 1]) { flags.scope = args[++i]; }
-    else if (args[i] === '--port' && args[i + 1]) { flags.port = args[++i]; }
+    if (args[i] === '--scope' && args[i + 1])       { flags.scope = args[++i]; }
+    else if (args[i] === '--port' && args[i + 1])   { flags.port = args[++i]; }
+    else if (args[i] === '--server-port' && args[i + 1]) { flags.serverPort = args[++i]; }
     else if (args[i] === '--description' && args[i + 1]) { flags.description = args[++i]; }
-    else if (!args[i].startsWith('--') && !name) { name = args[i]; }
+    else if (args[i] === '--github-org' && args[i + 1]) { flags.githubOrg = args[++i]; }
+    else if (args[i] === '--public')                { flags.public = true; }
+    else if (args[i] === '--no-github')             { flags.noGithub = true; }
+    else if (!args[i].startsWith('--') && !name)   { name = args[i]; }
   }
   return { name, ...flags };
 }
 
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
 async function main() {
   const cli = parseArgs();
+  const ghAvailable = !cli.noGithub && hasGhCli();
 
   intro('create-appystack');
 
@@ -157,12 +198,11 @@ async function main() {
     projectName = cli.name.trim();
   } else {
     const result = await text({
-      message: 'Project name (e.g. my-app)',
+      message: 'Project name',
       placeholder: 'my-app',
       validate(value) {
         if (!value || value.trim().length === 0) return 'Project name is required';
-        if (!/^[a-z0-9-]+$/.test(value.trim()))
-          return 'Use lowercase letters, numbers, and hyphens only';
+        if (!/^[a-z0-9-]+$/.test(value.trim())) return 'Use lowercase letters, numbers, and hyphens only';
       },
     });
     if (isCancel(result)) { cancel('Cancelled.'); process.exit(0); }
@@ -181,13 +221,13 @@ async function main() {
   if (cli.scope) {
     const s = cli.scope.trim();
     if (!s.startsWith('@') || !/^@[a-z0-9-]+$/.test(s)) {
-      console.error('Error: --scope must be like @myorg (lowercase letters, numbers, hyphens)');
+      console.error('Error: --scope must be like @myorg');
       process.exit(1);
     }
     packageScope = s;
   } else {
-    const scopeResult = await text({
-      message: 'Package scope (e.g. @myorg)',
+    const result = await text({
+      message: 'Package scope',
       placeholder: '@myorg',
       validate(value) {
         if (!value || value.trim().length === 0) return 'Package scope is required';
@@ -195,8 +235,8 @@ async function main() {
         if (!/^@[a-z0-9-]+$/.test(value.trim())) return 'Use @lowercase-letters-numbers-hyphens only';
       },
     });
-    if (isCancel(scopeResult)) { cancel('Cancelled.'); process.exit(0); }
-    packageScope = scopeResult.trim();
+    if (isCancel(result)) { cancel('Cancelled.'); process.exit(0); }
+    packageScope = result.trim();
   }
 
   // --- Client port ---
@@ -209,49 +249,129 @@ async function main() {
     }
     clientPort = String(p);
   } else {
-    const clientPortResult = await text({
+    const inUse = await isPortInUse(5500);
+    const result = await text({
       message: 'Client port',
       placeholder: '5500',
       initialValue: '5500',
+      hint: inUse ? '⚠ port 5500 appears to be in use' : undefined,
       validate(value) {
         const port = Number(value);
-        if (!Number.isInteger(port) || port < 1 || port > 65535)
-          return 'Enter a valid port number (1–65535)';
+        if (!Number.isInteger(port) || port < 1 || port > 65535) return 'Enter a valid port number (1–65535)';
       },
     });
-    if (isCancel(clientPortResult)) { cancel('Cancelled.'); process.exit(0); }
-    clientPort = clientPortResult.trim();
+    if (isCancel(result)) { cancel('Cancelled.'); process.exit(0); }
+    clientPort = result.trim();
   }
 
-  // --- Server port (defaults to client port + 1) ---
-  const serverPortResult = await text({
-    message: 'Server port',
-    placeholder: String(Number(clientPort) + 1),
-    initialValue: String(Number(clientPort) + 1),
-    validate(value) {
-      const port = Number(value);
-      if (!Number.isInteger(port) || port < 1 || port > 65535)
-        return 'Enter a valid port number (1–65535)';
-    },
-  });
-  if (isCancel(serverPortResult)) { cancel('Cancelled.'); process.exit(0); }
-  const serverPort = serverPortResult.trim();
+  // Check chosen client port
+  const clientPortInUse = await isPortInUse(Number(clientPort));
+
+  // --- Server port ---
+  let serverPort;
+  const defaultServerPort = String(Number(clientPort) + 1);
+  if (cli.serverPort) {
+    const p = Number(cli.serverPort);
+    if (!Number.isInteger(p) || p < 1 || p > 65535) {
+      console.error('Error: --server-port must be a valid port number (1–65535)');
+      process.exit(1);
+    }
+    serverPort = String(p);
+  } else {
+    const inUse = await isPortInUse(Number(defaultServerPort));
+    const result = await text({
+      message: 'Server port',
+      placeholder: defaultServerPort,
+      initialValue: defaultServerPort,
+      hint: inUse ? `⚠ port ${defaultServerPort} appears to be in use` : undefined,
+      validate(value) {
+        const port = Number(value);
+        if (!Number.isInteger(port) || port < 1 || port > 65535) return 'Enter a valid port number (1–65535)';
+      },
+    });
+    if (isCancel(result)) { cancel('Cancelled.'); process.exit(0); }
+    serverPort = result.trim();
+  }
+
+  const serverPortInUse = await isPortInUse(Number(serverPort));
 
   // --- Description ---
   let description;
   if (cli.description) {
     description = cli.description.trim();
   } else {
-    const descResult = await text({
+    const result = await text({
       message: 'Project description',
-      placeholder: 'My awesome app',
+      placeholder: 'A short one-liner describing what this app does',
       validate(value) {
         if (!value || value.trim().length === 0) return 'Description is required';
       },
     });
-    if (isCancel(descResult)) { cancel('Cancelled.'); process.exit(0); }
-    description = descResult.trim();
+    if (isCancel(result)) { cancel('Cancelled.'); process.exit(0); }
+    description = result.trim();
   }
+
+  // --- GitHub org/visibility ---
+  let githubOrg = null;
+  let visibility = 'private';
+
+  if (ghAvailable) {
+    if (cli.githubOrg) {
+      githubOrg = cli.githubOrg.trim();
+    } else {
+      const result = await text({
+        message: 'GitHub org or user (for repo creation)',
+        placeholder: 'appydave',
+        initialValue: 'appydave',
+        hint: 'Leave blank to skip GitHub repo creation',
+      });
+      if (isCancel(result)) { cancel('Cancelled.'); process.exit(0); }
+      githubOrg = result.trim() || null;
+    }
+
+    if (githubOrg && !cli.public) {
+      const result = await select({
+        message: 'Repository visibility',
+        options: [
+          { value: 'private', label: 'Private', hint: 'only you and collaborators' },
+          { value: 'public', label: 'Public', hint: 'visible to everyone' },
+        ],
+      });
+      if (isCancel(result)) { cancel('Cancelled.'); process.exit(0); }
+      visibility = result;
+    } else if (cli.public) {
+      visibility = 'public';
+    }
+  }
+
+  // --- Confirmation summary ---
+  const portWarnings = [
+    clientPortInUse ? `  ⚠  Client port ${clientPort} is currently in use` : '',
+    serverPortInUse ? `  ⚠  Server port ${serverPort} is currently in use` : '',
+  ].filter(Boolean).join('\n');
+
+  const githubLine = githubOrg
+    ? `  GitHub     github.com/${githubOrg}/${projectName} (${visibility})`
+    : !ghAvailable && !cli.noGithub
+    ? `  GitHub     skipped — gh CLI not found (install with: brew install gh)`
+    : `  GitHub     skipped`;
+
+  note(
+    [
+      `  Project    ${projectName}`,
+      `  Scope      ${packageScope}`,
+      `  Client     http://localhost:${clientPort}`,
+      `  Server     http://localhost:${serverPort}`,
+      githubLine,
+      `  Location   ${targetDir}`,
+      portWarnings ? '' : '',
+      portWarnings,
+    ].filter((l) => l !== undefined).join('\n').trim(),
+    'Ready to scaffold'
+  );
+
+  const go = await confirm({ message: 'Create project?' });
+  if (isCancel(go) || !go) { cancel('Cancelled.'); process.exit(0); }
 
   // --- Copy template ---
   const s = spinner();
@@ -267,41 +387,70 @@ async function main() {
   }
 
   // --- Apply customizations ---
-  s.start('Customizing project...');
+  s.start('Customising project...');
   try {
-    applyCustomizations(targetDir, {
-      name: projectName,
-      scope: packageScope,
-      serverPort,
-      clientPort,
-      desc: description,
-    });
-    s.stop('Project customized');
+    applyCustomizations(targetDir, { name: projectName, scope: packageScope, serverPort, clientPort, desc: description });
+    s.stop('Project customised');
   } catch (err) {
-    s.stop('Customization failed');
+    s.stop('Customisation failed');
     console.error(err.message);
     rmSync(targetDir, { recursive: true, force: true });
     process.exit(1);
   }
 
   // --- npm install ---
-  s.start('Installing dependencies (this may take a minute)...');
+  s.start('Installing dependencies...');
   try {
-    execSync('npm install', { cwd: targetDir, stdio: 'inherit' });
+    execSync('npm install', { cwd: targetDir, stdio: 'pipe' });
     s.stop('Dependencies installed');
   } catch (err) {
-    s.stop('npm install failed');
-    console.error('Run "npm install" manually after cd into the project.');
+    s.stop('npm install failed — run it manually after cd into the project');
   }
 
-  outro(`Created ${projectName}
+  // --- Git init + initial commit ---
+  s.start('Initialising git repository...');
+  const gitResult = tryExec(
+    'git init && git add -A && git commit -m "chore: initial scaffold from create-appystack"',
+    { cwd: targetDir, shell: true }
+  );
+  if (gitResult.ok) {
+    s.stop('Git repository initialised');
+  } else {
+    s.stop('Git init skipped — run "git init" manually');
+  }
 
-Next steps:
-  cd ${projectName}
-  npm run dev
+  // --- GitHub repo creation ---
+  let repoUrl = null;
+  if (githubOrg && gitResult.ok) {
+    s.start(`Creating GitHub repo ${githubOrg}/${projectName}...`);
+    const ghResult = tryExec(
+      `gh repo create ${githubOrg}/${projectName} --${visibility} --source=. --remote=origin --push`,
+      { cwd: targetDir, shell: true }
+    );
+    if (ghResult.ok) {
+      repoUrl = `https://github.com/${githubOrg}/${projectName}`;
+      s.stop(`Repo created and pushed → ${repoUrl}`);
+    } else {
+      s.stop(`GitHub repo creation failed — create it manually at github.com/new`);
+    }
+  }
 
-Client: http://localhost:${clientPort}
-Server: http://localhost:${serverPort}`);
+  // --- Outro ---
+  const nextSteps = [
+    `  cd ${projectName}`,
+    `  npm run dev`,
+    ``,
+    `  Client  →  http://localhost:${clientPort}`,
+    `  Server  →  http://localhost:${serverPort}`,
+    repoUrl ? `  GitHub  →  ${repoUrl}` : '',
+    ``,
+    `  Next:`,
+    `  • Delete client/src/demo/ when you start building`,
+    `  • Run /recipe readme once you have something working`,
+    `  • Run /recipe nav-shell or /recipe file-crud to scaffold features`,
+  ].filter((l) => l !== null).join('\n');
+
+  outro(`Created ${projectName}\n\n${nextSteps}`);
 }
 
 main().catch((err) => {
