@@ -33,6 +33,12 @@ npx create-appystack@latest my-app --scope @myorg --port 5500 --description "My 
 | [Deployment](./deployment.md) | Build, production configuration, and deploy workflows |
 | [Database](./database.md) | Where and how to integrate any database: env schema, shutdown hook, query structure, test patterns |
 
+## Ecosystem
+
+| Document | What it covers |
+|---|---|
+| [App Naming](./app-naming.md) | Naming conventions for standalone AppyStack apps — the compound metaphor + function pattern |
+
 ## Recipes (Claude Code Skill)
 
 Recipes scaffold specific app architectures on top of the RVETS template. Available via `/recipe` in any project created with `create-appystack`.
