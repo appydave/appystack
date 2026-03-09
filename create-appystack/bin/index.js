@@ -15,6 +15,7 @@
 import { intro, outro, text, select, confirm, cancel, isCancel, spinner, note } from '@clack/prompts';
 import { readFileSync, writeFileSync, cpSync, existsSync, rmSync, readdirSync, statSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
+import { buildAudit, renderAudit } from './audit.js';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { createConnection } from 'node:net';
@@ -209,11 +210,15 @@ async function main() {
     projectName = result.trim();
   }
 
-  // --- Check target doesn't exist ---
+  // --- Check target directory ---
   const targetDir = resolve(process.cwd(), projectName);
+  let mergeMode = false;
   if (existsSync(targetDir)) {
-    console.error(`Error: directory "${projectName}" already exists`);
-    process.exit(1);
+    const doMerge = await confirm({
+      message: `Directory "${projectName}" already exists. Scaffold into it (keeps existing files)?`,
+    });
+    if (isCancel(doMerge) || !doMerge) { cancel('Cancelled.'); process.exit(0); }
+    mergeMode = true;
   }
 
   // --- Package scope ---
@@ -356,9 +361,12 @@ async function main() {
     ? `  GitHub     skipped — gh CLI not found (install with: brew install gh)`
     : `  GitHub     skipped`;
 
+  const modeLabel = mergeMode ? 'merge into existing' : 'create new';
+
   note(
     [
       `  Project    ${projectName}`,
+      `  Mode       ${modeLabel}`,
       `  Scope      ${packageScope}`,
       `  Client     http://localhost:${clientPort}`,
       `  Server     http://localhost:${serverPort}`,
@@ -370,19 +378,25 @@ async function main() {
     'Ready to scaffold'
   );
 
-  const go = await confirm({ message: 'Create project?' });
+  // --- Merge mode audit ---
+  if (mergeMode) {
+    const audit = buildAudit(targetDir, TEMPLATE_DIR, templateFilter);
+    note(renderAudit(audit, projectName, targetDir), 'File audit');
+  }
+
+  const go = await confirm({ message: mergeMode ? 'Scaffold into existing directory?' : 'Create project?' });
   if (isCancel(go) || !go) { cancel('Cancelled.'); process.exit(0); }
 
   // --- Copy template ---
   const s = spinner();
-  s.start('Copying template...');
+  s.start(mergeMode ? 'Merging template (existing files kept)...' : 'Copying template...');
   try {
-    cpSync(TEMPLATE_DIR, targetDir, { recursive: true, filter: templateFilter });
-    s.stop('Template copied');
+    cpSync(TEMPLATE_DIR, targetDir, { recursive: true, filter: templateFilter, force: !mergeMode });
+    s.stop(mergeMode ? 'Template merged' : 'Template copied');
   } catch (err) {
     s.stop('Failed to copy template');
     console.error(err.message);
-    rmSync(targetDir, { recursive: true, force: true });
+    if (!mergeMode) rmSync(targetDir, { recursive: true, force: true });
     process.exit(1);
   }
 
@@ -394,7 +408,7 @@ async function main() {
   } catch (err) {
     s.stop('Customisation failed');
     console.error(err.message);
-    rmSync(targetDir, { recursive: true, force: true });
+    if (!mergeMode) rmSync(targetDir, { recursive: true, force: true });
     process.exit(1);
   }
 
@@ -408,15 +422,19 @@ async function main() {
   }
 
   // --- Git init + initial commit ---
-  s.start('Initialising git repository...');
-  const gitResult = tryExec(
-    'git init && git add -A && git commit -m "chore: initial scaffold from create-appystack"',
-    { cwd: targetDir, shell: true }
-  );
+  const gitAlreadyExists = existsSync(resolve(targetDir, '.git'));
+  s.start(gitAlreadyExists ? 'Adding scaffold files to existing git repo...' : 'Initialising git repository...');
+  const gitCommitMsg = mergeMode
+    ? 'chore: scaffold appystack into existing project'
+    : 'chore: initial scaffold from create-appystack';
+  const gitCmd = gitAlreadyExists
+    ? `git add -A && git commit -m "${gitCommitMsg}"`
+    : `git init && git add -A && git commit -m "${gitCommitMsg}"`;
+  const gitResult = tryExec(gitCmd, { cwd: targetDir, shell: true });
   if (gitResult.ok) {
-    s.stop('Git repository initialised');
+    s.stop(gitAlreadyExists ? 'Scaffold files committed' : 'Git repository initialised');
   } else {
-    s.stop('Git init skipped — run "git init" manually');
+    s.stop('Git step skipped — run "git add -A && git commit" manually');
   }
 
   // --- GitHub repo creation ---

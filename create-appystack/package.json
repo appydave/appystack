@@ -12,7 +12,9 @@
   ],
   "scripts": {
     "sync": "node scripts/sync-template.js",
-    "prepublishOnly": "node scripts/sync-template.js"
+    "prepublishOnly": "node scripts/sync-template.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@clack/prompts": "^1.0.1"
@@ -35,5 +37,8 @@
     "express",
     "typescript",
     "socket.io"
-  ]
+  ],
+  "devDependencies": {
+    "vitest": "^4.0.18"
+  }
 }
