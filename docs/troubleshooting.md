@@ -47,20 +47,28 @@ No action required. Confirm TypeScript works: `npm run typecheck`
 
 ---
 
-## 3. Port Conflicts — 5500 or 5501 Already in Use
+## 3. Port Conflicts — Orphaned Processes From a Previous Dev Session
 
-**Symptoms**
+> **As of 2026-03-10** the template has three defences built in. If you're hitting this, something bypassed those defences — read on.
+
+**What the template now does automatically**
+
+1. **`strictPort: true`** in `client/vite.config.ts` — Vite fails immediately with a clear error instead of silently bumping to the next port
+2. **`cleanupPort()`** in `server/src/index.ts` — the Express server kills any process holding its port before binding
+3. **`--kill-others`** in the root `dev` script — all children (Vite, nodemon) die when any one exits, including on Ctrl+C
+
+**Symptoms if still occurring**
 
 ```
 Error: listen EADDRINUSE: address already in use :::5501
-Port 5500 is in use, trying another one...
+Error: Port 5500 is already in use
 ```
 
 **Cause**
 
-Another process is bound to port 5500 (client) or 5501 (server) — often a previous dev session that did not exit cleanly.
+A previous dev session left orphaned processes. The `cleanupPort()` ran but something held on (e.g. the port is used by a completely different app).
 
-**Fix — Kill the process**
+**Fix — Kill manually**
 
 ```bash
 kill -9 $(lsof -ti tcp:5500)
@@ -73,13 +81,13 @@ kill -9 $(lsof -ti tcp:5501)
 ```bash
 PORT=5601
 CLIENT_URL=http://localhost:5600
-VITE_API_URL=http://localhost:5601
 ```
 
 `template/client/vite.config.ts`:
 ```typescript
 server: {
   port: 5600,
+  strictPort: true,
   proxy: {
     '/api':       { target: 'http://localhost:5601', changeOrigin: true },
     '/health':    { target: 'http://localhost:5601', changeOrigin: true },
@@ -93,6 +101,11 @@ server: {
 PORT: z.coerce.number().default(5601),
 CLIENT_URL: z.string().default('http://localhost:5600'),
 ```
+
+**Ongoing tracking**
+
+Port conflict patterns across all AppyDave apps are tracked in the pain doc:
+`~/dev/ad/brains/brand-dave/dev-pain-port-conflicts.md`
 
 See `docs/architecture.md` for the full port allocation table.
 
@@ -329,3 +342,4 @@ coverage: {
 - `docs/architecture.md` — Architecture guide, port allocation, config inheritance
 - `docs/requirements.md` — Setup checklist and dependency matrix
 - `template/CLAUDE.md` — Template commands and patterns
+- `~/dev/ad/brains/brand-dave/dev-pain-port-conflicts.md` — Cross-app port conflict pain tracker (ongoing)
