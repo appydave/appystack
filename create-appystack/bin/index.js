@@ -22,6 +22,7 @@ import { createConnection } from 'node:net';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_DIR = resolve(__dirname, '../template');
+const PKG_VERSION = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-8')).version;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -58,10 +59,10 @@ function hasGhCli() {
 
 function tryExec(cmd, opts = {}) {
   try {
-    execSync(cmd, { stdio: 'pipe', ...opts });
-    return { ok: true };
+    const stdout = execSync(cmd, { stdio: 'pipe', ...opts }).toString();
+    return { ok: true, stdout };
   } catch (err) {
-    return { ok: false, message: err.message };
+    return { ok: false, message: err.message, stdout: null };
   }
 }
 
@@ -435,6 +436,23 @@ async function main() {
     s.stop(gitAlreadyExists ? 'Scaffold files committed' : 'Git repository initialised');
   } else {
     s.stop('Git step skipped — run "git add -A && git commit" manually');
+  }
+
+  // Write appystack.json — version baseline for npx appystack-upgrade
+  if (gitResult.ok) {
+    try {
+      const shaResult = tryExec('git rev-parse HEAD', { cwd: targetDir, shell: true });
+      const scaffoldCommit = shaResult.ok ? shaResult.stdout?.trim() ?? null : null;
+      const appystackMeta = {
+        version: PKG_VERSION,
+        scaffoldCommit,
+        lastUpgrade: null,
+        templatePath: null,
+      };
+      writeFileSync(resolve(targetDir, 'appystack.json'), JSON.stringify(appystackMeta, null, 2) + '\n', 'utf-8');
+    } catch {
+      // non-fatal — appystack.json missing just means first upgrade run will prompt
+    }
   }
 
   // --- GitHub repo creation ---
