@@ -107,12 +107,43 @@ upgrade tool needs to do safely. Each time it happens manually, capture the case
 
 ---
 
-## What to do now
+## Status: Implemented (Wave 6 — 2026-03-11)
 
-Nothing — document this, then implement when 3+ consumer apps exist so you have real migration
-scenarios to test against. The classification above is the most important output of this doc.
+`npx appystack-upgrade` is now live as a second bin entry inside the `create-appystack` package.
 
-Consumer apps to test against (as of March 2026):
-- ThumbRack — `/Users/davidcruwys/dev/ad/apps/thumbrack`
-- Signal Studio — `/Users/davidcruwys/dev/clients/supportsignal/signal-studio`
-- One more needed before implementation begins
+### How it works
+
+Run from inside any AppyStack consumer app:
+```bash
+npx appystack-upgrade
+# or with flags:
+npx appystack-upgrade --yes                           # non-interactive, auto-skip modified files
+npx appystack-upgrade --template-path /path/to/tpl   # use local template (dev/monorepo use)
+```
+
+### What it does
+1. Detects `appystack.json` (written at scaffold time) — or scans git log for scaffold commit — or prompts
+2. Walks the bundled AppyStack template (108 files)
+3. Classifies each file: `auto` | `never` | `recipe`
+4. Auto-updates unchanged files, prompts for modified files, adds new recipe files automatically
+5. Writes `UPGRADE_TODO.md` for files marked for manual merge
+6. Updates `appystack.json` with `lastUpgrade` date
+
+### File classification (implemented)
+
+| Tier | Files | Behaviour |
+|------|-------|-----------|
+| `auto` | Middleware, CI workflow, useSocket hook | Auto-update if unchanged since scaffold, prompt if modified |
+| `never` | package.json, types.ts, pages, components, env.ts, routes | Always skip — project owns these |
+| `recipe` | `.claude/skills/recipe/**` | New files auto-add; SKILL.md always prompts; existing refs use diff engine |
+
+### Known limitation — retrofit scaffold apps
+
+Apps created via merge-mode (`create-appystack` into an existing directory) have project-specific values (scope, ports) baked into their scaffold commit. The diff engine correctly skips these files (classified `never`) but cannot offer template-level structural improvements to `env.ts`, `health.ts`, `info.ts`, or `entitySocket.ts`. These are effectively project-owned once scaffolded.
+
+**Future improvement**: version-tagged template diffs (compare template@v0.3.0 vs template@latest) would allow detecting structural changes independently of project customisation. Implement when a meaningful template version bump occurs.
+
+### Tested against
+- ThumbRack — true scaffold consumer ✔
+- DeckHand — retrofit scaffold ✔
+- Signal Studio — hand-migrated (no scaffold commit) — prompt fallback ✔

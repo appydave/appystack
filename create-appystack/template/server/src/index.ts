@@ -1,5 +1,6 @@
 import express from 'express';
 import { createServer } from 'node:http';
+import { execSync } from 'node:child_process';
 import { join, dirname } from 'node:path'; // used for production static file serving below
 import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
@@ -96,9 +97,24 @@ io.on('connection', (socket) => {
   });
 });
 
+function cleanupPort(port: number | string): void {
+  try {
+    const result = execSync(`lsof -ti:${port} 2>/dev/null || true`, { encoding: 'utf-8' });
+    const pids = result.trim().split('\n').filter(Boolean);
+    if (pids.length > 0) {
+      logger.info(`Cleaning up port ${port}: killing PIDs ${pids.join(', ')}`);
+      for (const pid of pids) {
+        try { execSync(`kill -9 ${pid} 2>/dev/null || true`); } catch { /* already gone */ }
+      }
+      execSync('sleep 0.5');
+    }
+  } catch { /* lsof unavailable, continue */ }
+}
+
 // Start server — skip in test environment to prevent EADDRINUSE when multiple
 // test files import this module. Tests use supertest with app directly.
 if (!env.isTest) {
+  cleanupPort(env.PORT);
   httpServer.listen(env.PORT, () => {
     logger.info(`Server running on http://localhost:${env.PORT}`);
     logger.info(`Client URL: ${env.CLIENT_URL}`);

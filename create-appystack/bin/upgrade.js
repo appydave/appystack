@@ -46,25 +46,36 @@ function buildAutoPrompts() {
 // ---------------------------------------------------------------------------
 
 function tallySummary(results) {
-  const tally = { added: 0, updated: 0, todo: 0, skipped: 0, owned: 0 };
+  const tally = { added: [], updated: [], todo: [], skipped: [], owned: [] };
   for (const r of results) {
-    if (r.action === 'added')                          tally.added++;
-    else if (r.action === 'updated' || r.action === 'overwritten') tally.updated++;
-    else if (r.action === 'todo' || r.action === 'deferred')       tally.todo++;
-    else if (r.action === 'skipped' || r.action === 'cancelled')   tally.skipped++;
-    else if (r.action === 'owned')                     tally.owned++;
+    if (r.action === 'added')                                      tally.added.push(r.path);
+    else if (r.action === 'updated' || r.action === 'overwritten') tally.updated.push(r.path);
+    else if (r.action === 'todo' || r.action === 'deferred')       tally.todo.push(r.path);
+    else if (r.action === 'skipped' || r.action === 'cancelled')   tally.skipped.push(r.path);
+    else if (r.action === 'owned')                                 tally.owned.push(r.path);
   }
   return tally;
 }
 
 function formatSummary(tally) {
-  return [
-    `✔ Added:        ${tally.added} files`,
-    `✔ Updated:      ${tally.updated} files`,
-    `⚠ Todo:         ${tally.todo} files${tally.todo > 0 ? '  (see UPGRADE_TODO.md)' : ''}`,
-    `— Skipped:      ${tally.skipped} files`,
-    `— Owned:        ${tally.owned} files`,
-  ].join('\n');
+  const lines = [];
+
+  function section(icon, label, paths, extra) {
+    if (paths.length === 0) {
+      lines.push(`${icon} ${label}: 0 files`);
+    } else {
+      lines.push(`${icon} ${label}: ${paths.length} file${paths.length === 1 ? '' : 's'}${extra ?? ''}`);
+      for (const p of paths) lines.push(`    ${p}`);
+    }
+  }
+
+  section('✔', 'Added   ', tally.added);
+  section('✔', 'Updated ', tally.updated);
+  section('⚠', 'Todo    ', tally.todo, '  (see UPGRADE_TODO.md)');
+  section('—', 'Skipped ', tally.skipped);
+  lines.push(`— Owned:    ${tally.owned.length} files`);
+
+  return lines.join('\n');
 }
 
 // ---------------------------------------------------------------------------
