@@ -84,6 +84,7 @@ export function appendUpgradeTodo(consumerDir, relativePath) {
 export async function handleAutoFile(consumerDir, templateDir, scaffoldCommit, relativePath, prompts) {
   const { note, select, isCancel } = prompts;
   const destPath = join(consumerDir, relativePath);
+  const srcPath = join(templateDir, relativePath);
 
   // 1. File does not exist in consumer → just add it
   if (!existsSync(destPath)) {
@@ -91,15 +92,31 @@ export async function handleAutoFile(consumerDir, templateDir, scaffoldCommit, r
     return { action: 'added', path: relativePath };
   }
 
-  // 2. File exists but unchanged since scaffold → safe to overwrite
+  // 2. No scaffold baseline — compare content directly
+  if (!scaffoldCommit) {
+    const consumerContent = readFileSync(destPath, 'utf-8');
+    const templateContent = readFileSync(srcPath, 'utf-8');
+
+    if (consumerContent === templateContent) {
+      // Identical to template — nothing to do, skip silently
+      return { action: 'identical', path: relativePath };
+    }
+
+    // Files differ — show content diff and prompt (same as modified flow)
+    const diffLines = buildContentDiff(templateContent, consumerContent);
+    note(diffLines || '(no differences detected)', `Template vs current: ${relativePath}`);
+
+    return promptForMerge(relativePath, consumerDir, templateDir, prompts);
+  }
+
+  // 3. Has scaffold baseline — check if consumer changed since scaffold
   if (!isFileChangedSinceScaffold(consumerDir, scaffoldCommit, relativePath)) {
+    // Unchanged since scaffold → safe to overwrite with template
     applyUpdate(consumerDir, templateDir, relativePath);
     return { action: 'updated', path: relativePath };
   }
 
-  // 3. File has been modified since scaffold — show diff and prompt user
-
-  // Show diff (first 50 lines of git diff output)
+  // 4. File modified since scaffold — show git diff and prompt
   let diffOutput = '';
   try {
     diffOutput = execSync(`git diff ${scaffoldCommit} -- ${relativePath}`, {
@@ -114,10 +131,41 @@ export async function handleAutoFile(consumerDir, templateDir, scaffoldCommit, r
     diffOutput = '(could not retrieve diff)';
   }
 
-  note(diffOutput || '(no diff output)', `Diff for ${relativePath}`);
+  note(diffOutput || '(no diff output)', `Modified since scaffold: ${relativePath}`);
+
+  return promptForMerge(relativePath, consumerDir, templateDir, prompts);
+}
+
+// ---------------------------------------------------------------------------
+// buildContentDiff — simple line-level diff summary (template vs consumer)
+// ---------------------------------------------------------------------------
+
+function buildContentDiff(templateContent, consumerContent) {
+  const tLines = templateContent.split('\n');
+  const cLines = consumerContent.split('\n');
+  const out = [];
+  const maxLen = Math.max(tLines.length, cLines.length);
+  let shown = 0;
+  for (let i = 0; i < maxLen && shown < 50; i++) {
+    if (tLines[i] !== cLines[i]) {
+      if (tLines[i] !== undefined) out.push(`+ ${tLines[i]}`);
+      if (cLines[i] !== undefined) out.push(`- ${cLines[i]}`);
+      shown++;
+    }
+  }
+  if (shown === 50 && maxLen > 50) out.push(`... (${maxLen - 50} more lines differ)`);
+  return out.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// promptForMerge — shared prompt for both baseline and no-baseline paths
+// ---------------------------------------------------------------------------
+
+async function promptForMerge(relativePath, consumerDir, templateDir, prompts) {
+  const { select, isCancel } = prompts;
 
   const answer = await select({
-    message: `File modified since scaffold: ${relativePath}`,
+    message: `File differs from template: ${relativePath}`,
     options: [
       { value: 'skip',      label: 'Skip',           hint: 'keep your version' },
       { value: 'overwrite', label: 'Overwrite',      hint: 'replace with latest AppyStack version' },
@@ -125,20 +173,14 @@ export async function handleAutoFile(consumerDir, templateDir, scaffoldCommit, r
     ],
   });
 
-  if (isCancel(answer)) {
-    return { action: 'skipped', path: relativePath };
-  }
-
+  if (isCancel(answer)) return { action: 'skipped', path: relativePath };
   if (answer === 'overwrite') {
     applyUpdate(consumerDir, templateDir, relativePath);
     return { action: 'updated', path: relativePath };
   }
-
   if (answer === 'todo') {
     appendUpgradeTodo(consumerDir, relativePath);
     return { action: 'todo', path: relativePath };
   }
-
-  // 'skip'
   return { action: 'skipped', path: relativePath };
 }

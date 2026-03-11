@@ -52,7 +52,7 @@ function tallySummary(results) {
     else if (r.action === 'updated' || r.action === 'overwritten') tally.updated.push(r.path);
     else if (r.action === 'todo' || r.action === 'deferred')       tally.todo.push(r.path);
     else if (r.action === 'skipped' || r.action === 'cancelled')   tally.skipped.push(r.path);
-    else if (r.action === 'owned')                                 tally.owned.push(r.path);
+    else if (r.action === 'owned' || r.action === 'identical')     tally.owned.push(r.path);
   }
   return tally;
 }
