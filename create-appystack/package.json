@@ -4,7 +4,8 @@
   "description": "Scaffold a new AppyStack RVETS project — React, Vite, Express, TypeScript, Socket.io",
   "type": "module",
   "bin": {
-    "create-appystack": "bin/index.js"
+    "create-appystack": "bin/index.js",
+    "appystack-upgrade": "bin/upgrade.js"
   },
   "files": [
     "bin/",
@@ -32,6 +33,7 @@
     "appystack",
     "create",
     "scaffold",
+    "upgrade",
     "react",
     "vite",
     "express",
