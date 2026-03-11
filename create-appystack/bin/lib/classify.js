@@ -6,12 +6,8 @@ export const CLASSIFICATION = {
     'server/src/middleware/rateLimiter.ts',
     'server/src/middleware/requestLogger.ts',
     'server/src/middleware/validate.ts',
-    'server/src/routes/health.ts',
-    'server/src/routes/info.ts',
-    'server/src/config/env.ts',
     'server/src/config/logger.ts',
     'client/src/hooks/useSocket.ts',
-    'client/src/lib/entitySocket.ts',
     '.github/workflows/ci.yml',
     'eslint.config.js',
   ],
@@ -31,6 +27,11 @@ export const CLASSIFICATION = {
         'client/src/App.tsx',
         'server/nodemon.json',
         'client/src/styles/index.css',
+        // Project-specific values set at scaffold time (scope, ports) — never overwrite
+        'server/src/config/env.ts',
+        'server/src/routes/health.ts',
+        'server/src/routes/info.ts',
+        'client/src/lib/entitySocket.ts',
       ],
     },
     // suffix patterns
@@ -58,6 +59,11 @@ const NEVER_EXACT = new Set([
   'client/src/App.tsx',
   'server/nodemon.json',
   'client/src/styles/index.css',
+  // Project-specific values set at scaffold time (scope, ports) — never overwrite
+  'server/src/config/env.ts',
+  'server/src/routes/health.ts',
+  'server/src/routes/info.ts',
+  'client/src/lib/entitySocket.ts',
 ]);
 
 /**
