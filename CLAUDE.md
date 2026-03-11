@@ -13,6 +13,7 @@ AppyStack is a shared configuration package and architecture reference for the R
 This is NOT an application — it's a config package + documentation hub.
 
 - `create-appystack/` — The `create-appystack` npm package (published as v0.1.3 on npm)
+  - Also publishes `appystack-upgrade` bin — run `npx appystack-upgrade` from inside any consumer app to pull in the latest AppyStack template improvements (recipes, middleware, CI). See `docs/plans/upgrade-strategy.md`.
   - `bin/index.js` — CLI entry point (see usage below)
   - `scripts/sync-template.js` — Copies `../template/` → `./template/` (run before publish)
   - `template/` — Committed copy of root `template/` (synced, excludes node_modules/dist/coverage)
