@@ -1,0 +1,34 @@
+{
+  "name": "appystack-upgrade",
+  "version": "0.4.0",
+  "description": "Upgrade AppyStack RVETS consumer apps to the latest template improvements — recipes, middleware, CI",
+  "type": "module",
+  "bin": {
+    "appystack-upgrade": "bin/index.js"
+  },
+  "files": [
+    "bin/"
+  ],
+  "dependencies": {
+    "create-appystack": "^0.4.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "David Cruwys",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/appydave/appystack.git"
+  },
+  "keywords": [
+    "appystack",
+    "upgrade",
+    "migrate",
+    "react",
+    "vite",
+    "express",
+    "typescript",
+    "socket.io"
+  ]
+}
