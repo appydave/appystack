@@ -27,6 +27,31 @@ server (Express 5 + Socket.io + Pino + Zod)   →  port 5501
 shared (TypeScript interfaces only)
 ```
 
+## Data Directory
+
+Runtime-written files live at the **monorepo root** in `data/`, never inside any package's `src/`:
+
+```
+<app-root>/
+├── data/
+│   └── {entity-plural}/   ← JSON records, SQLite files, upload staging
+├── client/
+├── server/
+└── shared/
+```
+
+**Why**: nodemon watches `server/src/**/*.ts` for code changes. Any file written inside `src/` triggers a server restart. If the restart races before the old process releases the port, you get `EADDRINUSE` crashes.
+
+**Path construction in server code** (data is one level up from `server/`):
+```ts
+import path from 'path'
+const DATA_ROOT = process.env.DATA_DIR ?? path.resolve(process.cwd(), '..', 'data')
+```
+
+`process.cwd()` is `server/` when nodemon runs, so `..` goes to the monorepo root. Override via `DATA_DIR` env var if needed.
+
+**`.gitignore`**: Add `data/` for production data. Remove the ignore for seeded sample data that should be committed.
+
 ## Dev Server Management
 
 Before starting any dev server, check if it's already running:

@@ -16,7 +16,9 @@ Scaffold server-side JSON file persistence for one or more domain entities, with
 **Stack Assumptions**
 - Express 5, Socket.io, TypeScript, Node.js `fs/promises`
 - chokidar (verify in `server/package.json`; add if missing)
-- `data/` folder at repo root
+- `data/` folder at monorepo root (never inside `server/src/`)
+
+> **Why monorepo root?** nodemon watches `server/src/**/*.ts`. If data files land inside `src/`, any write triggers a server restart. The restarting process can't bind the port before the old one releases it → `EADDRINUSE` crash. Keep all runtime-written files outside `src/`.
 
 **Idempotency Check**
 Does `server/src/data/fileStore.ts` exist? If yes → infrastructure is already installed. Only generate entity-specific route and type files for new entities.
@@ -116,13 +118,20 @@ The server maintains a per-entity index cache. chokidar invalidates it on any fi
 
 ```typescript
 // server/src/data/fileStore.ts
+import path from 'path'
+import fs from 'fs/promises'
+
+// Data lives at the monorepo root. process.cwd() is server/ when nodemon runs,
+// so '../data' resolves to <monorepo-root>/data/.
+// Override with DATA_DIR env var if your deployment layout differs.
+const DATA_ROOT = process.env.DATA_DIR ?? path.resolve(process.cwd(), '..', 'data')
 
 const indexCache = new Map<string, EntityIndex[]>()
 
 export async function listRecords(entity: string): Promise<EntityIndex[]> {
   if (indexCache.has(entity)) return indexCache.get(entity)!
 
-  const folder = path.join('./data', entity)
+  const folder = path.join(DATA_ROOT, entity)
   const files = (await fs.readdir(folder)).filter(f => f.endsWith('.json'))
 
   const index = await Promise.all(files.map(async (filename) => {

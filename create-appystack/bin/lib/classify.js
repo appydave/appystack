@@ -10,6 +10,7 @@ export const CLASSIFICATION = {
     'client/src/hooks/useSocket.ts',
     '.github/workflows/ci.yml',
     'eslint.config.js',
+    'server/nodemon.json', // safe infrastructure config — consumers rarely customize, no project-specific values
   ],
   neverPatterns: [
     // exact filenames (basename match)
@@ -25,7 +26,6 @@ export const CLASSIFICATION = {
         'client/vite.config.ts',
         'client/src/main.tsx',
         'client/src/App.tsx',
-        'server/nodemon.json',
         'client/src/styles/index.css',
         // Project-specific values set at scaffold time (scope, ports) — never overwrite
         'server/src/config/env.ts',
@@ -57,7 +57,6 @@ const NEVER_EXACT = new Set([
   'client/vite.config.ts',
   'client/src/main.tsx',
   'client/src/App.tsx',
-  'server/nodemon.json',
   'client/src/styles/index.css',
   // Project-specific values set at scaffold time (scope, ports) — never overwrite
   'server/src/config/env.ts',
