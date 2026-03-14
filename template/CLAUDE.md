@@ -65,6 +65,22 @@ Never change port numbers from what is defined in `.env`.
 
 Replace `CLIENT_PORT` and `SERVER_PORT` with this project's actual ports (see `.env`).
 
+**To start persistently** (survives terminal close):
+
+```bash
+./scripts/start.sh   # builds shared, port-checks, then launches via Overmind
+overmind start       # direct launch (assumes shared already built)
+```
+
+**Overmind commands:**
+
+```bash
+overmind connect client  # attach to client logs (Ctrl+B D to detach)
+overmind connect server  # attach to server logs
+overmind restart client  # restart just the client
+overmind stop            # stop all processes
+```
+
 ## Commands
 
 ```bash

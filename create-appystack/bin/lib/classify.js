@@ -11,6 +11,8 @@ export const CLASSIFICATION = {
     '.github/workflows/ci.yml',
     'eslint.config.js',
     'server/nodemon.json', // safe infrastructure config — consumers rarely customize, no project-specific values
+    'Procfile', // process manager config — generic client/server split, safe to refresh
+    'scripts/start.sh', // startup script — port-check + overmind launch, safe to refresh (ports come from env)
   ],
   neverPatterns: [
     // exact filenames (basename match)
