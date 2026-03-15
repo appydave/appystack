@@ -6,7 +6,7 @@ description: >
   when someone says "/mochaccino", "mockup mode", "new mockup", "let's do a
   mochaccino", "I want to design something", or "can we look at how this could
   work". Creates standalone HTML mockups saved to the project's
-  .mockups/designs/ folder, grounded in the real design system and data shape,
+  .mochaccino/designs/ folder, grounded in the real design system and data shape,
   always aiming for improvement over faithful reproduction.
 ---
 
@@ -62,7 +62,7 @@ Work through these in sequence — stop at the first useful result:
    (colours, spacing, border-radius, shadows)
 3. `client/src/components/` — scan 2–3 representative components to infer
    visual conventions (border radius, shadow usage, card patterns)
-4. `.mockups/references/design-context.md` if it exists — read it; this is the
+4. `.mochaccino/references/design-context.md` if it exists — read it; this is the
    pre-filled design reference for this project (fastest path on repeat runs)
 5. If nothing useful found — ask:
    > "I couldn't find a design system file. Can you point me to your main CSS
@@ -91,7 +91,7 @@ Before building, tell the user what was found and confirm the approach:
 > Is that okay, or do you want to explore something more free-form, without
 > being constrained by the current schema?"
 
-If the user wants unconstrained exploration, note this in `.mockups/config.md`
+If the user wants unconstrained exploration, note this in `.mochaccino/config.md`
 as `mode: free-form` and proceed without the schema constraint.
 
 **Step 5: Flag schema gaps (if applicable)**
@@ -126,7 +126,7 @@ Suggest a kebab-case folder name based on what the user described:
 > "I'll save this as **dashboard-summary-redesign** — does that work, or
 > would you like a different name?"
 
-Rules: lowercase, hyphens only, descriptive, unique. Check `.mockups/designs/`
+Rules: lowercase, hyphens only, descriptive, unique. Check `.mochaccino/designs/`
 to avoid name collisions.
 
 **Step 8: Generate the mockup**
@@ -149,9 +149,9 @@ Invoke the `frontend-design` skill with this brief:
 
 **Step 9: Save and log**
 
-Save to: `.mockups/designs/[mockup-name]/index.html`
+Save to: `.mochaccino/designs/[mockup-name]/index.html`
 
-Update (or create) `.mockups/config.md` — add one entry using this structure:
+Update (or create) `.mochaccino/config.md` — add one entry using this structure:
 
 ```markdown
 ## [mockup-name]
@@ -169,7 +169,7 @@ Update (or create) `.mockups/config.md` — add one entry using this structure:
 ```
 
 Tell the user:
-> "Your mockup is ready! It's saved at **.mockups/designs/[name]/index.html**
+> "Your mockup is ready! It's saved at **.mochaccino/designs/[name]/index.html**
 > — open it in any browser to see it. Want me to explain what I changed
 > and why?"
 
@@ -177,7 +177,7 @@ Tell the user:
 
 ### `list` — List Existing Mockups
 
-Read `.mockups/designs/` and list folders with date and one-line goal from
+Read `.mochaccino/designs/` and list folders with date and one-line goal from
 `config.md`:
 
 ```
@@ -193,7 +193,7 @@ Existing mockups:
 
 Ask which one (if not specified), then run:
 ```bash
-open .mockups/designs/[name]/index.html
+open .mochaccino/designs/[name]/index.html
 ```
 
 ---
@@ -219,7 +219,7 @@ open .mockups/designs/[name]/index.html
 
 ## References
 
-- `.mockups/references/design-context.md` — If this file exists, read it
+- `.mochaccino/references/design-context.md` — If this file exists, read it
   before running design token discovery. It is the pre-filled design reference
   for this project, filled in by the developer or generated on a previous
   Mochaccino run. See `references/design-context-template.md` for the format.
