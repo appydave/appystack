@@ -11,6 +11,7 @@
  *   --github-org   GitHub org or user to create the repo under
  *   --public       Make the GitHub repo public (default: private)
  *   --no-github    Skip GitHub repo creation entirely
+ *   --yes          Skip all interactive confirmations (auto-accept)
  */
 import { intro, outro, text, select, confirm, cancel, isCancel, spinner, note } from '@clack/prompts';
 import { readFileSync, writeFileSync, cpSync, existsSync, rmSync, readdirSync, statSync } from 'node:fs';
@@ -175,6 +176,7 @@ function parseArgs() {
     else if (args[i] === '--github-org' && args[i + 1]) { flags.githubOrg = args[++i]; }
     else if (args[i] === '--public')                { flags.public = true; }
     else if (args[i] === '--no-github')             { flags.noGithub = true; }
+    else if (args[i] === '--yes')                   { flags.yes = true; }
     else if (!args[i].startsWith('--') && !name)   { name = args[i]; }
   }
   return { name, ...flags };
@@ -215,10 +217,12 @@ async function main() {
   const targetDir = resolve(process.cwd(), projectName);
   let mergeMode = false;
   if (existsSync(targetDir)) {
-    const doMerge = await confirm({
-      message: `Directory "${projectName}" already exists. Scaffold into it (keeps existing files)?`,
-    });
-    if (isCancel(doMerge) || !doMerge) { cancel('Cancelled.'); process.exit(0); }
+    if (!cli.yes) {
+      const doMerge = await confirm({
+        message: `Directory "${projectName}" already exists. Scaffold into it (keeps existing files)?`,
+      });
+      if (isCancel(doMerge) || !doMerge) { cancel('Cancelled.'); process.exit(0); }
+    }
     mergeMode = true;
   }
 
@@ -385,8 +389,10 @@ async function main() {
     note(renderAudit(audit, projectName, targetDir), 'File audit');
   }
 
-  const go = await confirm({ message: mergeMode ? 'Scaffold into existing directory?' : 'Create project?' });
-  if (isCancel(go) || !go) { cancel('Cancelled.'); process.exit(0); }
+  if (!cli.yes) {
+    const go = await confirm({ message: mergeMode ? 'Scaffold into existing directory?' : 'Create project?' });
+    if (isCancel(go) || !go) { cancel('Cancelled.'); process.exit(0); }
+  }
 
   // --- Copy template ---
   const s = spinner();
