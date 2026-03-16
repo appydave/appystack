@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v17 Tiles</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #f5f0e8;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topnav {
+    background: #342d2d; height: 48px; display: flex; align-items: center;
+    padding: 0 32px; gap: 14px; flex-shrink: 0;
+  }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #FFDE59; letter-spacing: 0.06em; }
+  .sep { width: 1px; height: 16px; background: #4a3f3f; }
+  .sub { font-size: 12px; color: #6a5a4a; }
+  .right { margin-left: auto; display: flex; gap: 4px; }
+  .mbt {
+    padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; background: transparent;
+    color: #6a5a4a; font-family: 'DM Sans', sans-serif; transition: all 0.14s;
+  }
+  .mbt.active { background: #4a3f3f; border-color: #FFDE59; color: #FFDE59; }
+
+  .page { flex: 1; max-width: 1040px; width: 100%; margin: 0 auto; padding: 48px 40px; }
+
+  .page-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
+    text-transform: uppercase; color: #9e9090; margin-bottom: 24px;
+  }
+
+  /* Big tile grid */
+  .tile-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+
+  /* Workflow tile */
+  .wf-tile {
+    background: white; border: 2px solid #e0d4b8; border-radius: 16px;
+    padding: 24px 22px; cursor: pointer; transition: all 0.18s;
+    display: flex; flex-direction: column; position: relative; overflow: hidden;
+    min-height: 180px;
+  }
+  .wf-tile:hover { border-color: #ccba9d; box-shadow: 0 6px 24px rgba(52,45,45,0.1); transform: translateY(-2px); }
+  .wf-tile.selected { border-color: #342d2d; box-shadow: 0 6px 24px rgba(52,45,45,0.14); }
+  .wf-tile.unavailable { opacity: 0.32; cursor: not-allowed; }
+  .wf-tile.unavailable:hover { transform: none; box-shadow: none; border-color: #e0d4b8; }
+
+  /* Coloured top strip */
+  .tile-strip {
+    position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: #e0d4b8;
+    transition: background 0.18s;
+  }
+  .wf-tile.selected .tile-strip { background: #FFDE59; }
+  .wf-tile:hover:not(.unavailable) .tile-strip { background: #ccba9d; }
+  .wf-tile.signal-studio.selected .tile-strip { background: #FFDE59; }
+
+  .tile-app { font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #b0a090; margin-bottom: 8px; }
+  .tile-name { font-size: 16px; font-weight: 600; color: #342d2d; line-height: 1.25; margin-bottom: 8px; }
+  .tile-desc { font-size: 11px; color: #9e9090; line-height: 1.5; flex: 1; }
+
+  /* Stats in tile */
+  .tile-stats {
+    display: flex; gap: 10px; margin-top: 16px; padding-top: 12px;
+    border-top: 1px solid #f0ece4;
+  }
+  .ts { display: flex; align-items: baseline; gap: 3px; }
+  .ts-n { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #342d2d; line-height: 1; }
+  .ts-l { font-size: 9px; color: #b0a090; letter-spacing: 0.1em; text-transform: uppercase; }
+  .ts-sep { width: 1px; background: #e8e0d0; align-self: stretch; }
+
+  /* Selected badge */
+  .tile-check {
+    position: absolute; top: 12px; right: 12px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #342d2d; display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  .wf-tile.selected .tile-check { opacity: 1; }
+
+  /* Placeholder tile */
+  .tile-add {
+    background: transparent; border: 2px dashed #e0d4b8; border-radius: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; cursor: pointer; transition: all 0.14s; min-height: 180px;
+    font-size: 12px; color: #b0a090;
+  }
+  .tile-add:hover { border-color: #ccba9d; color: #8a7a6a; background: #faf5ec; }
+  .tile-add-icon { width: 28px; height: 28px; border: 1.5px solid #d8ccb8; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
+  /* Entry area */
+  .entry-section { }
+  .entry-label { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #9e9090; margin-bottom: 14px; }
+  .entry-row { display: grid; grid-template-columns: 1fr 1.8fr; gap: 12px; }
+
+  .entry-card {
+    background: white; border: 1.5px solid #e0d4b8; border-radius: 12px;
+    padding: 20px; cursor: pointer; transition: all 0.15s;
+  }
+  .entry-card:hover { border-color: #ccba9d; box-shadow: 0 2px 12px rgba(52,45,45,0.08); }
+  .entry-card.dark { background: #342d2d; border-color: #342d2d; }
+  .entry-card.dark:hover { background: #2a2424; border-color: #2a2424; }
+
+  .entry-ico {
+    width: 30px; height: 30px; border-radius: 7px; background: #faf5ec;
+    border: 1px solid #e0d4b8; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+  }
+  .entry-card.dark .entry-ico { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
+  .entry-ttl { font-size: 14px; font-weight: 600; color: #342d2d; }
+  .entry-card.dark .entry-ttl { color: #e8dcc8; }
+  .entry-sub { font-size: 12px; color: #9e9090; margin-top: 3px; }
+  .entry-card.dark .entry-sub { color: rgba(255,255,255,0.3); }
+
+  .load-tabs { display: flex; gap: 2px; margin-bottom: 8px; }
+  .load-tab {
+    padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; color: #9e9090; background: transparent; font-family: 'DM Sans', sans-serif;
+  }
+  .load-tab.active { background: #faf5ec; border-color: #e0d4b8; color: #342d2d; }
+  .drop-zone {
+    border: 1.5px dashed #e0d4b8; border-radius: 7px; padding: 16px;
+    text-align: center; cursor: pointer; transition: all 0.14s; font-size: 12px; color: #b0a090;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .drop-zone:hover { border-color: #ccba9d; background: #faf5ec; }
+  .drop-lnk { color: #9a7a4a; text-decoration: underline; text-underline-offset: 2px; }
+
+  .api-row {
+    display: flex; align-items: center; gap: 8px; margin-top: 20px;
+    font-size: 11px; color: #c0b0a0; font-family: 'DM Mono', monospace;
+    cursor: pointer; transition: color 0.14s;
+  }
+  .api-row:hover { color: #8a7a6a; }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <span class="logo">AWB</span>
+  <div class="sep"></div>
+  <span class="sub">Agent Workflow Builder</span>
+  <div class="right">
+    <button class="mbt active">Engineer</button>
+    <button class="mbt">Pilot</button>
+  </div>
+</nav>
+
+<div class="page">
+
+  <div class="page-title">Select Workflow</div>
+
+  <div class="tile-grid">
+
+    <!-- Active tile: large, with stats -->
+    <div class="wf-tile selected signal-studio">
+      <div class="tile-strip"></div>
+      <div class="tile-check">
+        <svg width="10" height="10" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div class="tile-app">Signal Studio</div>
+      <div class="tile-name">New Incident Intake</div>
+      <div class="tile-desc">Analyse NDIS support incidents end-to-end — narrative enhancement and observation synthesis.</div>
+      <div class="tile-stats">
+        <div class="ts"><span class="ts-n">8</span><span class="ts-l">&nbsp;Steps</span></div>
+        <div class="ts-sep"></div>
+        <div class="ts"><span class="ts-n">3</span><span class="ts-l">&nbsp;Pred</span></div>
+        <div class="ts-sep"></div>
+        <div class="ts"><span class="ts-n">6</span><span class="ts-l">&nbsp;LLM</span></div>
+      </div>
+    </div>
+
+    <!-- Second tile -->
+    <div class="wf-tile signal-studio">
+      <div class="tile-strip"></div>
+      <div class="tile-app">Signal Studio</div>
+      <div class="tile-name">Moments That Matter</div>
+      <div class="tile-desc">Batch process routine moment confirmations and shift reflections for participants.</div>
+      <div class="tile-stats">
+        <div class="ts"><span class="ts-n">12</span><span class="ts-l">&nbsp;Steps</span></div>
+        <div class="ts-sep"></div>
+        <div class="ts"><span class="ts-l">batch mode</span></div>
+      </div>
+    </div>
+
+    <!-- Unavailable tile -->
+    <div class="wf-tile unavailable">
+      <div class="tile-strip"></div>
+      <div class="tile-app">FliHub</div>
+      <div class="tile-name">YouTube Launch Optimizer</div>
+      <div class="tile-desc" style="color:#c0b0a0;">YAML workflow not available on this machine.</div>
+      <div class="tile-stats">
+        <div class="ts"><span class="ts-l" style="color:#d0c0b0;">not available</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Entry -->
+  <div class="entry-section">
+    <div class="entry-label">Start — New Incident Intake</div>
+    <div class="entry-row">
+      <div class="entry-card dark">
+        <div class="entry-ico">
+          <svg width="14" height="14" fill="none" stroke="rgba(255,255,255,0.6)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        </div>
+        <div class="entry-ttl">Start Fresh</div>
+        <div class="entry-sub">Begin with empty fields</div>
+      </div>
+      <div class="entry-card" style="display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div class="entry-ico" style="margin:0;flex-shrink:0;">
+            <svg width="13" height="13" fill="none" stroke="#9a7a4a" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          </div>
+          <div>
+            <div class="entry-ttl">Load Data</div>
+            <div class="entry-sub">Pre-fill from JSON export</div>
+          </div>
+        </div>
+        <div class="load-tabs">
+          <button class="load-tab active">File upload</button>
+          <button class="load-tab">Paste JSON</button>
+        </div>
+        <div class="drop-zone">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          Drop .json here or <span class="drop-lnk">browse</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-row">
+      <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+      API Integration — POST /api/workflow/intake
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

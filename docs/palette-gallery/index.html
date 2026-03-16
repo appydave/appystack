@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppyDave Palette Gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #e8e0d4;
+    color: #342d2d;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: #1a1515;
+    border-bottom: 1px solid #2a2424;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: #FFDE59;
+    letter-spacing: 0.08em;
+  }
+  .header-sep { width: 1px; height: 16px; background: #2a2424; }
+  .header-sub { font-size: 12px; color: #7a6e5e; }
+  .header-counts {
+    margin-left: auto;
+    display: flex;
+    gap: 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #5a4f4f;
+  }
+  .header-counts span { color: #c8841a; }
+
+  /* ── Section header ── */
+  .section-header {
+    background: #2a2018;
+    color: #d4c9b8;
+    padding: 10px 32px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0.1em;
+    color: #c8841a;
+  }
+  .section-desc {
+    font-size: 12px;
+    color: #7a6e5e;
+  }
+  .section-count {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #4a3f3f;
+  }
+
+  /* ── Gallery grid ── */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+    padding: 24px 32px;
+  }
+
+  /* ── Design card ── */
+  .card {
+    background: #f5f1eb;
+    border: 1px solid #d4cdc4;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(42,32,24,0.08);
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .card:hover {
+    box-shadow: 0 6px 20px rgba(42,32,24,0.14);
+    transform: translateY(-2px);
+  }
+
+  /* iframe preview */
+  .preview-wrap {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    position: relative;
+    background: #f0ece4;
+    border-bottom: 1px solid #d4cdc4;
+  }
+  .preview-wrap iframe {
+    width: 200%;
+    height: 200%;
+    transform: scale(0.5);
+    transform-origin: top left;
+    border: none;
+    pointer-events: none;
+  }
+
+  /* card info row */
+  .card-info {
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    color: #c8841a;
+    line-height: 1;
+    min-width: 28px;
+  }
+  .card-body { flex: 1; min-width: 0; }
+  .card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2a2018;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-desc {
+    font-size: 11px;
+    color: #7a6e5e;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-actions {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  .btn-open {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: #7a6e5e;
+    padding: 4px 9px;
+    border: 1px solid #d4cdc4;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+  .btn-open:hover {
+    border-color: #c8841a;
+    color: #c8841a;
+  }
+
+  /* AngelEye pairs */
+  .angeleye-pair {
+    background: #f5f1eb;
+    border: 1px solid #d4cdc4;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(42,32,24,0.08);
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .angeleye-pair:hover {
+    box-shadow: 0 6px 20px rgba(42,32,24,0.14);
+    transform: translateY(-2px);
+  }
+  .pair-previews {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: #d4cdc4;
+    border-bottom: 1px solid #d4cdc4;
+  }
+  .pair-preview {
+    width: 100%;
+    height: 140px;
+    overflow: hidden;
+    position: relative;
+    background: #f0ece4;
+  }
+  .pair-preview iframe {
+    width: 200%;
+    height: 200%;
+    transform: scale(0.5);
+    transform-origin: top left;
+    border: none;
+    pointer-events: none;
+  }
+  .pair-label {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    color: #7a6e5e;
+    background: rgba(245,241,235,0.85);
+    padding: 2px 6px;
+    border-radius: 3px;
+    letter-spacing: 0.04em;
+  }
+  .pair-info {
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* intro blurb */
+  .intro {
+    background: #ede7dc;
+    border-bottom: 1px solid #d4cdc4;
+    padding: 14px 32px;
+    font-size: 12px;
+    color: #7a6e5e;
+    line-height: 1.6;
+  }
+  .intro strong { color: #2a2018; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="logo">AppyDave</span>
+  <div class="header-sep"></div>
+  <span class="header-sub">Palette Gallery</span>
+  <div class="header-counts">
+    <span>AWB <span>17</span></span>
+    <span>AngelEye <span>5</span></span>
+    <span>Total <span>22</span></span>
+  </div>
+</div>
+
+<div class="intro">
+  Design explorations built with the <strong>AppyDave Palette</strong> — warm tones throughout, dark structural chrome, warm-light content surfaces, one amber accent for active state.
+  Delete any card that no longer serves as a useful reference. Open individual designs to view at full size.
+</div>
+
+<!-- ═══════════════════════════════ AWB ═══════════════════════════════ -->
+
+<div class="section-header">
+  <span class="section-title">AWB WUI Variants</span>
+  <span class="section-desc">Agent Workflow Builder — landing page explorations</span>
+  <span class="section-count">17 designs</span>
+</div>
+
+<div class="gallery">
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v1-continuity.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">1</span>
+      <div class="card-body">
+        <div class="card-name">Continuity</div>
+        <div class="card-desc">Sidebar wizard — dark nav, warm content, step-by-step feel</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v1-continuity.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v2-command.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">2</span>
+      <div class="card-body">
+        <div class="card-name">Command</div>
+        <div class="card-desc">Palette-style command input, dark modal focus</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v2-command.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v3-workflow-cards.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">3</span>
+      <div class="card-body">
+        <div class="card-name">Workflow Cards</div>
+        <div class="card-desc">Card grid picker with selected banner, warm background</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v3-workflow-cards.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v4-cockpit.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">4</span>
+      <div class="card-body">
+        <div class="card-name">Cockpit</div>
+        <div class="card-desc">Dashboard/cockpit layout with instrument panels</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v4-cockpit.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v5-refined.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">5</span>
+      <div class="card-body">
+        <div class="card-name">Refined</div>
+        <div class="card-desc">Polished hybrid — sidebar + clean action card</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v5-refined.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v6-synthesis.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">6</span>
+      <div class="card-body">
+        <div class="card-name">Synthesis ★</div>
+        <div class="card-desc">Split: dark sidebar + two-panel (identity left, actions right)</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v6-synthesis.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v7-noir.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">7</span>
+      <div class="card-body">
+        <div class="card-name">Noir</div>
+        <div class="card-desc">Full dark — V6 palette inverted, accent stats in yellow</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v7-noir.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v8-whitespace.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">8</span>
+      <div class="card-body">
+        <div class="card-name">Whitespace</div>
+        <div class="card-desc">All-white, extreme minimalism — pure typography focus</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v8-whitespace.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v9-scoreboard.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">9</span>
+      <div class="card-body">
+        <div class="card-name">Scoreboard</div>
+        <div class="card-desc">Stats as dominant hero — 72px yellow numbers front and centre</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v9-scoreboard.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v10-pipeline.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">10</span>
+      <div class="card-body">
+        <div class="card-name">Pipeline</div>
+        <div class="card-desc">Visual step pipeline shown before entry options</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v10-pipeline.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v11-hero-banner.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">11</span>
+      <div class="card-body">
+        <div class="card-name">Hero Banner</div>
+        <div class="card-desc">Full-width dark hero with tab bar below, actions beneath</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v11-hero-banner.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v12-brief.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">12</span>
+      <div class="card-body">
+        <div class="card-name">Brief</div>
+        <div class="card-desc">Document-style brief with metadata header and inline stats</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v12-brief.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v13-split-reverse.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">13</span>
+      <div class="card-body">
+        <div class="card-name">Split Reverse</div>
+        <div class="card-desc">V6 flipped — dark actions left, cream identity right</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v13-split-reverse.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v14-compact.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">14</span>
+      <div class="card-body">
+        <div class="card-name">Compact</div>
+        <div class="card-desc">Everything in a tight ribbon — workspace below ready for workflow</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v14-compact.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v15-magazine.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">15</span>
+      <div class="card-body">
+        <div class="card-name">Magazine</div>
+        <div class="card-desc">Newspaper masthead + 3-column editorial layout</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v15-magazine.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v16-console.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">16</span>
+      <div class="card-body">
+        <div class="card-name">Console</div>
+        <div class="card-desc">Full terminal/CLI aesthetic — dark green on black, blinking cursor</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v16-console.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="preview-wrap">
+      <iframe src="awb/v17-tiles.html" scrolling="no" tabindex="-1"></iframe>
+    </div>
+    <div class="card-info">
+      <span class="card-num">17</span>
+      <div class="card-body">
+        <div class="card-name">Tiles</div>
+        <div class="card-desc">Full-stats workflow tile grid with selected state + entry below</div>
+      </div>
+      <div class="card-actions">
+        <a href="awb/v17-tiles.html" target="_blank" class="btn-open">open →</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════ AngelEye ═══════════════════════════════ -->
+
+<div class="section-header">
+  <span class="section-title">AngelEye Mochaccino</span>
+  <span class="section-desc">Light-dominant explorations — Observer + Organiser views per variant</span>
+  <span class="section-count">5 variants · 10 views</span>
+</div>
+
+<div class="gallery">
+
+  <div class="angeleye-pair">
+    <div class="pair-previews">
+      <div class="pair-preview">
+        <iframe src="angeleye/v1-paper/observer.html" scrolling="no" tabindex="-1"></iframe>
+        <span class="pair-label">Observer</span>
+      </div>
+      <div class="pair-preview">
+        <iframe src="angeleye/v1-paper/organiser.html" scrolling="no" tabindex="-1"></iframe>
+        <span class="pair-label">Organiser</span>
+      </div>
+    </div>
+    <div class="pair-info">
+      <span class="card-num">1</span>
+      <div class="card-body">
+        <div class="card-name">Paper</div>
+        <div class="card-desc">Warm parchment canvas + dark sidebar. Sessions as operations log entries.</div>
+      </div>
+      <div class="card-actions">
+        <a href="angeleye/v1-paper/observer.html" target="_blank" class="btn-open">obs →</a>
+        <a href="angeleye/v1-paper/organiser.html" target="_blank" class="btn-open">org →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="angeleye-pair">
+    <div class="pair-previews">
+      <div class="pair-preview">
+        <iframe src="angeleye/v2-linen/observer.html" scrolling="no" tabindex="-1"></iframe>
+        <span class="pair-label">Observer</span>
+      </div>
+      <div class="pair-preview">
+        <iframe src="angeleye/v2-linen/organiser.html" scrolling="no" tabindex="-1"></iframe>
+        <span class="pair-label">Organiser</span>
+      </div>
+    </div>
+    <div class="pair-info">
+      <span class="card-num">2</span>
+      <div class="card-body">
+        <div class="card-name">Linen ★</div>
+        <div class="card-desc">Floating cards on linen canvas. Card elevation is the design. Became the reference implementation.</div>
+      </div>
+      <div class="card-actions">
+        <a href="angeleye/v2-linen/observer.html" target="_blank" class="btn-open">obs →</a>
+        <a href="angeleye/v2-linen/organiser.html" target="_blank" class="btn-open">org →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="angeleye-pair">
+    <div class="pair-previews">
+      <div class="pair-preview">
+        <iframe src="angeleye/v3-continuity/observer.html" scrolling="no" tabindex="-1"></iframe>
+        <span class="pair-label">Observer</span>
+      </div>
+      <div class="pair-preview">
+        <iframe src="angeleye/v3-continuity/organiser.html" scrolling="no" tabindex="-1"></iframe>
+        <span class="pair-label">Organiser</span>
+      </div>
+    </div>
+    <div class="pair-info">
+      <span class="card-num">3</span>
+      <div class="card-body">
+        <div class="card-name">Continuity</div>
+        <div class="card-desc">Dark nav + warm cream content. You live in the dark, work in the light.</div>
+      </div>
+      <div class="card-actions">
+        <a href="angeleye/v3-continuity/observer.html" target="_blank" class="btn-open">obs →</a>
+        <a href="angeleye/v3-continuity/organiser.html" target="_blank" class="btn-open">org →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="angeleye-pair">
+    <div class="pair-previews">
+      <div class="pair-preview">
+        <iframe src="angeleye/v4-cockpit-light/observer.html" scrolling="no" tabindex="-1"></iframe>
+        <span class="pair-label">Observer</span>
+      </div>
+      <div class="pair-preview">
+        <iframe src="angeleye/v4-cockpit-light/organiser.html" scrolling="no" tabindex="-1"></iframe>
+        <span class="pair-label">Organiser</span>
+      </div>
+    </div>
+    <div class="pair-info">
+      <span class="card-num">4</span>
+      <div class="card-body">
+        <div class="card-name">Cockpit Light</div>
+        <div class="card-desc">Light canvas overall — active sessions render as dark rows. Dark = live, light = history.</div>
+      </div>
+      <div class="card-actions">
+        <a href="angeleye/v4-cockpit-light/observer.html" target="_blank" class="btn-open">obs →</a>
+        <a href="angeleye/v4-cockpit-light/organiser.html" target="_blank" class="btn-open">org →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="angeleye-pair">
+    <div class="pair-previews">
+      <div class="pair-preview">
+        <iframe src="angeleye/v5-brief/observer.html" scrolling="no" tabindex="-1"></iframe>
+        <span class="pair-label">Observer</span>
+      </div>
+      <div class="pair-preview">
+        <iframe src="angeleye/v5-brief/organiser.html" scrolling="no" tabindex="-1"></iframe>
+        <span class="pair-label">Organiser</span>
+      </div>
+    </div>
+    <div class="pair-info">
+      <span class="card-num">5</span>
+      <div class="card-body">
+        <div class="card-name">Brief</div>
+        <div class="card-desc">Typography as the interface. No cards, no chrome. Session names as dominant hero.</div>
+      </div>
+      <div class="card-actions">
+        <a href="angeleye/v5-brief/observer.html" target="_blank" class="btn-open">obs →</a>
+        <a href="angeleye/v5-brief/organiser.html" target="_blank" class="btn-open">org →</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

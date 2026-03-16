@@ -1,31 +1,119 @@
 #!/bin/bash
-# AppyStack Template
+# AppyStack — Dev Server Launcher
 cd "$(dirname "$0")/.."
 
-echo "================================================"
-echo "AppyStack Template - Development Server"
-echo "================================================"
+ENV_FILE=".env"
+
+# ── Helpers ─────────────────────────────────────────────────────────────────
+
+env_val()        { grep "^$1=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"'; }
+port_of_url()    { echo "$1" | grep -oE '[0-9]+$'; }
+pid_on_port()    { lsof -ti ":$1" 2>/dev/null || true; }
+proc_on_port()   { lsof -i ":$1" 2>/dev/null | grep LISTEN | awk '{print $1" (pid "$2")"}' | head -1; }
+
+# ── Validate .env ────────────────────────────────────────────────────────────
+
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "ERROR: No .env file found."
+  echo "  cp .env.example .env"
+  exit 1
+fi
+
+SERVER_PORT=$(env_val PORT)
+CLIENT_URL=$(env_val CLIENT_URL)
+CLIENT_PORT=$(port_of_url "$CLIENT_URL")
+
+if [[ -z "$SERVER_PORT" || -z "$CLIENT_PORT" ]]; then
+  echo "ERROR: Could not read PORT or CLIENT_URL from .env"
+  exit 1
+fi
+
+# ── Banner ───────────────────────────────────────────────────────────────────
+
+echo ""
+echo "══════════════════════════════════════════════"
+echo "  AppyStack — Dev Server"
+echo "  client: http://localhost:${CLIENT_PORT}  server: http://localhost:${SERVER_PORT}"
+echo "══════════════════════════════════════════════"
 echo ""
 
-# Check if already running
-if lsof -i :5501 | grep -q LISTEN; then
-  echo "Server is already running on ports 5500/5501"
-  echo "Opening browser..."
-  open http://localhost:5500
-  exit 0
+# ── Warn on shell PORT conflict ──────────────────────────────────────────────
+
+if [[ -n "${PORT:-}" && "$PORT" != "$SERVER_PORT" ]]; then
+  echo "WARNING: Shell has PORT=$PORT but .env says PORT=$SERVER_PORT"
+  echo "  env.ts uses override:true so .env wins — but check your shell config."
+  echo ""
 fi
+
+# ── Port conflict check: server ──────────────────────────────────────────────
+
+SERVER_PID=$(pid_on_port "$SERVER_PORT")
+if [[ -n "$SERVER_PID" ]]; then
+  PROC=$(proc_on_port "$SERVER_PORT")
+  echo "Port $SERVER_PORT is in use by: ${PROC:-pid $SERVER_PID}"
+  echo ""
+  echo "  [1] Kill it and start fresh"
+  echo "  [2] Open browser (assume already running)"
+  echo "  [3] Abort"
+  echo ""
+  read -rp "Choice [1/2/3]: " choice
+  case "${choice:-3}" in
+    1)
+      echo "Killing :$SERVER_PORT ..."
+      echo "$SERVER_PID" | xargs kill -9 2>/dev/null || true
+      sleep 0.5
+      ;;
+    2)
+      open "http://localhost:${CLIENT_PORT}"
+      exit 0
+      ;;
+    *)
+      echo "Aborted."
+      exit 0
+      ;;
+  esac
+fi
+
+# ── Port conflict check: client ──────────────────────────────────────────────
+
+CLIENT_PID=$(pid_on_port "$CLIENT_PORT")
+if [[ -n "$CLIENT_PID" ]]; then
+  PROC=$(proc_on_port "$CLIENT_PORT")
+  echo "Port $CLIENT_PORT is in use by: ${PROC:-pid $CLIENT_PID}"
+  echo ""
+  read -rp "Kill it and continue? [y/N]: " confirm
+  if [[ "${confirm:-n}" =~ ^[Yy]$ ]]; then
+    echo "$CLIENT_PID" | xargs kill -9 2>/dev/null || true
+    sleep 0.5
+  else
+    echo "Aborted."
+    exit 0
+  fi
+fi
+
+# ── Build shared ─────────────────────────────────────────────────────────────
 
 echo "Building shared types..."
 npm run build -w shared
-
 echo ""
-echo "Starting dev server (client: 5500, server: 5501) via Overmind..."
+
+# ── Launch ───────────────────────────────────────────────────────────────────
+
+echo "Starting via Overmind..."
 echo "  overmind connect client  — attach to client logs"
 echo "  overmind connect server  — attach to server logs"
 echo "  overmind stop            — stop all processes"
 echo ""
 
-# Open browser after delay (background — gives server time to start)
-(sleep 4 && open http://localhost:5500) &
+# Open browser once server health check passes (background)
+(
+  for _ in {1..15}; do
+    sleep 1
+    if curl -sf "http://localhost:${SERVER_PORT}/health" > /dev/null 2>&1; then
+      open "http://localhost:${CLIENT_PORT}"
+      break
+    fi
+  done
+) &
 
 overmind start

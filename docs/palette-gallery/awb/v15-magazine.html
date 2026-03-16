@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v15 Magazine</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #ffffff;
+    min-height: 100vh;
+    color: #1a1515;
+  }
+
+  /* Header — newspaper masthead style */
+  .masthead {
+    border-bottom: 3px solid #1a1515;
+    padding: 14px 60px 12px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+  .masthead-left {}
+  .masthead-tagline { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: #b0a090; margin-bottom: 4px; }
+  .masthead-logo { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: #1a1515; letter-spacing: 0.08em; line-height: 1; }
+  .masthead-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .masthead-sub { font-size: 11px; color: #8a7a6a; letter-spacing: 0.06em; }
+  .mode-toggle { display: flex; border: 1.5px solid #1a1515; border-radius: 4px; overflow: hidden; }
+  .mbt { padding: 4px 14px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: #8a7a6a; font-family: 'DM Sans', sans-serif; letter-spacing: 0.04em; transition: all 0.14s; }
+  .mbt + .mbt { border-left: 1.5px solid #1a1515; }
+  .mbt.active { background: #1a1515; color: white; }
+
+  /* Section rules like a newspaper */
+  .section-rule {
+    display: flex; align-items: center; gap: 0; padding: 0 60px;
+    border-bottom: 1px solid #e0d4b8;
+  }
+  .section-pill {
+    padding: 6px 14px; font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all 0.14s; color: #9e9090;
+  }
+  .section-pill.active { border-bottom-color: #1a1515; color: #1a1515; }
+  .section-pill.dim { opacity: 0.3; cursor: not-allowed; }
+
+  /* Content grid: magazine 3-col layout */
+  .content {
+    display: grid;
+    grid-template-columns: 1fr 2px 1.2fr 2px 0.9fr;
+    gap: 0;
+    padding: 48px 60px 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .col-rule { background: #e0d4b8; }
+
+  /* Column 1: Identity */
+  .col1 { padding-right: 40px; }
+  .col-label { font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #b0a090; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #e0d4b8; }
+  .big-title { font-family: 'Bebas Neue', sans-serif; font-size: 56px; line-height: 0.92; color: #1a1515; margin-bottom: 16px; letter-spacing: 0.01em; }
+  .app-tag { font-size: 12px; color: #8a7a6a; font-weight: 500; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+  .app-tag::before { content: ''; display: block; width: 16px; height: 1px; background: #c8b898; }
+  .description { font-size: 13px; line-height: 1.7; color: #5a4f4f; font-weight: 300; margin-bottom: 24px; }
+
+  /* Stats in a grid */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .stat-box { border: 1px solid #e0d4b8; border-radius: 8px; padding: 12px; text-align: center; }
+  .stat-n { font-family: 'Bebas Neue', sans-serif; font-size: 30px; color: #1a1515; line-height: 1; letter-spacing: 0.04em; display: block; }
+  .stat-l { font-size: 9px; color: #b0a090; letter-spacing: 0.12em; text-transform: uppercase; display: block; margin-top: 2px; }
+
+  /* Column 2: Workflow list */
+  .col2 { padding: 0 40px; }
+  .wf-list { display: flex; flex-direction: column; gap: 2px; }
+  .wf-item {
+    display: flex; align-items: flex-start; gap: 12px; padding: 12px 10px;
+    border-radius: 8px; cursor: pointer; transition: background 0.14s;
+    border-left: 3px solid transparent;
+  }
+  .wf-item:hover { background: #faf5ec; }
+  .wf-item.active { background: #faf5ec; border-left-color: #1a1515; }
+  .wf-item.dim { opacity: 0.3; cursor: not-allowed; }
+  .wf-item.dim:hover { background: transparent; }
+  .wf-n { font-size: 13px; font-weight: 600; color: #342d2d; }
+  .wf-app { font-size: 10px; color: #b0a090; letter-spacing: 0.06em; margin-bottom: 2px; }
+  .wf-meta { font-size: 11px; color: #9e9090; font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .wf-sep { height: 1px; background: #f0ece4; margin: 8px 0; }
+
+  /* Column 3: Actions */
+  .col3 { padding-left: 40px; }
+  .start-fresh {
+    background: #1a1515; border-radius: 10px; padding: 20px;
+    margin-bottom: 12px; cursor: pointer; transition: background 0.15s; text-align: center;
+  }
+  .start-fresh:hover { background: #342d2d; }
+  .sf-label { font-size: 14px; font-weight: 600; color: #e8dcc8; margin-bottom: 3px; }
+  .sf-sub { font-size: 11px; color: rgba(255,255,255,0.3); }
+
+  .load-card { border: 1.5px solid #e0d4b8; border-radius: 10px; padding: 16px 18px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; }
+  .load-card:hover { border-color: #ccba9d; }
+  .load-head-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .load-ico { width: 26px; height: 26px; border-radius: 6px; background: #faf5ec; border: 1px solid #e0d4b8; display: flex; align-items: center; justify-content: center; }
+  .load-ttl { font-size: 13px; font-weight: 600; color: #342d2d; }
+  .load-sub-t { font-size: 11px; color: #9e9090; }
+  .tabs { display: flex; gap: 2px; margin-bottom: 8px; }
+  .tab { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid transparent; color: #9e9090; background: transparent; font-family: 'DM Sans', sans-serif; transition: all 0.14s; }
+  .tab.active { background: #faf5ec; border-color: #e0d4b8; color: #342d2d; }
+  .drop-zone { border: 1.5px dashed #e0d4b8; border-radius: 7px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.14s; font-size: 12px; color: #b0a090; }
+  .drop-zone:hover { border-color: #ccba9d; background: #faf5ec; }
+  .drop-lnk { color: #9a7a4a; text-decoration: underline; text-underline-offset: 2px; }
+
+  .api-link { display: flex; align-items: center; gap: 6px; padding-top: 16px; font-size: 11px; color: #c0b0a0; font-family: 'DM Mono', monospace; cursor: pointer; transition: color 0.14s; }
+  .api-link:hover { color: #8a7a6a; }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="masthead-left">
+    <div class="masthead-tagline">Agent Workflow Builder</div>
+    <div class="masthead-logo">AWB</div>
+  </div>
+  <div class="masthead-right">
+    <div class="masthead-sub">workflow launcher</div>
+    <div class="mode-toggle">
+      <button class="mbt active">Engineer</button>
+      <button class="mbt">Pilot</button>
+    </div>
+  </div>
+</div>
+
+<div class="section-rule">
+  <div class="section-pill active">Signal Studio</div>
+  <div class="section-pill">FliHub</div>
+</div>
+
+<div class="content">
+  <!-- Col 1: Identity -->
+  <div class="col1">
+    <div class="col-label">Selected Workflow</div>
+    <div class="app-tag">Signal Studio</div>
+    <h1 class="big-title">New<br>Incident<br>Intake</h1>
+    <p class="description">Analyse NDIS support incidents end-to-end — narrative enhancement, question generation, and observation synthesis.</p>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <span class="stat-n">8</span>
+        <span class="stat-l">Steps</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-n">3</span>
+        <span class="stat-l">Predicates</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-n">6</span>
+        <span class="stat-l">LLM Calls</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-rule"></div>
+
+  <!-- Col 2: Workflow list -->
+  <div class="col2">
+    <div class="col-label">All Workflows</div>
+    <div class="wf-list">
+      <div class="wf-item active">
+        <div>
+          <div class="wf-app">Signal Studio</div>
+          <div class="wf-n">New Incident Intake</div>
+          <div class="wf-meta">8 steps · 3 predicates · 6 llm</div>
+        </div>
+      </div>
+      <div class="wf-sep"></div>
+      <div class="wf-item">
+        <div>
+          <div class="wf-app">Signal Studio</div>
+          <div class="wf-n">Moments That Matter</div>
+          <div class="wf-meta">12 steps · batch mode</div>
+        </div>
+      </div>
+      <div class="wf-sep"></div>
+      <div class="wf-item dim">
+        <div>
+          <div class="wf-app">FliHub</div>
+          <div class="wf-n">YouTube Launch Optimizer</div>
+          <div class="wf-meta">not on this machine</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-rule"></div>
+
+  <!-- Col 3: Actions -->
+  <div class="col3">
+    <div class="col-label">How to Start</div>
+
+    <div class="start-fresh">
+      <div class="sf-label">Start Fresh</div>
+      <div class="sf-sub">Begin with empty fields</div>
+    </div>
+
+    <div class="load-card">
+      <div class="load-head-row">
+        <div class="load-ico">
+          <svg width="12" height="12" fill="none" stroke="#9a7a4a" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        </div>
+        <div>
+          <div class="load-ttl">Load Data</div>
+          <div class="load-sub-t">Pre-fill from JSON</div>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab active">File upload</button>
+        <button class="tab">Paste JSON</button>
+      </div>
+      <div class="drop-zone">Drop .json or <span class="drop-lnk">browse</span></div>
+    </div>
+
+    <div class="api-link">
+      <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+      API Integration
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

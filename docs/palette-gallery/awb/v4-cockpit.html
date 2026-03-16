@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v4 Cockpit (Instrument Panel)</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Mono', monospace;
+    background: #0f0c0c;
+    min-height: 100vh;
+    color: #ccba9d;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* scanline texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* header rule */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 28px;
+    border-bottom: 1px solid #2a2424;
+    flex-shrink: 0;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .logo-block {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .logo-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: #FFDE59;
+    letter-spacing: 0.12em;
+    line-height: 1;
+  }
+  .logo-sub {
+    font-size: 9px;
+    color: #4a3f3f;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: #4a3f3f;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #FFDE59;
+    box-shadow: 0 0 6px #FFDE59;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .header-right {
+    display: flex;
+    gap: 12px;
+    font-size: 10px;
+    color: #4a3f3f;
+    letter-spacing: 0.1em;
+  }
+  .header-right span { cursor: pointer; transition: color 0.15s; }
+  .header-right span:hover { color: #ccba9d; }
+  .header-right .active { color: #ccba9d; }
+
+  /* instrument layout */
+  .cockpit {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 28px;
+    gap: 0;
+  }
+  .col-divider { background: #2a2424; margin: 28px 0; }
+
+  /* panel */
+  .panel { padding: 28px 32px 28px 0; }
+  .panel:last-child { padding: 28px 0 28px 32px; }
+
+  .panel-label {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #4a3f3f;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .panel-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #2a2424;
+  }
+
+  /* instrument row */
+  .inst-row {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 8px 16px;
+    align-items: start;
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+  .inst-key {
+    font-size: 10px;
+    color: #4a3f3f;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding-top: 1px;
+  }
+  .inst-val {
+    font-size: 12px;
+    color: #ccba9d;
+  }
+  .inst-val.dim { color: #4a3f3f; }
+  .inst-val.bright { color: #FFDE59; font-weight: 500; }
+  .inst-val.large {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: #e8dcc8;
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+
+  /* workflow selector */
+  .wf-options {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 24px;
+    margin-left: 106px;
+  }
+  .wf-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 4px;
+    transition: background 0.15s;
+    border: 1px solid transparent;
+  }
+  .wf-option:hover { background: rgba(204,186,157,0.05); }
+  .wf-option.active { border-color: #3a3030; background: #1e1919; }
+  .wf-option-indicator {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    border: 1px solid #4a3f3f;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .wf-option.active .wf-option-indicator { background: #FFDE59; border-color: #FFDE59; box-shadow: 0 0 4px #FFDE59; }
+  .wf-option-name { font-size: 11px; color: #8a7a6a; }
+  .wf-option.active .wf-option-name { color: #ccba9d; }
+  .wf-option-group { font-size: 9px; color: #3a3030; margin-left: auto; text-transform: uppercase; letter-spacing: 0.1em; }
+  .wf-option.active .wf-option-group { color: #4a3f3f; }
+
+  /* separator within panel */
+  .panel-sep { height: 1px; background: #2a2424; margin: 20px 0; }
+
+  /* data section */
+  .data-drop {
+    margin-left: 106px;
+    border: 1px dashed #2a2424;
+    padding: 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    text-align: center;
+  }
+  .data-drop:hover { border-color: #4a3f3f; }
+  .data-drop-text { font-size: 10px; color: #4a3f3f; letter-spacing: 0.08em; }
+  .data-drop-link { color: #8a7a6a; cursor: pointer; transition: color 0.15s; }
+  .data-drop-link:hover { color: #ccba9d; }
+
+  .data-tabs { display: flex; gap: 2px; margin-left: 106px; margin-bottom: 8px; }
+  .data-tab {
+    padding: 3px 8px; font-size: 10px; color: #4a3f3f; cursor: pointer; border: none;
+    background: transparent; border-bottom: 1px solid transparent; font-family: 'DM Mono', monospace;
+    letter-spacing: 0.06em; transition: all 0.15s;
+  }
+  .data-tab.active { color: #ccba9d; border-bottom-color: #FFDE59; }
+
+  /* action button */
+  .action-section { margin-top: 28px; }
+  .launch-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 24px;
+    background: #FFDE59;
+    color: #342d2d;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0.1em;
+    transition: background 0.15s;
+    width: 100%;
+    justify-content: center;
+  }
+  .launch-btn:hover { background: #ffd000; }
+  .or-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+    font-size: 9px;
+    color: #3a3030;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .or-line::before, .or-line::after { content: ''; flex: 1; height: 1px; background: #2a2424; }
+  .ghost-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 24px;
+    background: transparent;
+    border: 1px solid #2a2424;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #6a5a4a;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .ghost-btn:hover { border-color: #4a3f3f; color: #ccba9d; }
+
+  /* API panel */
+  .api-block {
+    margin-top: 24px;
+    border-top: 1px solid #2a2424;
+    padding-top: 16px;
+  }
+  .api-block-header {
+    font-size: 9px;
+    color: #3a3030;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .api-block-header:hover { color: #6a5a4a; }
+  .api-snippet {
+    font-size: 10px;
+    color: #4a3f3f;
+    background: #1a1515;
+    border: 1px solid #2a2424;
+    border-radius: 4px;
+    padding: 12px;
+    line-height: 1.8;
+    overflow: hidden;
+  }
+  .api-key { color: #6a5a4a; }
+  .api-str { color: #8a9a6a; }
+  .api-num { color: #FFDE59; }
+
+  /* footer */
+  footer {
+    padding: 12px 28px;
+    border-top: 1px solid #1e1919;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #2a2424;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo-block">
+      <span class="logo-text">AWB</span>
+      <span class="logo-sub">Agent Workflow Builder</span>
+    </div>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      Ready
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="active">ENGINEER</span>
+    <span>PILOT</span>
+    <span>&lt;/&gt; API</span>
+  </div>
+</div>
+
+<div class="cockpit">
+
+  <!-- Left panel: workflow + data -->
+  <div class="panel">
+
+    <div class="panel-label">Mission Config</div>
+
+    <div class="inst-row">
+      <span class="inst-key">Workflow</span>
+      <span class="inst-val large">New Incident<br>Intake</span>
+    </div>
+
+    <div class="wf-options">
+      <div class="wf-option active">
+        <div class="wf-option-indicator"></div>
+        <span class="wf-option-name">New Incident Intake</span>
+        <span class="wf-option-group">Signal Studio</span>
+      </div>
+      <div class="wf-option">
+        <div class="wf-option-indicator"></div>
+        <span class="wf-option-name">Moments That Matter</span>
+        <span class="wf-option-group">Signal Studio</span>
+      </div>
+      <div class="wf-option">
+        <div class="wf-option-indicator"></div>
+        <span class="wf-option-name">YouTube Launch Optimizer</span>
+        <span class="wf-option-group">FliHub</span>
+      </div>
+    </div>
+
+    <div class="panel-sep"></div>
+
+    <div class="inst-row">
+      <span class="inst-key">Provider</span>
+      <span class="inst-val">Signal Studio</span>
+    </div>
+    <div class="inst-row">
+      <span class="inst-key">Steps</span>
+      <span class="inst-val">8 nodes</span>
+    </div>
+    <div class="inst-row">
+      <span class="inst-key">Status</span>
+      <span class="inst-val bright">Ready</span>
+    </div>
+
+  </div>
+
+  <div class="col-divider"></div>
+
+  <!-- Right panel: data + launch -->
+  <div class="panel" style="padding-left:32px;padding-right:0;">
+
+    <div class="panel-label">Data + Launch</div>
+
+    <div class="inst-row" style="margin-bottom:12px;">
+      <span class="inst-key">Input</span>
+      <span class="inst-val dim">No data loaded</span>
+    </div>
+
+    <div class="data-tabs">
+      <button class="data-tab active">File</button>
+      <button class="data-tab">Paste</button>
+    </div>
+
+    <div class="data-drop">
+      <div class="data-drop-text">Drop .json or <span class="data-drop-link">browse</span></div>
+    </div>
+
+    <div class="action-section">
+      <button class="launch-btn">▶ Begin Workflow</button>
+      <div class="or-line">or</div>
+      <button class="ghost-btn">Start with empty fields</button>
+    </div>
+
+    <div class="api-block">
+      <div class="api-block-header">
+        API Integration
+        <span>▼</span>
+      </div>
+      <pre class="api-snippet"><span class="api-key">POST</span> localhost:3001/api/workflow/intake
+<span class="api-key">{</span>
+  <span class="api-key">"workflowId":</span> <span class="api-str">"new-incident"</span>,
+  <span class="api-key">"source":</span>     <span class="api-str">"Signal Studio"</span>,
+  <span class="api-key">"store":</span>      <span class="api-key">{</span> <span class="api-str">"incident"</span>: <span class="api-key">{...}</span> <span class="api-key">}</span>
+<span class="api-key">}</span></pre>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <span>AWB — Proof of Concept</span>
+  <span>SupportSignal POEM OS</span>
+</footer>
+
+</body>
+</html>

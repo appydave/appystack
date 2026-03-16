@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v2 Command (Minimal)</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #1e1919;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: #ccba9d;
+  }
+
+  /* top strip */
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 44px;
+    border-bottom: 1px solid #3a3030;
+    flex-shrink: 0;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.06em;
+    color: #FFDE59;
+  }
+  .bar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 11px;
+    color: #6a5a4a;
+    font-family: 'DM Mono', monospace;
+  }
+  .bar-btn {
+    padding: 3px 10px;
+    border: 1px solid #4a3f3f;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #6a5a4a;
+    font-size: 11px;
+    background: transparent;
+    transition: all 0.15s;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+  .bar-btn:hover { color: #ccba9d; border-color: #8a7a6a; }
+
+  /* center stage */
+  .stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .command-card {
+    width: 480px;
+  }
+
+  /* workflow identity */
+  .app-label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #6a5a4a;
+    margin-bottom: 6px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .app-label::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 1px;
+    background: #4a3f3f;
+  }
+  .workflow-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 64px;
+    color: #e8dcc8;
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+    margin-bottom: 10px;
+  }
+  .workflow-desc {
+    font-size: 13px;
+    color: #6b5f5f;
+    line-height: 1.5;
+    margin-bottom: 32px;
+    max-width: 360px;
+  }
+
+  /* divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, #3a3030, transparent);
+    margin-bottom: 28px;
+  }
+
+  /* action row */
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .action-btn {
+    padding: 11px 24px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .action-btn.primary {
+    background: #FFDE59;
+    color: #342d2d;
+  }
+  .action-btn.primary:hover { background: #ffd000; }
+  .action-btn.secondary {
+    background: #4a3f3f;
+    color: #e8dcc8;
+    border: 1px solid #6a5a4a;
+  }
+  .action-btn.secondary:hover { background: #5a4f4f; }
+
+  /* load data inline section */
+  .load-section {
+    background: #2a2424;
+    border: 1px solid #3a3030;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 4px;
+  }
+  .load-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 12px;
+  }
+  .load-tab {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    color: #6a5a4a;
+    background: transparent;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .load-tab.active { background: #3a3030; color: #ccba9d; }
+  .drop-zone {
+    border: 1px dashed #4a3f3f;
+    border-radius: 6px;
+    padding: 20px;
+    text-align: center;
+    color: #6a5a4a;
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .drop-zone:hover { border-color: #8a7a6a; color: #ccba9d; }
+  .drop-link { color: #FFDE59; cursor: pointer; }
+
+  /* workflow switcher */
+  .switcher {
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .switcher-label {
+    font-size: 11px;
+    color: #6a5a4a;
+    font-family: 'DM Mono', monospace;
+  }
+  .switcher-options {
+    display: flex;
+    gap: 6px;
+  }
+  .switcher-pill {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    cursor: pointer;
+    border: 1px solid #4a3f3f;
+    color: #6a5a4a;
+    background: transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .switcher-pill:hover { border-color: #8a7a6a; color: #ccba9d; }
+  .switcher-pill.active { border-color: #FFDE59; color: #FFDE59; background: rgba(255,222,89,0.06); }
+
+  /* footer */
+  footer {
+    text-align: center;
+    padding: 16px;
+    font-size: 11px;
+    color: #3a3030;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.06em;
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span class="logo">AWB</span>
+  <div class="bar-right">
+    <button class="bar-btn">&lt;/&gt; API</button>
+    <button class="bar-btn">ENG</button>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="command-card">
+
+    <div class="app-label">Signal Studio</div>
+    <div class="workflow-name">New Incident<br>Intake</div>
+    <div class="workflow-desc">
+      Analyse NDIS support incidents end-to-end — narrative enhancement, question generation, and observation synthesis.
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="actions">
+      <button class="action-btn primary">▶ Start Fresh</button>
+      <button class="action-btn secondary">📂 Load Data</button>
+    </div>
+
+    <div class="load-section">
+      <div class="load-tabs">
+        <button class="load-tab active">File upload</button>
+        <button class="load-tab">Paste JSON</button>
+      </div>
+      <div class="drop-zone">
+        Drop a .json file here or <span class="drop-link">click to browse</span>
+      </div>
+    </div>
+
+    <div class="switcher">
+      <span class="switcher-label">switch →</span>
+      <div class="switcher-options">
+        <button class="switcher-pill active">New Incident</button>
+        <button class="switcher-pill">Moments That Matter</button>
+        <button class="switcher-pill">YouTube Optimizer</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>AGENT WORKFLOW BUILDER — PROOF OF CONCEPT</footer>
+
+</body>
+</html>

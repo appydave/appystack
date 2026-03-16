@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v5 Refined Current</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #2a2424;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: #ccba9d;
+  }
+
+  /* Main scrollable area */
+  .page {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px 32px;
+  }
+  .content {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Workflow selector — now the dominant element */
+  .workflow-selector {
+    background: #1e1919;
+    border: 1px solid #3a3030;
+    border-radius: 16px;
+    padding: 24px 24px 20px;
+    margin-bottom: 20px;
+  }
+  .selector-label {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #4a3f3f;
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+
+  /* App groups */
+  .app-group { margin-bottom: 16px; }
+  .app-group:last-child { margin-bottom: 0; }
+  .app-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .app-name {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #5a4f4f;
+    font-weight: 600;
+  }
+  .app-line { flex: 1; height: 1px; background: #3a3030; }
+  .wf-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .wf-pill {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid #3a3030;
+    color: #6a5a4a;
+    background: transparent;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .wf-pill:hover { border-color: #6a5a4a; color: #ccba9d; }
+  .wf-pill.active {
+    background: #342d2d;
+    border-color: #FFDE59;
+    color: #e8dcc8;
+  }
+  .wf-pill.unavailable { opacity: 0.3; cursor: not-allowed; }
+  .wf-pill.unavailable:hover { border-color: #3a3030; color: #6a5a4a; }
+
+  /* Workflow identity (changes with selection) */
+  .workflow-identity {
+    padding: 0 0 24px;
+    text-align: center;
+  }
+  .workflow-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    color: #e8dcc8;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    margin-bottom: 8px;
+  }
+  .workflow-desc {
+    font-size: 13px;
+    color: #6a5a4a;
+    line-height: 1.5;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  /* Primary action: Load Data — full width card */
+  .load-card {
+    background: #342d2d;
+    border: 1.5px solid #4a3f3f;
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .load-card:hover { border-color: #6a5a4a; }
+  .load-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .load-icon {
+    width: 36px; height: 36px;
+    background: #4a3f3f;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .load-title { font-size: 15px; font-weight: 600; color: #e8dcc8; }
+  .load-subtitle { font-size: 12px; color: #8a7a6a; }
+
+  .load-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .load-tab {
+    padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
+    cursor: pointer; border: none; color: #6a5a4a; background: transparent;
+    font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+  }
+  .load-tab.active { background: #4a3f3f; color: #e8dcc8; }
+
+  .drop-zone {
+    border: 1.5px dashed #4a3f3f; border-radius: 8px;
+    padding: 24px; text-align: center; color: #6a5a4a; font-size: 12px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .drop-zone:hover { border-color: #8a7a6a; color: #ccba9d; }
+  .drop-link { color: #FFDE59; }
+
+  /* Start Fresh — demoted to text option */
+  .start-fresh-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #6a5a4a;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .start-fresh-row:hover { color: #ccba9d; }
+  .start-fresh-sep { color: #3a3030; }
+  .start-fresh-link {
+    color: #8a7a6a;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.15s;
+  }
+  .start-fresh-link:hover { color: #ccba9d; }
+
+  /* Dev data path */
+  .dev-path {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: #3a3030;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+  .dev-path-copy {
+    color: #4a3f3f;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .dev-path-copy:hover { color: #8a7a6a; }
+
+  /* Developer tools block */
+  .dev-tools {
+    background: #1a1515;
+    border: 1px solid #2a2424;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .dev-tools-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: background 0.15s;
+  }
+  .dev-tools-header:hover { background: rgba(255,255,255,0.02); }
+  .dev-tools-header.open { border-bottom-color: #2a2424; }
+  .dev-tools-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: #3a3030;
+    letter-spacing: 0.08em;
+    transition: color 0.15s;
+  }
+  .dev-tools-header:hover .dev-tools-label { color: #6a5a4a; }
+  .dev-tools-chevron { font-size: 10px; color: #3a3030; transition: color 0.15s; }
+  .dev-tools-header:hover .dev-tools-chevron { color: #6a5a4a; }
+
+  .dev-tools-body { padding: 14px 16px; }
+  .endpoint-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .endpoint-url {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #8a7a6a;
+    background: #2a2424;
+    padding: 6px 10px;
+    border-radius: 4px;
+    flex: 1;
+  }
+  .copy-btn {
+    font-size: 10px; color: #4a3f3f; cursor: pointer; border: none;
+    background: transparent; font-family: 'DM Mono', monospace;
+    transition: color 0.15s; padding: 4px;
+  }
+  .copy-btn:hover { color: #ccba9d; }
+  .api-tabs { display: flex; gap: 2px; margin-bottom: 10px; }
+  .api-tab {
+    padding: 3px 8px; font-size: 10px; font-family: 'DM Mono', monospace;
+    cursor: pointer; border: 1px solid transparent; border-radius: 4px;
+    color: #4a3f3f; background: transparent; transition: all 0.15s;
+    letter-spacing: 0.06em;
+  }
+  .api-tab.active { border-color: #4a3f3f; color: #8a7a6a; background: #2a2424; }
+  .api-snippet {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: #6a5a4a;
+    background: #0f0c0c;
+    border: 1px solid #2a2424;
+    border-radius: 4px;
+    padding: 10px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    color: #3a3030;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.08em;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="content">
+
+    <!-- Dominant: Workflow Selector -->
+    <div class="workflow-selector">
+      <div class="selector-label">Workflow</div>
+
+      <div class="app-group">
+        <div class="app-group-header">
+          <span class="app-name">Signal Studio</span>
+          <div class="app-line"></div>
+        </div>
+        <div class="wf-pills">
+          <button class="wf-pill active">New Incident Intake</button>
+          <button class="wf-pill">Moments That Matter</button>
+        </div>
+      </div>
+
+      <div class="app-group">
+        <div class="app-group-header">
+          <span class="app-name">FliHub</span>
+          <div class="app-line"></div>
+        </div>
+        <div class="wf-pills">
+          <button class="wf-pill unavailable" title="YAML not found on this machine">YouTube Launch Optimizer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workflow identity -->
+    <div class="workflow-identity">
+      <h1 class="workflow-title">New Incident Intake</h1>
+      <p class="workflow-desc">Analyse NDIS support incidents end-to-end — narrative enhancement, question generation, and observation synthesis.</p>
+    </div>
+
+    <!-- Primary action: Load Data -->
+    <div class="load-card">
+      <div class="load-card-header">
+        <div class="load-icon">
+          <svg width="16" height="16" fill="none" stroke="#ccba9d" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        </div>
+        <div>
+          <div class="load-title">Load Data</div>
+          <div class="load-subtitle">Pre-fill the workflow from a JSON export</div>
+        </div>
+      </div>
+      <div class="load-tabs">
+        <button class="load-tab active">File upload</button>
+        <button class="load-tab">Paste JSON</button>
+      </div>
+      <div class="drop-zone">
+        Drop a .json file here or <span class="drop-link">click to browse</span>
+      </div>
+    </div>
+
+    <!-- Demoted: Start Fresh -->
+    <div class="start-fresh-row">
+      <span>or</span>
+      <span class="start-fresh-link">start with empty fields</span>
+    </div>
+
+    <!-- Dev: file path hint -->
+    <div class="dev-path">
+      <span class="dev-path-copy">copy</span>
+      <span>/Users/davidcruwys/dev/clients/supportsignal/…/mock-data/incidents</span>
+    </div>
+
+    <!-- Developer tools -->
+    <div class="dev-tools">
+      <div class="dev-tools-header open">
+        <div class="dev-tools-label">
+          <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+          API Integration
+        </div>
+        <span class="dev-tools-chevron">▲</span>
+      </div>
+      <div class="dev-tools-body">
+        <div class="endpoint-row">
+          <span class="endpoint-url">POST http://localhost:3001/api/workflow/intake</span>
+          <button class="copy-btn">copy</button>
+        </div>
+        <div class="api-tabs">
+          <button class="api-tab active">Push data</button>
+          <button class="api-tab">Resume step</button>
+        </div>
+        <pre class="api-snippet">{
+  "workflowId": "new-incident",
+  "source":     "Signal Studio",
+  "store": {
+    "incident":    { "reporter_name": "..." },
+    "participant": { "first_name": "..." },
+    "narratives":  { "before_event": "..." }
+  }
+}</pre>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>AGENT WORKFLOW BUILDER — PROOF OF CONCEPT</footer>
+
+</body>
+</html>

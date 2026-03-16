@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v11 Hero Banner</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #f5f0e8;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Thin top strip */
+  .strip {
+    background: #342d2d;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 17px; color: #FFDE59; letter-spacing: 0.08em; }
+  .sep { width: 1px; height: 13px; background: #4a3f3f; }
+  .sub { font-size: 11px; color: #5a4f4f; }
+  .pills { margin-left: auto; display: flex; gap: 2px; }
+  .pill {
+    padding: 2px 9px; border-radius: 20px; font-size: 10px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; background: transparent;
+    color: #5a4f4f; font-family: 'DM Sans', sans-serif; transition: all 0.14s;
+  }
+  .pill.active { background: #4a3f3f; border-color: #FFDE59; color: #FFDE59; }
+
+  /* Hero — dark band, full width */
+  .hero {
+    background: #221c1c;
+    padding: 56px 60px 52px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    right: -40px; top: -40px;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,222,89,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    display: flex;
+    align-items: flex-end;
+    gap: 48px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .hero-text { flex: 1; }
+  .hero-eyebrow {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.22em;
+    text-transform: uppercase; color: #5a4f4f; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .hero-eyebrow::before { content: ''; width: 16px; height: 1px; background: #4a3f3f; }
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 76px; line-height: 0.9; letter-spacing: 0.02em;
+    color: #e8dcc8; margin-bottom: 0;
+  }
+  .hero-title em { color: #FFDE59; font-style: normal; }
+
+  .hero-right {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex-shrink: 0;
+    min-width: 200px;
+  }
+  .hero-desc {
+    font-size: 13px; line-height: 1.6; color: #6b5f5f; max-width: 220px;
+  }
+  .hero-stats { display: flex; gap: 20px; }
+  .hstat { display: flex; flex-direction: column; gap: 3px; }
+  .hstat-n { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: #FFDE59; line-height: 1; letter-spacing: 0.04em; }
+  .hstat-l { font-size: 9px; color: #5a4f4f; letter-spacing: 0.14em; text-transform: uppercase; }
+  .hstat-sep { width: 1px; background: #2a2424; align-self: stretch; }
+
+  /* Workflow tabs below hero */
+  .wf-bar {
+    background: #2a2424;
+    border-bottom: 1px solid #342d2d;
+    padding: 0 60px;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+  .wf-tab-item {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.14s;
+    flex-shrink: 0;
+  }
+  .wf-tab-item:hover { background: rgba(255,255,255,0.03); }
+  .wf-tab-item.active { border-bottom-color: #FFDE59; }
+  .wf-tab-item.dim { opacity: 0.25; cursor: not-allowed; }
+  .wf-dot { width: 5px; height: 5px; border-radius: 50%; background: #4a3f3f; flex-shrink: 0; }
+  .wf-tab-item.active .wf-dot { background: #FFDE59; }
+  .wf-tab-name { font-size: 12px; color: #6a5a4a; font-weight: 500; }
+  .wf-tab-item.active .wf-tab-name { color: #ccba9d; }
+  .wf-tab-group { font-size: 9px; color: #4a3f3f; text-transform: uppercase; letter-spacing: 0.1em; margin-right: 4px; }
+
+  /* Content area */
+  .content {
+    flex: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 48px 60px;
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 48px;
+    align-items: start;
+  }
+
+  /* Left: Start Fresh + API */
+  .left {}
+  .sec-lbl {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
+    text-transform: uppercase; color: #b0a090; margin-bottom: 16px;
+  }
+  .fresh-card {
+    background: white; border: 2px solid #342d2d; border-radius: 12px;
+    padding: 28px 24px; cursor: pointer; transition: all 0.15s; text-align: center; margin-bottom: 12px;
+  }
+  .fresh-card:hover { box-shadow: 0 4px 20px rgba(52,45,45,0.14); transform: translateY(-1px); }
+  .fresh-icon {
+    width: 44px; height: 44px; border-radius: 10px; background: #342d2d;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+  }
+  .fresh-title { font-size: 16px; font-weight: 600; color: #342d2d; }
+  .fresh-desc { font-size: 12px; color: #9e9090; margin-top: 4px; }
+
+  .api-card {
+    background: transparent; border: 1px solid #e0d4b8; border-radius: 8px;
+    padding: 12px 14px; cursor: pointer; transition: all 0.14s;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; color: #b0a090; font-family: 'DM Mono', monospace;
+    letter-spacing: 0.06em;
+  }
+  .api-card:hover { border-color: #ccba9d; color: #8a7a6a; }
+
+  /* Right: Load Data */
+  .right {}
+  .load-card {
+    background: white; border: 1.5px solid #e0d4b8; border-radius: 12px;
+    padding: 22px 22px; transition: border-color 0.15s;
+  }
+  .load-card:hover { border-color: #ccba9d; }
+  .load-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .load-ico {
+    width: 34px; height: 34px; border-radius: 8px; background: #faf5ec;
+    border: 1px solid #e0d4b8; display: flex; align-items: center; justify-content: center;
+  }
+  .load-title { font-size: 15px; font-weight: 600; color: #342d2d; }
+  .load-sub { font-size: 12px; color: #9e9090; margin-top: 1px; }
+  .tabs { display: flex; gap: 2px; margin-bottom: 12px; }
+  .tab {
+    padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; color: #9e9090; background: transparent;
+    font-family: 'DM Sans', sans-serif; transition: all 0.14s;
+  }
+  .tab.active { background: #faf5ec; border-color: #e0d4b8; color: #342d2d; }
+  .drop-zone {
+    border: 1.5px dashed #d8ccb8; border-radius: 8px; padding: 32px 20px;
+    text-align: center; cursor: pointer; transition: all 0.14s;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .drop-zone:hover { border-color: #ccba9d; background: #faf5ec; }
+  .drop-icon { color: #ccba9d; }
+  .drop-text { font-size: 13px; color: #9e9090; }
+  .drop-link { color: #9a7a4a; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="strip">
+  <span class="logo">AWB</span>
+  <div class="sep"></div>
+  <span class="sub">Agent Workflow Builder</span>
+  <div class="pills">
+    <button class="pill active">Engineer</button>
+    <button class="pill">Pilot</button>
+  </div>
+</div>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <div class="hero-eyebrow">Signal Studio</div>
+      <h1 class="hero-title">New<br><em>Incident</em><br>Intake</h1>
+    </div>
+    <div class="hero-right">
+      <p class="hero-desc">Analyse NDIS support incidents end-to-end — narrative enhancement, question generation, and observation synthesis.</p>
+      <div class="hero-stats">
+        <div class="hstat">
+          <span class="hstat-n">8</span>
+          <span class="hstat-l">Steps</span>
+        </div>
+        <div class="hstat-sep"></div>
+        <div class="hstat">
+          <span class="hstat-n">3</span>
+          <span class="hstat-l">Predicates</span>
+        </div>
+        <div class="hstat-sep"></div>
+        <div class="hstat">
+          <span class="hstat-n">6</span>
+          <span class="hstat-l">LLM Calls</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Workflow tab bar -->
+<div class="wf-bar">
+  <div class="wf-tab-item active">
+    <div class="wf-dot"></div>
+    <span class="wf-tab-name">New Incident Intake</span>
+  </div>
+  <div class="wf-tab-item">
+    <div class="wf-dot"></div>
+    <span class="wf-tab-name">Moments That Matter</span>
+  </div>
+  <div class="wf-tab-item dim">
+    <div class="wf-dot"></div>
+    <span class="wf-tab-group">FliHub —</span>
+    <span class="wf-tab-name">YouTube Launch Optimizer</span>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <div class="left">
+    <div class="sec-lbl">Quick Start</div>
+    <div class="fresh-card">
+      <div class="fresh-icon">
+        <svg width="18" height="18" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      </div>
+      <div class="fresh-title">Start Fresh</div>
+      <div class="fresh-desc">Begin with empty fields</div>
+    </div>
+    <div class="api-card">
+      <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+      API — POST /api/workflow/intake
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="sec-lbl">Load Existing Data</div>
+    <div class="load-card">
+      <div class="load-head">
+        <div class="load-ico">
+          <svg width="15" height="15" fill="none" stroke="#9a7a4a" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        </div>
+        <div>
+          <div class="load-title">Load Data</div>
+          <div class="load-sub">Pre-fill from a JSON export</div>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab active">File upload</button>
+        <button class="tab">Paste JSON</button>
+      </div>
+      <div class="drop-zone">
+        <svg class="drop-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        <span class="drop-text">Drop a .json file here or <span class="drop-link">click to browse</span></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

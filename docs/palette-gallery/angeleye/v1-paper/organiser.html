@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AngelEye — Organiser</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --canvas:        #f2ece4;
+    --surface:       #faf7f3;
+    --surface-alt:   #ede7de;
+    --sidebar-bg:    #1c1714;
+    --sidebar-text:  #d4c9b8;
+    --header-bg:     #1c1714;
+    --header-text:   #f2ece4;
+    --text-primary:  #2a2018;
+    --text-muted:    #8a7a6a;
+    --border:        #ddd6cb;
+    --amber:         #c8841a;
+    --amber-light:   #fdf3e3;
+    --amber-dim:     #e8d5b0;
+    --card-bg:       #faf7f3;
+    --card-border:   #ddd6cb;
+    --row-hover:     #f5efe7;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--canvas);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── Mochaccino Banner ── */
+  .mochaccino-banner {
+    background: var(--canvas);
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    padding: 8px 16px;
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+  }
+
+  /* ── App Shell ── */
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 35px);
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--header-bg);
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    flex-shrink: 0;
+    border-bottom: 1px solid #2d2218;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .app-name {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--header-text);
+    text-transform: uppercase;
+  }
+
+  .app-tagline {
+    font-size: 11px;
+    color: #5a4f42;
+    letter-spacing: 0.06em;
+    padding-top: 1px;
+    font-style: italic;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .session-total {
+    font-size: 11px;
+    color: #5a4f42;
+    letter-spacing: 0.04em;
+  }
+
+  .session-total span {
+    color: var(--amber);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Body Layout ── */
+  .app-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px;
+    background: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    border-right: 1px solid #2d2218;
+    padding-top: 8px;
+  }
+
+  .nav-group {
+    margin-bottom: 4px;
+  }
+
+  .nav-group-label {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #4a3f34;
+    padding: 12px 20px 6px;
+    font-weight: 600;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    font-size: 13px;
+    color: var(--sidebar-text);
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: background 0.1s;
+    text-decoration: none;
+    letter-spacing: 0.01em;
+  }
+
+  .nav-item:hover {
+    background: #251f19;
+    color: #e8ddd0;
+  }
+
+  .nav-item.active {
+    border-left-color: var(--amber);
+    background: #2d2218;
+    color: var(--amber);
+    font-weight: 500;
+  }
+
+  .nav-icon {
+    font-size: 14px;
+    opacity: 0.8;
+    width: 16px;
+    text-align: center;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    border-top: 1px solid #2d2218;
+    padding: 8px 0;
+  }
+
+  /* ── Content Area ── */
+  .content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--canvas);
+  }
+
+  /* ── View Header ── */
+  .view-header {
+    padding: 20px 32px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .view-title-group {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .view-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  .view-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .badge-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .badge-workspaces {
+    background: var(--amber-light);
+    color: var(--amber);
+    border: 1px solid var(--amber-dim);
+  }
+
+  .badge-inbox {
+    background: #ede7de;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  /* ── Two-Panel Layout ── */
+  .panels {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Inbox Panel (Left) ── */
+  .inbox-panel {
+    width: 340px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--canvas);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 14px 24px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .panel-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+
+  .panel-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+  }
+
+  .panel-hint {
+    font-size: 11px;
+    color: #b0a090;
+    font-style: italic;
+    padding: 8px 24px 0;
+    line-height: 1.4;
+    flex-shrink: 0;
+  }
+
+  .inbox-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+
+  /* ── Inbox Session Row ── */
+  .inbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 24px;
+    border-bottom: 1px solid #ede7de;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .inbox-row:hover {
+    background: var(--row-hover);
+  }
+
+  .inbox-row:last-child {
+    border-bottom: none;
+  }
+
+  .inbox-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .inbox-dot.active { background: var(--amber); }
+  .inbox-dot.ended  { background: var(--border); }
+
+  .inbox-row-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .inbox-project {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+  }
+
+  .inbox-row.ended-row .inbox-project {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .inbox-name {
+    font-size: 11px;
+    font-style: italic;
+    color: var(--amber);
+    line-height: 1.2;
+  }
+
+  .inbox-row.ended-row .inbox-name {
+    color: #a89070;
+  }
+
+  .inbox-time {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .inbox-tags {
+    display: flex;
+    gap: 3px;
+    margin-top: 2px;
+  }
+
+  .inbox-tag {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  .drag-handle {
+    color: #c5b8aa;
+    font-size: 12px;
+    cursor: grab;
+    flex-shrink: 0;
+    opacity: 0.5;
+  }
+
+  /* ── Workspaces Panel (Right) ── */
+  .workspaces-panel {
+    flex: 1;
+    background: var(--surface-alt);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .workspaces-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Workspace Card ── */
+  .workspace-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: box-shadow 0.15s;
+  }
+
+  .workspace-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  .workspace-card-header {
+    padding: 12px 18px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+  }
+
+  .workspace-name {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+  }
+
+  .workspace-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .workspace-count {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .workspace-active-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--amber);
+  }
+
+  /* ── Session Chips ── */
+  .workspace-sessions {
+    padding: 12px 18px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .session-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--canvas);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+
+  .session-chip:hover {
+    border-color: var(--amber-dim);
+    background: var(--amber-light);
+  }
+
+  .chip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .chip-dot.active { background: var(--amber); }
+  .chip-dot.ended  { background: #c5b8aa; }
+
+  .chip-project {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+
+  .chip-name {
+    font-size: 11px;
+    font-style: italic;
+    color: var(--amber);
+    line-height: 1.1;
+  }
+
+  .session-chip.chip-ended .chip-project {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .session-chip.chip-ended .chip-name {
+    color: #a89070;
+  }
+
+  .chip-time {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-left: 2px;
+  }
+
+  .chip-tags {
+    display: flex;
+    gap: 3px;
+  }
+
+  .chip-tag {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  /* New workspace button */
+  .new-workspace-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    background: transparent;
+    transition: all 0.12s;
+    width: 100%;
+    font-family: inherit;
+  }
+
+  .new-workspace-btn:hover {
+    border-color: var(--amber-dim);
+    color: var(--amber);
+    background: var(--amber-light);
+  }
+
+  /* ── Scrollbar ── */
+  .inbox-scroll::-webkit-scrollbar,
+  .workspaces-scroll::-webkit-scrollbar { width: 5px; }
+  .inbox-scroll::-webkit-scrollbar-track,
+  .workspaces-scroll::-webkit-scrollbar-track { background: transparent; }
+  .inbox-scroll::-webkit-scrollbar-thumb,
+  .workspaces-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="mochaccino-banner">Mochaccino — v1-paper — organiser — 2026-03-15</div>
+
+<div class="app-shell">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="app-name">AngelEye</div>
+      <div class="app-tagline">session monitor</div>
+    </div>
+    <div class="header-right">
+      <div class="session-total">
+        <span>667</span> sessions total
+      </div>
+    </div>
+  </header>
+
+  <!-- Body -->
+  <div class="app-body">
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="nav-group">
+        <div class="nav-group-label">Main</div>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">◉</span>
+          Observer
+        </a>
+        <a class="nav-item active" href="#">
+          <span class="nav-icon">⊞</span>
+          Organiser
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">System</div>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">⚙</span>
+          Settings
+        </a>
+      </div>
+
+      <div class="sidebar-footer">
+        <a class="nav-item" href="#">
+          <span class="nav-icon">?</span>
+          Help
+        </a>
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <main class="content">
+
+      <!-- View Header -->
+      <div class="view-header">
+        <div class="view-title-group">
+          <div class="view-title">Organiser</div>
+          <div class="view-subtitle">assign sessions to workspaces</div>
+        </div>
+        <div class="badge-row">
+          <div class="badge badge-workspaces">⊞ 4 workspaces</div>
+          <div class="badge badge-inbox">↓ 5 in inbox</div>
+        </div>
+      </div>
+
+      <!-- Two-Panel Layout -->
+      <div class="panels">
+
+        <!-- Inbox Panel -->
+        <div class="inbox-panel">
+          <div class="panel-header">
+            <div class="panel-label">Inbox</div>
+            <div class="panel-count">5 sessions</div>
+          </div>
+          <div class="panel-hint">Unassigned sessions. Drag into a workspace.</div>
+
+          <div class="inbox-scroll">
+
+            <!-- lars (active) -->
+            <div class="inbox-row">
+              <div class="drag-handle">⠿</div>
+              <div class="inbox-dot active"></div>
+              <div class="inbox-row-content">
+                <div class="inbox-project">lars</div>
+                <div style="font-size:10px; color: var(--text-muted); font-family: ui-monospace, monospace;">/dev/ad/lars</div>
+              </div>
+              <div class="inbox-time">1m</div>
+            </div>
+
+            <!-- appystack (ended) -->
+            <div class="inbox-row ended-row">
+              <div class="drag-handle">⠿</div>
+              <div class="inbox-dot ended"></div>
+              <div class="inbox-row-content">
+                <div class="inbox-project">appystack</div>
+                <div style="font-size:10px; color: var(--text-muted); font-family: ui-monospace, monospace;">/dev/ad/apps/appystack</div>
+              </div>
+              <div class="inbox-time">5h</div>
+            </div>
+
+            <!-- klueless (ended) -->
+            <div class="inbox-row ended-row">
+              <div class="drag-handle">⠿</div>
+              <div class="inbox-dot ended"></div>
+              <div class="inbox-row-content">
+                <div class="inbox-project">klueless</div>
+                <div class="inbox-name">DSL refactor</div>
+                <div class="inbox-tags"><span class="inbox-tag">dsl</span></div>
+              </div>
+              <div class="inbox-time">8h</div>
+            </div>
+
+            <!-- thumbrack (ended) -->
+            <div class="inbox-row ended-row">
+              <div class="drag-handle">⠿</div>
+              <div class="inbox-dot ended"></div>
+              <div class="inbox-row-content">
+                <div class="inbox-project">thumbrack</div>
+                <div style="font-size:10px; color: var(--text-muted); font-family: ui-monospace, monospace;">/dev/thumbrack</div>
+              </div>
+              <div class="inbox-time">20h</div>
+            </div>
+
+            <!-- poem-os (ended) -->
+            <div class="inbox-row ended-row">
+              <div class="drag-handle">⠿</div>
+              <div class="inbox-dot ended"></div>
+              <div class="inbox-row-content">
+                <div class="inbox-project">poem-os</div>
+                <div style="font-size:10px; color: var(--text-muted); font-family: ui-monospace, monospace;">/dev/ad/poem-os</div>
+              </div>
+              <div class="inbox-time">1d</div>
+            </div>
+
+          </div>
+        </div><!-- /inbox-panel -->
+
+        <!-- Workspaces Panel -->
+        <div class="workspaces-panel">
+          <div class="panel-header" style="background: var(--surface-alt);">
+            <div class="panel-label">Workspaces</div>
+            <div class="panel-count">4 workspaces · 5 sessions</div>
+          </div>
+
+          <div class="workspaces-scroll">
+
+            <!-- AngelEye Dev -->
+            <div class="workspace-card">
+              <div class="workspace-card-header">
+                <div class="workspace-name">AngelEye Dev</div>
+                <div class="workspace-meta">
+                  <div class="workspace-active-dot"></div>
+                  <div class="workspace-count">2 sessions · 2 active</div>
+                </div>
+              </div>
+              <div class="workspace-sessions">
+
+                <div class="session-chip">
+                  <div class="chip-dot active"></div>
+                  <div>
+                    <div class="chip-project">angeleye</div>
+                    <div class="chip-name">Fix write queue</div>
+                  </div>
+                  <div class="chip-tags"><span class="chip-tag">wave-6</span></div>
+                  <div class="chip-time">2s</div>
+                </div>
+
+                <div class="session-chip">
+                  <div class="chip-dot active"></div>
+                  <div>
+                    <div class="chip-project">appydave-plugins</div>
+                    <div class="chip-name">Plugin loader</div>
+                  </div>
+                  <div class="chip-tags"><span class="chip-tag">plugin</span></div>
+                  <div class="chip-time">34s</div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Tools -->
+            <div class="workspace-card">
+              <div class="workspace-card-header">
+                <div class="workspace-name">Tools</div>
+                <div class="workspace-meta">
+                  <div class="workspace-active-dot"></div>
+                  <div class="workspace-count">1 session · 1 active</div>
+                </div>
+              </div>
+              <div class="workspace-sessions">
+
+                <div class="session-chip">
+                  <div class="chip-dot active"></div>
+                  <div>
+                    <div class="chip-project">deckhand</div>
+                  </div>
+                  <div class="chip-time">32s</div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Client Work -->
+            <div class="workspace-card">
+              <div class="workspace-card-header">
+                <div class="workspace-name">Client Work</div>
+                <div class="workspace-meta">
+                  <div class="workspace-count" style="color: #c5b8aa;">1 session · 0 active</div>
+                </div>
+              </div>
+              <div class="workspace-sessions">
+
+                <div class="session-chip chip-ended">
+                  <div class="chip-dot ended"></div>
+                  <div>
+                    <div class="chip-project">signal-studio</div>
+                  </div>
+                  <div class="chip-tags"><span class="chip-tag">client</span></div>
+                  <div class="chip-time">7h</div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Research -->
+            <div class="workspace-card">
+              <div class="workspace-card-header">
+                <div class="workspace-name">Research</div>
+                <div class="workspace-meta">
+                  <div class="workspace-count" style="color: #c5b8aa;">1 session · 0 active</div>
+                </div>
+              </div>
+              <div class="workspace-sessions">
+
+                <div class="session-chip chip-ended">
+                  <div class="chip-dot ended"></div>
+                  <div>
+                    <div class="chip-project">brains</div>
+                    <div class="chip-name">Brain indexing</div>
+                  </div>
+                  <div class="chip-tags"><span class="chip-tag">research</span></div>
+                  <div class="chip-time">4h</div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- New Workspace Button -->
+            <button class="new-workspace-btn">
+              + New Workspace
+            </button>
+
+          </div><!-- /workspaces-scroll -->
+        </div><!-- /workspaces-panel -->
+
+      </div><!-- /panels -->
+    </main>
+
+  </div><!-- /app-body -->
+</div><!-- /app-shell -->
+
+</body>
+</html>

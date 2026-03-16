@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AngelEye — Observer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --canvas:       #f2ece4;
+    --surface:      #faf7f3;
+    --sidebar-bg:   #1c1714;
+    --sidebar-text: #d4c9b8;
+    --header-bg:    #1c1714;
+    --header-text:  #f2ece4;
+    --text-primary: #2a2018;
+    --text-muted:   #8a7a6a;
+    --border:       #ddd6cb;
+    --amber:        #c8841a;
+    --amber-light:  #fdf3e3;
+    --amber-dim:    #e8d5b0;
+    --row-hover:    #f5efe7;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--canvas);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── Mochaccino Banner ── */
+  .mochaccino-banner {
+    background: var(--canvas);
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    padding: 8px 16px;
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+  }
+
+  /* ── App Shell ── */
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 35px);
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--header-bg);
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    flex-shrink: 0;
+    border-bottom: 1px solid #2d2218;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .app-name {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--header-text);
+    text-transform: uppercase;
+  }
+
+  .app-tagline {
+    font-size: 11px;
+    color: #5a4f42;
+    letter-spacing: 0.06em;
+    padding-top: 1px;
+    font-style: italic;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .session-total {
+    font-size: 11px;
+    color: #5a4f42;
+    letter-spacing: 0.04em;
+  }
+
+  .session-total span {
+    color: var(--amber);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Body Layout ── */
+  .app-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px;
+    background: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    border-right: 1px solid #2d2218;
+    padding-top: 8px;
+  }
+
+  .nav-group {
+    margin-bottom: 4px;
+  }
+
+  .nav-group-label {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #4a3f34;
+    padding: 12px 20px 6px;
+    font-weight: 600;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    font-size: 13px;
+    color: var(--sidebar-text);
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: background 0.1s;
+    text-decoration: none;
+    letter-spacing: 0.01em;
+  }
+
+  .nav-item:hover {
+    background: #251f19;
+    color: #e8ddd0;
+  }
+
+  .nav-item.active {
+    border-left-color: var(--amber);
+    background: #2d2218;
+    color: var(--amber);
+    font-weight: 500;
+  }
+
+  .nav-icon {
+    font-size: 14px;
+    opacity: 0.8;
+    width: 16px;
+    text-align: center;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    border-top: 1px solid #2d2218;
+    padding: 8px 0;
+  }
+
+  /* ── Content Area ── */
+  .content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--canvas);
+  }
+
+  /* ── View Header ── */
+  .view-header {
+    padding: 20px 32px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .view-title-group {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .view-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  .view-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .badge-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .badge-active {
+    background: var(--amber-light);
+    color: var(--amber);
+    border: 1px solid var(--amber-dim);
+  }
+
+  .badge-ended {
+    background: #ede7de;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  /* ── Session Table ── */
+  .table-container {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .col-headers {
+    display: grid;
+    grid-template-columns: 4px 22px 1fr 110px 90px 80px 70px;
+    align-items: center;
+    gap: 0;
+    padding: 0 32px;
+    height: 32px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--canvas);
+    z-index: 10;
+  }
+
+  .col-header {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .col-header.right { text-align: right; }
+
+  /* ── Session Rows ── */
+  .session-row {
+    display: grid;
+    grid-template-columns: 4px 22px 1fr 110px 90px 80px 70px;
+    align-items: center;
+    gap: 0;
+    padding: 0 32px;
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+    cursor: default;
+  }
+
+  .session-row:hover {
+    background: var(--row-hover);
+  }
+
+  .session-row.active {
+    background: var(--surface);
+  }
+
+  .session-row.active:hover {
+    background: #f0e9df;
+  }
+
+  /* Left border accent */
+  .row-accent {
+    width: 4px;
+    height: 100%;
+    display: flex;
+    align-items: stretch;
+  }
+
+  .row-accent-bar {
+    width: 4px;
+    height: 100%;
+    border-radius: 0 2px 2px 0;
+  }
+
+  .session-row.active .row-accent-bar {
+    background: var(--amber);
+  }
+
+  .session-row.ended .row-accent-bar {
+    background: transparent;
+  }
+
+  /* Status dot */
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-dot.active {
+    background: var(--amber);
+    box-shadow: 0 0 0 2px var(--amber-light);
+  }
+
+  .status-dot.ended {
+    background: var(--border);
+  }
+
+  /* Project cell */
+  .project-cell {
+    padding: 0 12px 0 10px;
+    min-width: 0;
+  }
+
+  .project-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+  }
+
+  .session-row.ended .project-name {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .name-label {
+    font-size: 12px;
+    font-style: italic;
+    color: var(--amber);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .session-row.ended .name-label {
+    color: #a89070;
+  }
+
+  /* Tag pills */
+  .tags-inline {
+    display: flex;
+    gap: 4px;
+    flex-wrap: nowrap;
+    margin-top: 2px;
+  }
+
+  .tag-pill {
+    font-size: 9px;
+    letter-spacing: 0.05em;
+    padding: 1px 6px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    background: transparent;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* Status column */
+  .status-cell {
+    padding: 0 8px;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .status-pill.active {
+    background: var(--amber-light);
+    color: var(--amber);
+    border: 1px solid var(--amber-dim);
+  }
+
+  .status-pill.ended {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  /* Time columns */
+  .time-cell {
+    text-align: right;
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 0 8px;
+    white-space: nowrap;
+  }
+
+  .time-cell.highlight {
+    color: var(--amber);
+    font-weight: 500;
+  }
+
+  /* Session ID */
+  .session-id {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 9px;
+    color: #a89070;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Section dividers in table ── */
+  .section-divider {
+    padding: 6px 32px 4px 36px;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #b0a090;
+    background: #ede7de;
+    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    font-weight: 600;
+  }
+
+  /* ── Scrollbar ── */
+  .table-container::-webkit-scrollbar { width: 6px; }
+  .table-container::-webkit-scrollbar-track { background: var(--canvas); }
+  .table-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .table-container::-webkit-scrollbar-thumb:hover { background: #c5b8aa; }
+</style>
+</head>
+<body>
+
+<div class="mochaccino-banner">Mochaccino — v1-paper — observer — 2026-03-15</div>
+
+<div class="app-shell">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="app-name">AngelEye</div>
+      <div class="app-tagline">session monitor</div>
+    </div>
+    <div class="header-right">
+      <div class="session-total">
+        <span>667</span> sessions total
+      </div>
+    </div>
+  </header>
+
+  <!-- Body -->
+  <div class="app-body">
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="nav-group">
+        <div class="nav-group-label">Main</div>
+        <a class="nav-item active" href="#">
+          <span class="nav-icon">◉</span>
+          Observer
+        </a>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">⊞</span>
+          Organiser
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">System</div>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">⚙</span>
+          Settings
+        </a>
+      </div>
+
+      <div class="sidebar-footer">
+        <a class="nav-item" href="#">
+          <span class="nav-icon">?</span>
+          Help
+        </a>
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <main class="content">
+
+      <!-- View Header -->
+      <div class="view-header">
+        <div class="view-title-group">
+          <div class="view-title">Observer</div>
+          <div class="view-subtitle">all sessions, live</div>
+        </div>
+        <div class="badge-row">
+          <div class="badge badge-active">● 4 active</div>
+          <div class="badge badge-ended">○ 6 ended</div>
+        </div>
+      </div>
+
+      <!-- Column Headers -->
+      <div class="table-container">
+        <div class="col-headers">
+          <div></div>
+          <div></div>
+          <div class="col-header" style="padding-left: 10px;">Project</div>
+          <div class="col-header">Status</div>
+          <div class="col-header right">Last Active</div>
+          <div class="col-header right">When</div>
+          <div class="col-header right">Idle</div>
+        </div>
+
+        <!-- Active Sessions -->
+        <div class="section-divider">Active — 4 sessions</div>
+
+        <!-- Row: angeleye -->
+        <div class="session-row active">
+          <div class="row-accent"><div class="row-accent-bar"></div></div>
+          <div><div class="status-dot active"></div></div>
+          <div class="project-cell">
+            <div class="project-name">angeleye</div>
+            <div class="name-label">Fix write queue</div>
+            <div class="tags-inline"><span class="tag-pill">wave-6</span></div>
+          </div>
+          <div class="status-cell"><span class="status-pill active">● active</span></div>
+          <div class="time-cell highlight">2s ago</div>
+          <div class="time-cell">today</div>
+          <div class="time-cell highlight">0:02</div>
+        </div>
+
+        <!-- Row: deckhand -->
+        <div class="session-row active">
+          <div class="row-accent"><div class="row-accent-bar"></div></div>
+          <div><div class="status-dot active"></div></div>
+          <div class="project-cell">
+            <div class="project-name">deckhand</div>
+            <div style="height: 14px;"></div>
+          </div>
+          <div class="status-cell"><span class="status-pill active">● active</span></div>
+          <div class="time-cell highlight">32s ago</div>
+          <div class="time-cell">today</div>
+          <div class="time-cell highlight">0:32</div>
+        </div>
+
+        <!-- Row: appydave-plugins -->
+        <div class="session-row active">
+          <div class="row-accent"><div class="row-accent-bar"></div></div>
+          <div><div class="status-dot active"></div></div>
+          <div class="project-cell">
+            <div class="project-name">appydave-plugins</div>
+            <div class="name-label">Plugin loader</div>
+            <div class="tags-inline"><span class="tag-pill">plugin</span></div>
+          </div>
+          <div class="status-cell"><span class="status-pill active">● active</span></div>
+          <div class="time-cell highlight">34s ago</div>
+          <div class="time-cell">today</div>
+          <div class="time-cell highlight">0:34</div>
+        </div>
+
+        <!-- Row: lars -->
+        <div class="session-row active">
+          <div class="row-accent"><div class="row-accent-bar"></div></div>
+          <div><div class="status-dot active"></div></div>
+          <div class="project-cell">
+            <div class="project-name">lars</div>
+            <div style="height: 14px;"></div>
+          </div>
+          <div class="status-cell"><span class="status-pill active">● active</span></div>
+          <div class="time-cell">1m ago</div>
+          <div class="time-cell">today</div>
+          <div class="time-cell">1:04</div>
+        </div>
+
+        <!-- Ended Sessions -->
+        <div class="section-divider">Ended — 6 sessions</div>
+
+        <!-- Row: brains -->
+        <div class="session-row ended">
+          <div class="row-accent"><div class="row-accent-bar"></div></div>
+          <div><div class="status-dot ended"></div></div>
+          <div class="project-cell">
+            <div class="project-name">brains</div>
+            <div class="name-label">Brain indexing</div>
+            <div class="tags-inline"><span class="tag-pill">research</span></div>
+          </div>
+          <div class="status-cell"><span class="status-pill ended">○ ended</span></div>
+          <div class="time-cell">4h ago</div>
+          <div class="time-cell">today</div>
+          <div class="time-cell">4:12</div>
+        </div>
+
+        <!-- Row: appystack -->
+        <div class="session-row ended">
+          <div class="row-accent"><div class="row-accent-bar"></div></div>
+          <div><div class="status-dot ended"></div></div>
+          <div class="project-cell">
+            <div class="project-name">appystack</div>
+            <div style="height: 14px;"></div>
+          </div>
+          <div class="status-cell"><span class="status-pill ended">○ ended</span></div>
+          <div class="time-cell">5h ago</div>
+          <div class="time-cell">today</div>
+          <div class="time-cell">5:08</div>
+        </div>
+
+        <!-- Row: signal-studio -->
+        <div class="session-row ended">
+          <div class="row-accent"><div class="row-accent-bar"></div></div>
+          <div><div class="status-dot ended"></div></div>
+          <div class="project-cell">
+            <div class="project-name">signal-studio</div>
+            <div style="height: 14px;"></div>
+            <div class="tags-inline"><span class="tag-pill">client</span></div>
+          </div>
+          <div class="status-cell"><span class="status-pill ended">○ ended</span></div>
+          <div class="time-cell">7h ago</div>
+          <div class="time-cell">today</div>
+          <div class="time-cell">7:31</div>
+        </div>
+
+        <!-- Row: klueless -->
+        <div class="session-row ended">
+          <div class="row-accent"><div class="row-accent-bar"></div></div>
+          <div><div class="status-dot ended"></div></div>
+          <div class="project-cell">
+            <div class="project-name">klueless</div>
+            <div class="name-label">DSL refactor</div>
+            <div class="tags-inline"><span class="tag-pill">dsl</span></div>
+          </div>
+          <div class="status-cell"><span class="status-pill ended">○ ended</span></div>
+          <div class="time-cell">8h ago</div>
+          <div class="time-cell">today</div>
+          <div class="time-cell">8:44</div>
+        </div>
+
+        <!-- Row: thumbrack -->
+        <div class="session-row ended">
+          <div class="row-accent"><div class="row-accent-bar"></div></div>
+          <div><div class="status-dot ended"></div></div>
+          <div class="project-cell">
+            <div class="project-name">thumbrack</div>
+            <div style="height: 14px;"></div>
+          </div>
+          <div class="status-cell"><span class="status-pill ended">○ ended</span></div>
+          <div class="time-cell">20h ago</div>
+          <div class="time-cell">today</div>
+          <div class="time-cell">20:15</div>
+        </div>
+
+        <!-- Row: poem-os -->
+        <div class="session-row ended">
+          <div class="row-accent"><div class="row-accent-bar"></div></div>
+          <div><div class="status-dot ended"></div></div>
+          <div class="project-cell">
+            <div class="project-name">poem-os</div>
+            <div style="height: 14px;"></div>
+          </div>
+          <div class="status-cell"><span class="status-pill ended">○ ended</span></div>
+          <div class="time-cell">1d ago</div>
+          <div class="time-cell">yesterday</div>
+          <div class="time-cell">—</div>
+        </div>
+
+      </div><!-- /table-container -->
+    </main>
+
+  </div><!-- /app-body -->
+</div><!-- /app-shell -->
+
+</body>
+</html>

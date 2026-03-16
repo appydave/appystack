@@ -108,6 +108,7 @@ npm run typecheck     # TypeScript across all workspaces
 
 ## Patterns
 
+- **UI decisions with multiple options**: Before implementing any frontend feature where 2+ approaches are viable, run `/mochaccino` first. Generate 4 variations, pick one, then code. Skipping this step leads to implementation rework — the cost of a mockup is minutes, the cost of the wrong implementation is sessions.
 - **Shared types**: Define in `shared/src/types.ts`, import via `@appystack-template/shared`
 - **API routes**: Add to `server/src/routes/`, mount in `server/src/index.ts`
 - **Socket events**: Add to `ServerToClientEvents` / `ClientToServerEvents` in shared, handle in `server/src/index.ts`

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v16 Console</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c1a0c;
+    --bg2: #0a150a;
+    --surface: #111f11;
+    --border: #1a301a;
+    --border2: #244024;
+    --green: #4ade80;
+    --green-dim: #2d7a3d;
+    --green-faint: #1a4a1a;
+    --amber: #fbbf24;
+    --text: #7ec87e;
+    --muted: #3a6a3a;
+    --faint: #244024;
+    --cursor: #4ade80;
+  }
+
+  body {
+    font-family: 'DM Mono', 'Courier New', monospace;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: var(--text);
+  }
+
+  /* Status bar at top */
+  .statusbar {
+    height: 24px; display: flex; align-items: center; padding: 0 16px; gap: 20px;
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    font-size: 10px; color: var(--muted); letter-spacing: 0.06em;
+    flex-shrink: 0;
+  }
+  .sb-item { display: flex; align-items: center; gap: 6px; }
+  .sb-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); box-shadow: 0 0 4px rgba(74,222,128,0.5); }
+  .sb-dot.amber { background: var(--amber); box-shadow: 0 0 4px rgba(251,191,36,0.5); }
+  .sb-dot.off { background: var(--faint); box-shadow: none; }
+  .sb-right { margin-left: auto; display: flex; gap: 16px; }
+
+  /* Menu bar */
+  .menubar {
+    height: 32px; display: flex; align-items: center; padding: 0 16px; gap: 4px;
+    background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .menu-item {
+    padding: 2px 10px; border-radius: 3px; font-size: 11px; color: var(--muted);
+    cursor: pointer; transition: all 0.12s;
+  }
+  .menu-item:hover { background: var(--border); color: var(--text); }
+  .menu-item.active { background: var(--green-faint); color: var(--green); }
+  .menu-sep { width: 1px; height: 14px; background: var(--border); margin: 0 4px; }
+  .menu-right { margin-left: auto; display: flex; gap: 2px; }
+  .mode-btn { padding: 2px 8px; border-radius: 3px; font-size: 10px; color: var(--faint); cursor: pointer; transition: all 0.12s; border: 1px solid transparent; }
+  .mode-btn:hover { color: var(--muted); border-color: var(--border2); }
+  .mode-btn.active { color: var(--green); border-color: var(--green-dim); background: var(--green-faint); }
+
+  /* Layout: two panels */
+  .layout { flex: 1; display: grid; grid-template-columns: 260px 1fr; overflow: hidden; }
+
+  /* Left panel: workflow list in console style */
+  .panel-left {
+    background: var(--bg2); border-right: 1px solid var(--border);
+    padding: 0; display: flex; flex-direction: column; overflow-y: auto;
+  }
+  .panel-title {
+    padding: 10px 14px; font-size: 10px; color: var(--muted); letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0;
+  }
+  .panel-title span { color: var(--green-dim); }
+
+  .group-header { padding: 8px 14px 4px; font-size: 9px; color: var(--faint); letter-spacing: 0.16em; }
+  .wf-item {
+    display: flex; align-items: center; gap: 8px; padding: 7px 14px;
+    cursor: pointer; transition: all 0.1s; font-size: 11px;
+  }
+  .wf-item:hover { background: var(--green-faint); }
+  .wf-item.active { background: var(--green-faint); border-left: 2px solid var(--green); padding-left: 12px; }
+  .wf-item.dim { opacity: 0.2; cursor: not-allowed; }
+  .wf-item.dim:hover { background: transparent; }
+  .wf-prompt { color: var(--green-dim); flex-shrink: 0; }
+  .wf-item.active .wf-prompt { color: var(--green); }
+  .wf-name { color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wf-item.active .wf-name { color: var(--text); }
+  .wf-badge { font-size: 9px; color: var(--faint); }
+  .wf-item.active .wf-badge { color: var(--green-dim); }
+
+  .panel-footer { margin-top: auto; padding: 10px 14px; border-top: 1px solid var(--border); font-size: 10px; color: var(--faint); }
+
+  /* Right panel: main terminal */
+  .panel-right { background: var(--bg); overflow-y: auto; padding: 0; }
+
+  .terminal { padding: 24px 32px; }
+
+  /* Prompt lines */
+  .prompt-line { margin-bottom: 6px; display: flex; align-items: baseline; gap: 8px; }
+  .prompt-sign { color: var(--green-dim); flex-shrink: 0; }
+  .prompt-cmd { color: var(--text); }
+  .prompt-arg { color: var(--amber); }
+  .prompt-str { color: #86efac; }
+  .prompt-comment { color: var(--muted); }
+
+  /* Output block */
+  .output-block { margin: 16px 0; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; }
+  .out-row { display: flex; gap: 16px; align-items: baseline; margin-bottom: 4px; font-size: 12px; }
+  .out-key { color: var(--muted); min-width: 100px; }
+  .out-val { color: var(--text); }
+  .out-val.highlight { color: var(--green); font-size: 14px; }
+  .out-val.amber { color: var(--amber); }
+  .out-val.dim { color: var(--faint); }
+  .out-sep { height: 1px; background: var(--border); margin: 10px 0; }
+
+  /* Stats in ASCII style */
+  .stats-block { margin: 16px 0; font-size: 11px; }
+  .stat-row { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .stat-bar { height: 8px; background: var(--green-faint); border-radius: 2px; position: relative; overflow: hidden; }
+  .stat-fill { height: 100%; background: var(--green); border-radius: 2px; }
+  .stat-key { color: var(--muted); min-width: 80px; }
+  .stat-n { color: var(--green); min-width: 20px; text-align: right; }
+  .stat-track { flex: 1; height: 6px; background: var(--green-faint); border-radius: 2px; overflow: hidden; }
+  .stat-track-fill { height: 100%; background: var(--green-dim); border-radius: 2px; }
+
+  /* Input prompt */
+  .input-section { margin-top: 20px; }
+  .input-label { font-size: 10px; color: var(--faint); margin-bottom: 8px; letter-spacing: 0.08em; }
+  .input-options { display: flex; flex-direction: column; gap: 3px; margin-bottom: 14px; }
+  .input-opt {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    border: 1px solid var(--border2); border-radius: 3px; cursor: pointer;
+    background: var(--surface); transition: all 0.12s; font-size: 11px;
+  }
+  .input-opt:hover { border-color: var(--green-dim); background: var(--green-faint); }
+  .opt-n { color: var(--green-dim); min-width: 14px; }
+  .opt-text { color: var(--muted); }
+  .input-opt:hover .opt-text { color: var(--text); }
+  .opt-hint { margin-left: auto; color: var(--faint); font-size: 10px; }
+
+  .cursor-line { display: flex; align-items: center; gap: 6px; padding-top: 6px; font-size: 12px; }
+  .cursor-prompt { color: var(--green); }
+  .cursor { display: inline-block; width: 7px; height: 14px; background: var(--cursor); animation: blink 1s step-end infinite; vertical-align: text-bottom; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .drop-zone {
+    border: 1px dashed var(--border2); border-radius: 3px; padding: 12px 16px;
+    text-align: center; cursor: pointer; transition: all 0.12s; font-size: 11px; color: var(--faint);
+    margin-top: 10px;
+  }
+  .drop-zone:hover { border-color: var(--green-dim); color: var(--muted); background: var(--green-faint); }
+</style>
+</head>
+<body>
+
+<!-- Status bar -->
+<div class="statusbar">
+  <div class="sb-item"><div class="sb-dot"></div>AWB connected</div>
+  <div class="sb-item"><div class="sb-dot amber"></div>Signal Studio</div>
+  <div class="sb-item"><div class="sb-dot off"></div>FliHub — offline</div>
+  <div class="sb-right">
+    <span>awb v2.4.1</span>
+    <span>engineer mode</span>
+  </div>
+</div>
+
+<!-- Menu bar -->
+<div class="menubar">
+  <span class="menu-item active">file</span>
+  <span class="menu-item">run</span>
+  <span class="menu-item">view</span>
+  <span class="menu-item">help</span>
+  <div class="menu-sep"></div>
+  <div class="menu-right">
+    <button class="mode-btn active">engineer</button>
+    <button class="mode-btn">pilot</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- Workflow browser -->
+  <div class="panel-left">
+    <div class="panel-title">workflows <span>[3 found]</span></div>
+
+    <div class="group-header">// signal-studio</div>
+    <div class="wf-item active">
+      <span class="wf-prompt">▶</span>
+      <span class="wf-name">new-incident</span>
+      <span class="wf-badge">[8]</span>
+    </div>
+    <div class="wf-item">
+      <span class="wf-prompt">·</span>
+      <span class="wf-name">moments-that-matter</span>
+      <span class="wf-badge">[12]</span>
+    </div>
+    <div class="group-header">// fli-hub</div>
+    <div class="wf-item dim">
+      <span class="wf-prompt">✕</span>
+      <span class="wf-name">yt-launch-optimizer</span>
+      <span class="wf-badge">[?]</span>
+    </div>
+
+    <div class="panel-footer">
+      &lt;/&gt; api · localhost:3001
+    </div>
+  </div>
+
+  <!-- Terminal main panel -->
+  <div class="panel-right">
+    <div class="terminal">
+
+      <div class="prompt-line">
+        <span class="prompt-sign">$</span>
+        <span class="prompt-cmd">awb run</span>
+        <span class="prompt-arg">--workflow</span>
+        <span class="prompt-str">"new-incident"</span>
+        <span class="prompt-arg">--mode</span>
+        <span class="prompt-str">"engineer"</span>
+      </div>
+
+      <div class="output-block">
+        <div class="out-row"><span class="out-key">workflow</span><span class="out-val highlight">new-incident</span></div>
+        <div class="out-row"><span class="out-key">application</span><span class="out-val">Signal Studio</span></div>
+        <div class="out-row"><span class="out-key">status</span><span class="out-val amber">● ready</span></div>
+        <div class="out-sep"></div>
+        <div class="out-row"><span class="out-key">description</span><span class="out-val dim">Analyse NDIS support incidents end-to-end — narrative</span></div>
+        <div class="out-row"><span class="out-key"></span><span class="out-val dim">enhancement, question generation, and observation synthesis.</span></div>
+      </div>
+
+      <div class="stats-block">
+        <div class="stat-row">
+          <span class="stat-key">steps</span>
+          <span class="stat-n">8</span>
+          <div class="stat-track"><div class="stat-track-fill" style="width:67%"></div></div>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">predicates</span>
+          <span class="stat-n">3</span>
+          <div class="stat-track"><div class="stat-track-fill" style="width:37%"></div></div>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">llm_calls</span>
+          <span class="stat-n">6</span>
+          <div class="stat-track"><div class="stat-track-fill" style="width:50%"></div></div>
+        </div>
+      </div>
+
+      <div class="prompt-line" style="margin-top:16px;color:var(--muted);">
+        <span class="prompt-sign">#</span>
+        <span class="prompt-comment">Select entry mode:</span>
+      </div>
+
+      <div class="input-section">
+        <div class="input-options">
+          <div class="input-opt">
+            <span class="opt-n">[1]</span>
+            <span class="opt-text">load --file &lt;path-to-json&gt;</span>
+            <span class="opt-hint">pre-fill from export</span>
+          </div>
+          <div class="input-opt">
+            <span class="opt-n">[2]</span>
+            <span class="opt-text">start --fresh</span>
+            <span class="opt-hint">empty fields</span>
+          </div>
+          <div class="input-opt">
+            <span class="opt-n">[3]</span>
+            <span class="opt-text">load --paste-json</span>
+            <span class="opt-hint">paste from clipboard</span>
+          </div>
+        </div>
+
+        <div class="drop-zone">drag + drop .json to auto-select option [1]</div>
+
+        <div class="cursor-line">
+          <span class="cursor-prompt">awb &gt;</span>
+          <span class="cursor"></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

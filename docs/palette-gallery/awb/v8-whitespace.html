@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v8 Whitespace</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #ffffff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: #1a1515;
+  }
+
+  /* Minimal header strip */
+  .header {
+    padding: 0 60px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #f0ece4;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: #1a1515;
+    letter-spacing: 0.1em;
+    line-height: 1;
+  }
+  .logo-divider { width: 1px; height: 16px; background: #e0d8cc; }
+  .logo-sub { font-size: 12px; color: #9e9090; letter-spacing: 0.02em; }
+  .mode-toggle {
+    display: flex;
+    gap: 0;
+    border: 1px solid #e0d8cc;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .mode-btn {
+    padding: 5px 14px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: #9e9090;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.04em;
+    transition: all 0.14s;
+  }
+  .mode-btn + .mode-btn { border-left: 1px solid #e0d8cc; }
+  .mode-btn.active { background: #1a1515; color: #ffffff; }
+
+  /* Main content */
+  .page {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 80px 60px;
+    gap: 80px;
+    align-items: start;
+  }
+
+  /* Left: pure typography */
+  .left { padding-top: 8px; }
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #b0a090;
+    margin-bottom: 20px;
+  }
+
+  .big-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 80px;
+    line-height: 0.88;
+    letter-spacing: 0.01em;
+    color: #1a1515;
+    margin-bottom: 24px;
+  }
+
+  .description {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #6b5f5f;
+    max-width: 340px;
+    margin-bottom: 40px;
+    font-weight: 300;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid #f0ece4;
+    border-bottom: 1px solid #f0ece4;
+    padding: 20px 0;
+  }
+  .stat-cell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-cell + .stat-cell { border-left: 1px solid #f0ece4; padding-left: 20px; margin-left: 0; }
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    line-height: 1;
+    color: #1a1515;
+    letter-spacing: 0.04em;
+  }
+  .stat-lbl {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #b0a090;
+    font-weight: 500;
+  }
+
+  /* Workflow picker — small, at bottom of left col */
+  .wf-picker { margin-top: 32px; }
+  .picker-label { font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #c0b0a0; margin-bottom: 10px; }
+  .picker-list { display: flex; flex-direction: column; gap: 2px; }
+  .picker-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    border-radius: 7px; cursor: pointer; transition: background 0.14s;
+  }
+  .picker-row:hover { background: #faf5ec; }
+  .picker-row.active { background: #f5f0e8; }
+  .picker-dot { width: 5px; height: 5px; border-radius: 50%; background: #d8ccb8; flex-shrink: 0; }
+  .picker-row.active .picker-dot { background: #342d2d; }
+  .picker-name { font-size: 13px; color: #6b5f5f; font-weight: 500; }
+  .picker-row.active .picker-name { color: #1a1515; }
+  .picker-meta { font-size: 10px; color: #b0a090; font-family: 'DM Mono', monospace; margin-left: auto; }
+  .picker-row.dim { opacity: 0.3; cursor: not-allowed; }
+  .picker-row.dim:hover { background: transparent; }
+
+  /* Right: actions */
+  .right { }
+  .action-heading {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: #b0a090; margin-bottom: 24px;
+  }
+
+  /* Big CTA buttons */
+  .cta-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+  .cta-primary {
+    display: flex; align-items: center; gap: 14px; padding: 18px 20px;
+    background: #1a1515; border-radius: 10px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .cta-primary:hover { background: #342d2d; }
+  .cta-icon {
+    width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .cta-text { flex: 1; }
+  .cta-title { font-size: 14px; font-weight: 600; color: #ffffff; }
+  .cta-sub { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+  .cta-arrow { color: rgba(255,255,255,0.3); font-size: 16px; }
+
+  .cta-secondary {
+    display: flex; align-items: center; gap: 14px; padding: 18px 20px;
+    background: #faf5ec; border: 1px solid #e8e0d0; border-radius: 10px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cta-secondary:hover { border-color: #ccba9d; box-shadow: 0 2px 10px rgba(52,45,45,0.06); }
+  .cta-icon-light {
+    width: 36px; height: 36px; border-radius: 8px; background: #ffffff;
+    border: 1px solid #e0d4b8;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .cta-title-dark { font-size: 14px; font-weight: 600; color: #342d2d; }
+  .cta-sub-dark { font-size: 12px; color: #9e9090; margin-top: 2px; }
+  .cta-arrow-dark { color: #c0b0a0; font-size: 16px; }
+
+  /* JSON drop mini */
+  .json-drop {
+    border: 1.5px dashed #e0d4b8; border-radius: 8px; padding: 16px;
+    text-align: center; cursor: pointer; transition: all 0.14s; margin-top: 10px;
+    font-size: 12px; color: #b0a090;
+  }
+  .json-drop:hover { border-color: #ccba9d; color: #8a7a6a; background: #faf5ec; }
+
+  /* API */
+  .api-row {
+    display: flex; align-items: center; gap: 8px; padding-top: 24px;
+    border-top: 1px solid #f0ece4; margin-top: 24px;
+    font-size: 11px; color: #c0b0a0; font-family: 'DM Mono', monospace;
+    cursor: pointer; transition: color 0.14s; letter-spacing: 0.06em;
+  }
+  .api-row:hover { color: #8a7a6a; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <span class="logo">AWB</span>
+    <div class="logo-divider"></div>
+    <span class="logo-sub">Agent Workflow Builder</span>
+  </div>
+  <div class="mode-toggle">
+    <button class="mode-btn active">Engineer</button>
+    <button class="mode-btn">Pilot</button>
+  </div>
+</header>
+
+<div class="page">
+
+  <div class="left">
+    <div class="eyebrow">Signal Studio</div>
+    <h1 class="big-title">New<br>Incident<br>Intake</h1>
+    <p class="description">Analyse NDIS support incidents end-to-end — narrative enhancement, question generation, and observation synthesis.</p>
+
+    <div class="stats-row">
+      <div class="stat-cell">
+        <span class="stat-num">8</span>
+        <span class="stat-lbl">Steps</span>
+      </div>
+      <div class="stat-cell" style="padding-left:20px;">
+        <span class="stat-num">3</span>
+        <span class="stat-lbl">Predicates</span>
+      </div>
+      <div class="stat-cell" style="padding-left:20px;">
+        <span class="stat-num">6</span>
+        <span class="stat-lbl">LLM Calls</span>
+      </div>
+    </div>
+
+    <div class="wf-picker">
+      <div class="picker-label">All Workflows</div>
+      <div class="picker-list">
+        <div class="picker-row active">
+          <div class="picker-dot"></div>
+          <span class="picker-name">New Incident Intake</span>
+          <span class="picker-meta">8 · 3 · 6</span>
+        </div>
+        <div class="picker-row">
+          <div class="picker-dot"></div>
+          <span class="picker-name">Moments That Matter</span>
+          <span class="picker-meta">12 · batch</span>
+        </div>
+        <div class="picker-row dim">
+          <div class="picker-dot"></div>
+          <span class="picker-name">YouTube Launch Optimizer</span>
+          <span class="picker-meta">not here</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="action-heading">How to start</div>
+
+    <div class="cta-group">
+      <div class="cta-primary">
+        <div class="cta-icon">
+          <svg width="16" height="16" fill="none" stroke="rgba(255,255,255,0.7)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        </div>
+        <div class="cta-text">
+          <div class="cta-title">Load Data</div>
+          <div class="cta-sub">Pre-fill from a JSON export</div>
+        </div>
+        <span class="cta-arrow">→</span>
+      </div>
+
+      <div class="cta-secondary">
+        <div class="cta-icon-light">
+          <svg width="14" height="14" fill="none" stroke="#9a7a4a" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        </div>
+        <div class="cta-text">
+          <div class="cta-title-dark">Start Fresh</div>
+          <div class="cta-sub-dark">Begin with empty fields</div>
+        </div>
+        <span class="cta-arrow-dark">→</span>
+      </div>
+    </div>
+
+    <div class="json-drop">or drop a .json file anywhere on this page</div>
+
+    <div class="api-row">
+      <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+      API Integration — POST /api/workflow/intake
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

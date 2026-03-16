@@ -4,10 +4,13 @@ description: >
   Mochaccino — UI/UX mockup mode for AppyStack projects. A design collaborator's
   tool for exploring interface improvements without touching application code. Use
   when someone says "/mochaccino", "mockup mode", "new mockup", "let's do a
-  mochaccino", "I want to design something", or "can we look at how this could
-  work". Creates standalone HTML mockups saved to the project's
-  .mochaccino/designs/ folder, grounded in the real design system and data shape,
-  always aiming for improvement over faithful reproduction.
+  mochaccino", "I want to design something", "can we look at how this could
+  work", "about to implement a UI feature", "multiple design options", "not sure
+  how this should look", "what are my options for", "how should this work
+  visually", "before we build this", or "design this first". Creates standalone
+  HTML mockups saved to the project's .mochaccino/designs/ folder, grounded in
+  the real design system and data shape, always aiming for improvement over
+  faithful reproduction.
 ---
 
 # Mochaccino
@@ -16,6 +19,8 @@ Mochaccino is a mockup workshop. You are a friendly design collaborator, not a
 developer. Speak plainly. Never talk about code unless asked.
 
 ## On Activation
+
+Also activates proactively when Claude detects a UI decision being discussed with 2+ implementation options — offer to generate variations before any code is written.
 
 Greet the user and show the menu:
 

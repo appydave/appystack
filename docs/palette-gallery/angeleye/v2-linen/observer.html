@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AngelEye — Observer — v2-linen</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #e8e0d4;
+    color: #2a2018;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Banner */
+  .banner {
+    background: #2a2018;
+    color: #7a6e5e;
+    font-size: 11px;
+    text-align: center;
+    padding: 3px 0;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+  }
+
+  /* Header */
+  .app-header {
+    background: #f5f1eb;
+    border-bottom: 1px solid #d4cdc4;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    flex-shrink: 0;
+    gap: 16px;
+  }
+
+  .app-name {
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: 0.15em;
+    color: #2a2018;
+    text-transform: uppercase;
+  }
+
+  .app-name span {
+    color: #c8841a;
+  }
+
+  .session-pill {
+    background: #c8841a;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  .header-nav {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .nav-btn {
+    font-size: 12px;
+    font-weight: 500;
+    color: #7a6e5e;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .nav-btn:hover {
+    background: #ddd6cc;
+    color: #2a2018;
+  }
+
+  .nav-btn.active {
+    background: #2a2018;
+    color: #d4c9b8;
+  }
+
+  /* Layout */
+  .layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    background: #ede7dc;
+    border-right: 1px solid #d4cdc4;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 16px 0 8px;
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #7a6e5e;
+    padding: 0 16px 6px;
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #4a3e30;
+    cursor: pointer;
+    transition: background 0.12s;
+    border-left: 2px solid transparent;
+  }
+
+  .sidebar-item:hover {
+    background: #ddd6cc;
+  }
+
+  .sidebar-item.active {
+    background: #ede7dc;
+    border-left: 2px solid #c8841a;
+    color: #2a2018;
+    font-weight: 600;
+  }
+
+  .sidebar-item .item-icon {
+    font-size: 14px;
+    opacity: 0.7;
+  }
+
+  .sidebar-item .item-count {
+    margin-left: auto;
+    font-size: 11px;
+    color: #7a6e5e;
+    background: #d4cdc4;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  .sidebar-item.active .item-count {
+    background: #c8841a;
+    color: #fff;
+  }
+
+  .sidebar-divider {
+    height: 1px;
+    background: #d4cdc4;
+    margin: 8px 16px;
+  }
+
+  /* Main content */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #e8e0d4;
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: #e8e0d4;
+    flex-shrink: 0;
+  }
+
+  .filter-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #7a6e5e;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .filter-chip {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 11px;
+    border-radius: 12px;
+    cursor: pointer;
+    border: 1px solid #d4cdc4;
+    color: #7a6e5e;
+    background: transparent;
+    transition: all 0.12s;
+  }
+
+  .filter-chip:hover {
+    background: #ddd6cc;
+    color: #2a2018;
+  }
+
+  .filter-chip.active {
+    background: #2a2018;
+    color: #d4c9b8;
+    border-color: #2a2018;
+  }
+
+  .filter-sep {
+    flex: 1;
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    background: #f5f1eb;
+    border: 1px solid #d4cdc4;
+    border-radius: 6px;
+    padding: 5px 10px;
+    gap: 6px;
+  }
+
+  .search-box svg {
+    opacity: 0.4;
+  }
+
+  .search-input {
+    font-size: 12px;
+    color: #7a6e5e;
+    width: 140px;
+  }
+
+  /* Column header */
+  .col-header {
+    background: #2a2018;
+    display: grid;
+    grid-template-columns: 280px 1fr 160px 90px 80px;
+    padding: 0 20px;
+    height: 32px;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .col-header-cell {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #d4c9b8;
+    opacity: 0.7;
+  }
+
+  .col-header-cell.right {
+    text-align: right;
+  }
+
+  /* Sessions list */
+  .sessions-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Section label */
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0 4px;
+  }
+
+  .section-divider-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #7a6e5e;
+  }
+
+  .section-divider-line {
+    flex: 1;
+    height: 1px;
+    background: #d4cdc4;
+  }
+
+  .section-divider-count {
+    font-size: 10px;
+    color: #7a6e5e;
+    background: #d4cdc4;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  /* Session card */
+  .session-card {
+    background: #f5f1eb;
+    border: 1px solid #ddd6cc;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(42,32,24,0.08);
+    display: grid;
+    grid-template-columns: 280px 1fr 160px 90px 80px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background 0.12s, box-shadow 0.12s;
+    border-left: 3px solid transparent;
+    position: relative;
+  }
+
+  .session-card:hover {
+    background: #faf8f4;
+    box-shadow: 0 2px 6px rgba(42,32,24,0.12);
+  }
+
+  .session-card.is-active {
+    border-left: 3px solid #c8841a;
+  }
+
+  /* Project info */
+  .project-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .project-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .active-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #c8841a;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 2px rgba(200,132,26,0.2);
+  }
+
+  .ended-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #c4bcb0;
+    flex-shrink: 0;
+  }
+
+  .project-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2a2018;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .session-id {
+    font-size: 10px;
+    font-family: 'SF Mono', 'Fira Mono', 'Consolas', monospace;
+    color: #b0a898;
+    background: #ede7dc;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .session-human-name {
+    font-size: 12px;
+    font-style: italic;
+    color: #c8841a;
+    padding-left: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Tags */
+  .tags-cell {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 9px;
+    border: 1px solid #c8841a;
+    color: #c8841a;
+    letter-spacing: 0.04em;
+    background: rgba(200,132,26,0.06);
+  }
+
+  /* Path */
+  .path-cell {
+    font-size: 11px;
+    font-family: 'SF Mono', 'Fira Mono', 'Consolas', monospace;
+    color: #7a6e5e;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Status pill */
+  .status-pill {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 10px;
+    letter-spacing: 0.04em;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .status-pill.active {
+    background: #c8841a;
+    color: #fff;
+  }
+
+  .status-pill.ended {
+    background: transparent;
+    border: 1px solid #c4bcb0;
+    color: #9a8e7e;
+  }
+
+  /* Time cell */
+  .time-cell {
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Mono', 'Consolas', monospace;
+    color: #7a6e5e;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .time-cell.fresh {
+    color: #c8841a;
+    font-weight: 600;
+  }
+
+  /* Scrollbar */
+  .sessions-list::-webkit-scrollbar { width: 6px; }
+  .sessions-list::-webkit-scrollbar-track { background: transparent; }
+  .sessions-list::-webkit-scrollbar-thumb { background: #c4bcb0; border-radius: 3px; }
+
+  /* Status bar */
+  .status-bar {
+    height: 26px;
+    background: #2a2018;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .status-item {
+    font-size: 11px;
+    color: #7a6e5e;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .status-item .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #c8841a;
+  }
+
+  .status-item .dot.muted {
+    background: #5a4e40;
+  }
+
+  .status-right {
+    margin-left: auto;
+    font-size: 11px;
+    color: #5a4e40;
+    font-family: 'SF Mono', 'Fira Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="banner">Mochaccino — v2-linen — observer — 2026-03-15</div>
+
+<!-- Header -->
+<div class="app-header">
+  <div class="app-name">ANGEL<span>EYE</span></div>
+  <div class="session-pill">4 active</div>
+  <div class="header-nav">
+    <div class="nav-btn active">Observer</div>
+    <div class="nav-btn">Organiser</div>
+    <div class="nav-btn">Settings</div>
+  </div>
+</div>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Status</div>
+      <div class="sidebar-item active">
+        <span class="item-icon">◉</span> All Sessions
+        <span class="item-count">10</span>
+      </div>
+      <div class="sidebar-item">
+        <span class="item-icon">◎</span> Active
+        <span class="item-count">4</span>
+      </div>
+      <div class="sidebar-item">
+        <span class="item-icon">○</span> Ended
+        <span class="item-count">6</span>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Workspaces</div>
+      <div class="sidebar-item">
+        <span class="item-icon">⬡</span> AngelEye Dev
+        <span class="item-count">2</span>
+      </div>
+      <div class="sidebar-item">
+        <span class="item-icon">⬡</span> Tools
+        <span class="item-count">1</span>
+      </div>
+      <div class="sidebar-item">
+        <span class="item-icon">⬡</span> Client Work
+        <span class="item-count">1</span>
+      </div>
+      <div class="sidebar-item">
+        <span class="item-icon">⬡</span> Research
+        <span class="item-count">1</span>
+      </div>
+      <div class="sidebar-item" style="color:#b0a898;">
+        <span class="item-icon" style="opacity:0.4">○</span> Inbox
+        <span class="item-count">5</span>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Tags</div>
+      <div class="sidebar-item">
+        <span class="item-icon">◇</span> wave-6
+        <span class="item-count">1</span>
+      </div>
+      <div class="sidebar-item">
+        <span class="item-icon">◇</span> client
+        <span class="item-count">1</span>
+      </div>
+      <div class="sidebar-item">
+        <span class="item-icon">◇</span> research
+        <span class="item-count">1</span>
+      </div>
+      <div class="sidebar-item">
+        <span class="item-icon">◇</span> dsl
+        <span class="item-count">1</span>
+      </div>
+      <div class="sidebar-item">
+        <span class="item-icon">◇</span> plugin
+        <span class="item-count">1</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <span class="filter-label">Filter</span>
+      <div class="filter-chip active">All</div>
+      <div class="filter-chip">Named</div>
+      <div class="filter-chip">Tagged</div>
+      <div class="filter-chip">Today</div>
+      <div class="filter-sep"></div>
+      <div class="search-box">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <circle cx="5" cy="5" r="3.5" stroke="#2a2018" stroke-width="1.3"/>
+          <path d="M8 8L10.5 10.5" stroke="#2a2018" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        <div class="search-input" style="color:#b0a898;">Search sessions…</div>
+      </div>
+    </div>
+
+    <!-- Column headers -->
+    <div class="col-header">
+      <div class="col-header-cell">Project / Session</div>
+      <div class="col-header-cell">Tags</div>
+      <div class="col-header-cell">Path</div>
+      <div class="col-header-cell">Status</div>
+      <div class="col-header-cell right">Last Active</div>
+    </div>
+
+    <!-- Sessions -->
+    <div class="sessions-list">
+
+      <!-- Active section -->
+      <div class="section-divider">
+        <span class="section-divider-label">Active</span>
+        <div class="section-divider-line"></div>
+        <span class="section-divider-count">4</span>
+      </div>
+
+      <!-- Session: angeleye (active) -->
+      <div class="session-card is-active">
+        <div class="project-info">
+          <div class="project-row">
+            <div class="active-dot"></div>
+            <span class="project-name">angeleye</span>
+            <span class="session-id">4f2a1b</span>
+          </div>
+          <div class="session-human-name">"Fix write queue"</div>
+        </div>
+        <div class="tags-cell">
+          <span class="tag">wave-6</span>
+        </div>
+        <div class="path-cell">/dev/ad/apps/angeleye</div>
+        <div><span class="status-pill active">active</span></div>
+        <div class="time-cell fresh">2s ago</div>
+      </div>
+
+      <!-- Session: deckhand (active) -->
+      <div class="session-card is-active">
+        <div class="project-info">
+          <div class="project-row">
+            <div class="active-dot"></div>
+            <span class="project-name">deckhand</span>
+            <span class="session-id">9c3e2d</span>
+          </div>
+        </div>
+        <div class="tags-cell"></div>
+        <div class="path-cell">/dev/ad/apps/deckhand</div>
+        <div><span class="status-pill active">active</span></div>
+        <div class="time-cell fresh">32s ago</div>
+      </div>
+
+      <!-- Session: appydave-plugins (active) -->
+      <div class="session-card is-active">
+        <div class="project-info">
+          <div class="project-row">
+            <div class="active-dot"></div>
+            <span class="project-name">appydave-plugins</span>
+            <span class="session-id">a7f891</span>
+          </div>
+          <div class="session-human-name">"Plugin loader"</div>
+        </div>
+        <div class="tags-cell">
+          <span class="tag">plugin</span>
+        </div>
+        <div class="path-cell">/dev/ad/appydave-plugins</div>
+        <div><span class="status-pill active">active</span></div>
+        <div class="time-cell fresh">34s ago</div>
+      </div>
+
+      <!-- Session: lars (active) -->
+      <div class="session-card is-active">
+        <div class="project-info">
+          <div class="project-row">
+            <div class="active-dot"></div>
+            <span class="project-name">lars</span>
+            <span class="session-id">b2d456</span>
+          </div>
+        </div>
+        <div class="tags-cell"></div>
+        <div class="path-cell">/dev/ad/lars</div>
+        <div><span class="status-pill active">active</span></div>
+        <div class="time-cell fresh">1m ago</div>
+      </div>
+
+      <!-- Ended section -->
+      <div class="section-divider" style="margin-top:8px;">
+        <span class="section-divider-label">Ended</span>
+        <div class="section-divider-line"></div>
+        <span class="section-divider-count">6</span>
+      </div>
+
+      <!-- Session: brains (ended) -->
+      <div class="session-card">
+        <div class="project-info">
+          <div class="project-row">
+            <div class="ended-dot"></div>
+            <span class="project-name" style="color:#4a3e30;">brains</span>
+            <span class="session-id">c8e123</span>
+          </div>
+          <div class="session-human-name">"Brain indexing"</div>
+        </div>
+        <div class="tags-cell">
+          <span class="tag" style="border-color:#b0a898;color:#9a8e7e;background:transparent;">research</span>
+        </div>
+        <div class="path-cell">/dev/ad/brains</div>
+        <div><span class="status-pill ended">ended</span></div>
+        <div class="time-cell">4h ago</div>
+      </div>
+
+      <!-- Session: signal-studio (ended) -->
+      <div class="session-card">
+        <div class="project-info">
+          <div class="project-row">
+            <div class="ended-dot"></div>
+            <span class="project-name" style="color:#4a3e30;">signal-studio</span>
+            <span class="session-id">d1f789</span>
+          </div>
+        </div>
+        <div class="tags-cell">
+          <span class="tag" style="border-color:#b0a898;color:#9a8e7e;background:transparent;">client</span>
+        </div>
+        <div class="path-cell">/dev/clients/supportsignal</div>
+        <div><span class="status-pill ended">ended</span></div>
+        <div class="time-cell">7h ago</div>
+      </div>
+
+      <!-- Session: appystack (ended) -->
+      <div class="session-card">
+        <div class="project-info">
+          <div class="project-row">
+            <div class="ended-dot"></div>
+            <span class="project-name" style="color:#4a3e30;">appystack</span>
+            <span class="session-id">e5a234</span>
+          </div>
+        </div>
+        <div class="tags-cell"></div>
+        <div class="path-cell">/dev/ad/apps/appystack</div>
+        <div><span class="status-pill ended">ended</span></div>
+        <div class="time-cell">5h ago</div>
+      </div>
+
+      <!-- Session: klueless (ended) -->
+      <div class="session-card">
+        <div class="project-info">
+          <div class="project-row">
+            <div class="ended-dot"></div>
+            <span class="project-name" style="color:#4a3e30;">klueless</span>
+            <span class="session-id">f3b678</span>
+          </div>
+          <div class="session-human-name">"DSL refactor"</div>
+        </div>
+        <div class="tags-cell">
+          <span class="tag" style="border-color:#b0a898;color:#9a8e7e;background:transparent;">dsl</span>
+        </div>
+        <div class="path-cell">/dev/klueless</div>
+        <div><span class="status-pill ended">ended</span></div>
+        <div class="time-cell">8h ago</div>
+      </div>
+
+      <!-- Session: thumbrack (ended) -->
+      <div class="session-card">
+        <div class="project-info">
+          <div class="project-row">
+            <div class="ended-dot"></div>
+            <span class="project-name" style="color:#4a3e30;">thumbrack</span>
+            <span class="session-id">071c45</span>
+          </div>
+        </div>
+        <div class="tags-cell"></div>
+        <div class="path-cell">/dev/thumbrack</div>
+        <div><span class="status-pill ended">ended</span></div>
+        <div class="time-cell">20h ago</div>
+      </div>
+
+      <!-- Session: poem-os (ended) -->
+      <div class="session-card">
+        <div class="project-info">
+          <div class="project-row">
+            <div class="ended-dot"></div>
+            <span class="project-name" style="color:#4a3e30;">poem-os</span>
+            <span class="session-id">182d90</span>
+          </div>
+        </div>
+        <div class="tags-cell"></div>
+        <div class="path-cell">/dev/ad/poem-os</div>
+        <div><span class="status-pill ended">ended</span></div>
+        <div class="time-cell">1d ago</div>
+      </div>
+
+    </div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <div class="status-item">
+        <div class="dot"></div>
+        4 active
+      </div>
+      <div class="status-item">
+        <div class="dot muted"></div>
+        6 ended
+      </div>
+      <div class="status-item">
+        <div class="dot muted"></div>
+        5 unassigned
+      </div>
+      <div class="status-right">polling 5s · 15:42:07</div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

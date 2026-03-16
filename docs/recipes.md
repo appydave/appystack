@@ -17,6 +17,7 @@ Recipes are:
 | `file-crud` | JSON file-based persistence for one or more entities — real-time Socket.io sync, chokidar watcher, no database required | [file-crud.md](../template/.claude/skills/recipe/references/file-crud.md) |
 | `api-endpoints` | REST API layer with OpenAPI/Swagger documentation — exposes entities as external-facing endpoints with auth and CORS | [api-endpoints.md](../template/.claude/skills/recipe/references/api-endpoints.md) |
 | `zod-schema` | Runtime schema validation for file-CRUD entities — Zod schemas as source of truth, integrity checker, client-side form validation | [See below](#zod-schema-validation) |
+| `appydave-palette` | AppyDave color semantics — the five rules that make any UI feel like it belongs to the AppyDave ecosystem. Load before Mochaccino or any design work. | [appydave-palette.md](../template/.claude/skills/recipe/references/appydave-palette.md) |
 
 ---
 

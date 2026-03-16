@@ -32,6 +32,8 @@ Recipes are:
 | `add-state` | Zustand store that replaces multiple React contexts. Reads existing context files, consolidates them into typed slices with optional persistence and DevTools. |
 | `csv-bulk-import` | CSV upload modal for bulk-creating entity records. Column validation, partial success reporting, company scoping for non-admins. Uses HTTP POST + multer; emits Socket.io `entity:external-change` after writes. |
 | `domain-expert-uat` | Generates a plain-English UAT plan for a non-developer domain expert. Groups test cases by business workflow, not technical entity. Covers happy path, validation errors, permission boundaries, and three-state field transitions. |
+| `appydave-palette` | AppyDave's visual brand as color semantics — the five rules that make any UI feel like it belongs to the AppyDave ecosystem. Not a component kit. Governs what each color zone *means* (dark = structure, warm-light = content, one accent = active state only). Load before any Mochaccino session or design exploration. |
+| `wizard-shell` | Multi-step workflow execution shell. Shell owns the header; step components own only their content. Covers landing screen (three-zone: Identity / Navigation / Action) and execution shell (6-zone layout with pipeline circles, developer panel, view modes). For prompt pipelines, intake wizards, interview flows. |
 
 **Combinations:**
 - `nav-shell` + `file-crud` = complete CRUD app with sidebar nav and file persistence
@@ -45,6 +47,8 @@ Recipes are:
 - `readme` = run after any combination to document what was built
 - `csv-bulk-import` = add to any entity that needs bulk data entry
 - `domain-expert-uat` = run after features stabilise to generate non-developer test plans
+- `appydave-palette` = load before any Mochaccino session or design work to ground it in AppyDave color semantics
+- `wizard-shell` = for any app built around a structured multi-step workflow (combine with `appydave-palette` for visual treatment)
 
 **Reference files:**
 - `references/nav-shell.md` — full nav-shell recipe spec
@@ -60,6 +64,8 @@ Recipes are:
 - `references/add-state.md` — Zustand store (replaces multiple React contexts)
 - `references/csv-bulk-import.md` — CSV upload modal, column validation, partial success, company scoping
 - `references/domain-expert-uat.md` — plain-English UAT plan generator for non-developer domain experts
+- `references/appydave-palette.md` — AppyDave color semantics: the five rules, warm palette family, accent calibration, typography roles, anti-patterns, Mochaccino usage guide
+- `references/wizard-shell.md` — multi-step execution shell: landing screen three-zone layout, 6-zone execution layout, component ownership, step type visual grammar, pipeline circles, developer panel, view modes
 
 ---
 

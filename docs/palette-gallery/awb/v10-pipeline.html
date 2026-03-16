@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v10 Pipeline</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #f5f0e8;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topnav {
+    background: #342d2d; height: 50px; display: flex; align-items: center;
+    padding: 0 32px; gap: 12px; flex-shrink: 0;
+  }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #FFDE59; letter-spacing: 0.06em; }
+  .sep { width: 1px; height: 16px; background: #4a3f3f; }
+  .sub { font-size: 12px; color: #6a5a4a; }
+  .right { margin-left: auto; display: flex; gap: 4px; }
+  .mbtn {
+    padding: 4px 12px; border-radius: 5px; font-size: 11px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; background: transparent;
+    color: #6a5a4a; font-family: 'DM Sans', sans-serif; transition: all 0.14s;
+  }
+  .mbtn.active { background: #4a3f3f; border-color: #5a4f4f; color: #ccba9d; }
+
+  .page { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 44px 40px; }
+
+  /* Workflow selector */
+  .wf-tabs { display: flex; gap: 8px; margin-bottom: 36px; flex-wrap: wrap; }
+  .wf-tab {
+    display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+    background: white; border: 2px solid #e0d4b8; border-radius: 10px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .wf-tab:hover { border-color: #ccba9d; }
+  .wf-tab.active { border-color: #342d2d; }
+  .wf-tab.dim { opacity: 0.3; cursor: not-allowed; }
+  .wf-tab.dim:hover { border-color: #e0d4b8; }
+  .tab-accent { width: 4px; height: 28px; border-radius: 2px; background: #e0d4b8; }
+  .wf-tab.active .tab-accent { background: #FFDE59; }
+  .tab-body {}
+  .tab-app { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #b0a090; }
+  .tab-name { font-size: 13px; font-weight: 600; color: #342d2d; }
+
+  /* Identity bar */
+  .identity-bar {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1.5px solid #e0d4b8;
+  }
+  .id-left {}
+  .id-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 42px; line-height: 1;
+    color: #342d2d; letter-spacing: 0.02em;
+  }
+  .id-desc { font-size: 13px; color: #8a7a6a; max-width: 400px; margin-top: 6px; line-height: 1.5; }
+  .id-stats { display: flex; gap: 20px; align-items: flex-end; }
+  .stat { text-align: right; }
+  .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #342d2d; line-height: 1; letter-spacing: 0.04em; }
+  .stat-lbl { font-size: 9px; color: #b0a090; letter-spacing: 0.12em; text-transform: uppercase; }
+  .stat-sep { width: 1px; background: #e0d4b8; align-self: stretch; margin-bottom: 2px; }
+
+  /* Pipeline visualization */
+  .pipeline-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+    text-transform: uppercase; color: #b0a090; margin-bottom: 10px;
+  }
+  .pipeline {
+    display: flex; align-items: center; gap: 0; margin-bottom: 36px;
+    overflow-x: auto; padding-bottom: 4px;
+  }
+  .pipe-step {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    flex-shrink: 0; min-width: 80px;
+  }
+  .pipe-node {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 2px solid #e0d4b8; background: white;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
+    color: #9e9090; position: relative; transition: all 0.14s; cursor: default;
+  }
+  .pipe-node.llm { border-color: #FFDE59; background: #fffde8; color: #9a7a0a; }
+  .pipe-node.predicate { border-color: #ccba9d; background: #faf5ec; color: #6a5a3a; }
+  .pipe-node.done { background: #342d2d; border-color: #342d2d; color: white; }
+  .pipe-step-lbl { font-size: 9px; color: #b0a090; text-align: center; max-width: 72px; line-height: 1.3; font-family: 'DM Mono', monospace; }
+  .pipe-step.llm .pipe-step-lbl { color: #9a8060; }
+  .pipe-step.predicate .pipe-step-lbl { color: #8a7050; }
+  .pipe-conn { flex: 1; height: 1.5px; background: #e0d4b8; min-width: 16px; align-self: flex-start; margin-top: 17px; }
+  .pipe-conn.llm { background: #e8d870; }
+  .pipe-legend {
+    display: flex; gap: 16px; margin-bottom: 32px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #9e9090; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Entry area */
+  .entry-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+  .entry-card {
+    background: white; border: 1.5px solid #e0d4b8; border-radius: 12px;
+    padding: 20px; cursor: pointer; transition: all 0.15s;
+    display: flex; flex-direction: column;
+  }
+  .entry-card:hover { border-color: #ccba9d; box-shadow: 0 2px 12px rgba(52,45,45,0.08); }
+  .entry-icon {
+    width: 32px; height: 32px; border-radius: 8px; background: #faf5ec;
+    border: 1px solid #e0d4b8; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+  }
+  .entry-title { font-size: 14px; font-weight: 600; color: #342d2d; margin-bottom: 4px; }
+  .entry-desc { font-size: 12px; color: #9e9090; }
+  .entry-load { flex-direction: column; }
+  .load-tabs { display: flex; gap: 3px; margin-bottom: 10px; }
+  .load-tab {
+    padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; color: #9e9090; background: transparent;
+  }
+  .load-tab.active { background: #faf5ec; border-color: #e0d4b8; color: #342d2d; }
+  .drop-zone {
+    border: 1.5px dashed #e0d4b8; border-radius: 8px; padding: 20px;
+    text-align: center; font-size: 12px; color: #9e9090; cursor: pointer; transition: all 0.14s; flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .drop-zone:hover { border-color: #ccba9d; color: #6b5f5f; }
+  .drop-lnk { color: #9a7a4a; text-decoration: underline; text-underline-offset: 2px; }
+
+  .api-row {
+    display: flex; align-items: center; gap: 8px; margin-top: 20px;
+    font-size: 11px; color: #c0b0a0; font-family: 'DM Mono', monospace;
+    cursor: pointer; transition: color 0.14s;
+  }
+  .api-row:hover { color: #8a7a6a; }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <span class="logo">AWB</span>
+  <div class="sep"></div>
+  <span class="sub">Agent Workflow Builder</span>
+  <div class="right">
+    <button class="mbtn active">Engineer</button>
+    <button class="mbtn">Pilot</button>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- Workflow tabs -->
+  <div class="wf-tabs">
+    <div class="wf-tab active">
+      <div class="tab-accent"></div>
+      <div class="tab-body">
+        <div class="tab-app">Signal Studio</div>
+        <div class="tab-name">New Incident Intake</div>
+      </div>
+    </div>
+    <div class="wf-tab">
+      <div class="tab-accent"></div>
+      <div class="tab-body">
+        <div class="tab-app">Signal Studio</div>
+        <div class="tab-name">Moments That Matter</div>
+      </div>
+    </div>
+    <div class="wf-tab dim">
+      <div class="tab-accent"></div>
+      <div class="tab-body">
+        <div class="tab-app">FliHub</div>
+        <div class="tab-name">YouTube Launch Optimizer</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Identity bar -->
+  <div class="identity-bar">
+    <div class="id-left">
+      <div class="id-title">New Incident Intake</div>
+      <div class="id-desc">Analyse NDIS support incidents end-to-end — narrative enhancement, question generation, and observation synthesis.</div>
+    </div>
+    <div class="id-stats">
+      <div class="stat">
+        <div class="stat-num">8</div>
+        <div class="stat-lbl">Steps</div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <div class="stat-num">3</div>
+        <div class="stat-lbl">Predicates</div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <div class="stat-num">6</div>
+        <div class="stat-lbl">LLM Calls</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline -->
+  <div class="pipeline-label">Workflow Steps</div>
+  <div class="pipeline">
+    <div class="pipe-step done">
+      <div class="pipe-node done">1</div>
+      <div class="pipe-step-lbl">Load<br>Context</div>
+    </div>
+    <div class="pipe-conn"></div>
+    <div class="pipe-step">
+      <div class="pipe-node predicate">?</div>
+      <div class="pipe-step-lbl">Validate<br>Input</div>
+    </div>
+    <div class="pipe-conn"></div>
+    <div class="pipe-step llm">
+      <div class="pipe-node llm">3</div>
+      <div class="pipe-step-lbl">Enhance<br>Narrative</div>
+    </div>
+    <div class="pipe-conn llm"></div>
+    <div class="pipe-step llm">
+      <div class="pipe-node llm">4</div>
+      <div class="pipe-step-lbl">Generate<br>Questions</div>
+    </div>
+    <div class="pipe-conn"></div>
+    <div class="pipe-step">
+      <div class="pipe-node predicate">?</div>
+      <div class="pipe-step-lbl">Check<br>Completeness</div>
+    </div>
+    <div class="pipe-conn"></div>
+    <div class="pipe-step llm">
+      <div class="pipe-node llm">6</div>
+      <div class="pipe-step-lbl">Synthesise<br>Observations</div>
+    </div>
+    <div class="pipe-conn"></div>
+    <div class="pipe-step">
+      <div class="pipe-node predicate">?</div>
+      <div class="pipe-step-lbl">Route<br>Output</div>
+    </div>
+    <div class="pipe-conn"></div>
+    <div class="pipe-step">
+      <div class="pipe-node">8</div>
+      <div class="pipe-step-lbl">Finalise<br>Report</div>
+    </div>
+  </div>
+
+  <div class="pipe-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#FFDE59;"></div>LLM Step</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ccba9d;"></div>Predicate / Branch</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#342d2d;"></div>Completed</div>
+  </div>
+
+  <!-- Entry -->
+  <div class="pipeline-label">How to Start</div>
+  <div class="entry-grid">
+    <div class="entry-card" style="align-items:center;text-align:center;justify-content:center;">
+      <div class="entry-icon" style="margin:0 auto 14px;">
+        <svg width="14" height="14" fill="none" stroke="#9a7a4a" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      </div>
+      <div class="entry-title">Start Fresh</div>
+      <div class="entry-desc">Begin with empty fields</div>
+    </div>
+    <div class="entry-card entry-load">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div class="entry-icon" style="margin:0;flex-shrink:0;">
+          <svg width="13" height="13" fill="none" stroke="#9a7a4a" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        </div>
+        <div>
+          <div class="entry-title" style="margin:0;">Load Data</div>
+          <div class="entry-desc">Pre-fill from JSON export</div>
+        </div>
+      </div>
+      <div class="load-tabs">
+        <button class="load-tab active">File upload</button>
+        <button class="load-tab">Paste JSON</button>
+      </div>
+      <div class="drop-zone">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        Drop .json here or <span class="drop-lnk">browse</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="api-row">
+    <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+    API Integration — POST /api/workflow/intake
+  </div>
+
+</div>
+
+</body>
+</html>

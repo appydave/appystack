@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v12 Brief</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #f5f0e8;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: #342d2d;
+  }
+
+  /* Thin rule header — almost invisible */
+  .header {
+    height: 44px; display: flex; align-items: center; padding: 0 52px;
+    gap: 12px; border-bottom: 1px solid #e0d4b8; background: #ffffff;
+    flex-shrink: 0;
+  }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #342d2d; letter-spacing: 0.1em; }
+  .logo-sep { font-family: 'DM Mono', monospace; font-size: 12px; color: #c0b0a0; }
+  .logo-sub { font-size: 12px; color: #b0a090; }
+  .mode-row { margin-left: auto; display: flex; border: 1px solid #e0d4b8; border-radius: 5px; overflow: hidden; }
+  .mbt {
+    padding: 4px 12px; font-size: 11px; font-weight: 500; cursor: pointer;
+    border: none; background: transparent; color: #9e9090; font-family: 'DM Sans', sans-serif;
+    transition: all 0.14s;
+  }
+  .mbt + .mbt { border-left: 1px solid #e0d4b8; }
+  .mbt.active { background: #342d2d; color: white; }
+
+  /* Main */
+  .page { flex: 1; max-width: 800px; margin: 0 auto; width: 100%; padding: 60px 52px; }
+
+  /* Document-style brief header */
+  .brief-header {
+    border: 1px solid #e0d4b8;
+    border-radius: 12px;
+    background: white;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+  }
+
+  .brief-meta-row {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0ece4;
+    flex-wrap: wrap;
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-key { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #c0b0a0; }
+  .meta-val { font-size: 13px; color: #342d2d; font-weight: 500; }
+  .meta-val.mono { font-family: 'DM Mono', monospace; font-size: 12px; color: #6b5f5f; }
+
+  .brief-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px; line-height: 0.92; letter-spacing: 0.02em;
+    color: #342d2d; margin-bottom: 14px;
+  }
+
+  .brief-desc {
+    font-size: 14px; line-height: 1.65; color: #6b5f5f; max-width: 520px;
+  }
+
+  /* Stats inline row */
+  .brief-stats {
+    display: flex;
+    gap: 0;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f0ece4;
+  }
+  .bstat {
+    display: flex; align-items: baseline; gap: 6px; padding: 0 20px 0 0; margin-right: 20px;
+    border-right: 1px solid #f0ece4;
+  }
+  .bstat:last-child { border-right: none; }
+  .bstat-n { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #342d2d; line-height: 1; letter-spacing: 0.04em; }
+  .bstat-l { font-size: 11px; color: #b0a090; font-weight: 500; letter-spacing: 0.06em; }
+
+  /* Workflow selector — compact list */
+  .wf-switcher {
+    display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .wf-chip {
+    display: flex; align-items: center; gap: 7px; padding: 7px 12px;
+    background: white; border: 1.5px solid #e0d4b8; border-radius: 8px;
+    cursor: pointer; font-size: 12px; color: #8a7a6a; font-weight: 500;
+    transition: all 0.14s;
+  }
+  .wf-chip:hover { border-color: #ccba9d; }
+  .wf-chip.active { border-color: #342d2d; color: #342d2d; }
+  .wf-chip.dim { opacity: 0.3; cursor: not-allowed; }
+  .wf-chip.dim:hover { border-color: #e0d4b8; }
+  .chip-dot { width: 5px; height: 5px; border-radius: 50%; background: #e0d4b8; flex-shrink: 0; }
+  .wf-chip.active .chip-dot { background: #342d2d; }
+
+  /* Section label */
+  .sec-lbl {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+    text-transform: uppercase; color: #b0a090; margin-bottom: 12px;
+  }
+
+  /* Entry options — horizontal */
+  .entry-row { display: flex; gap: 10px; }
+  .entry-card {
+    flex: 1; background: white; border: 1.5px solid #e0d4b8; border-radius: 10px;
+    padding: 18px 20px; cursor: pointer; transition: all 0.15s;
+  }
+  .entry-card:hover { border-color: #ccba9d; box-shadow: 0 2px 10px rgba(52,45,45,0.07); }
+  .entry-card.primary { border-color: #342d2d; background: #342d2d; }
+  .entry-card.primary:hover { background: #2a2424; }
+  .entry-ico {
+    width: 28px; height: 28px; border-radius: 6px; background: #faf5ec;
+    border: 1px solid #e0d4b8; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+  }
+  .entry-card.primary .entry-ico { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.1); }
+  .entry-ttl { font-size: 13px; font-weight: 600; color: #342d2d; }
+  .entry-card.primary .entry-ttl { color: #e8dcc8; }
+  .entry-sub { font-size: 11px; color: #9e9090; margin-top: 3px; }
+  .entry-card.primary .entry-sub { color: rgba(255,255,255,0.35); }
+
+  .drop-zone {
+    border: 1.5px dashed #e0d4b8; border-radius: 8px; padding: 14px 12px;
+    text-align: center; font-size: 12px; color: #b0a090; cursor: pointer; transition: all 0.14s; margin-top: 4px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .drop-zone:hover { border-color: #ccba9d; color: #8a7a6a; background: #faf5ec; }
+  .drop-lnk { color: #9a7a4a; text-decoration: underline; text-underline-offset: 2px; }
+
+  .tabs { display: flex; gap: 2px; margin-bottom: 8px; }
+  .tab {
+    padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; color: #9e9090; background: transparent;
+    font-family: 'DM Sans', sans-serif; transition: all 0.14s;
+  }
+  .tab.active { background: #faf5ec; border-color: #e0d4b8; color: #342d2d; }
+
+  .api-row {
+    display: flex; align-items: center; gap: 8px; margin-top: 24px;
+    font-size: 11px; color: #c0b0a0; font-family: 'DM Mono', monospace;
+    cursor: pointer; transition: color 0.14s; letter-spacing: 0.04em;
+  }
+  .api-row:hover { color: #8a7a6a; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <span class="logo">AWB</span>
+  <span class="logo-sep">—</span>
+  <span class="logo-sub">Agent Workflow Builder</span>
+  <div class="mode-row">
+    <button class="mbt active">Engineer</button>
+    <button class="mbt">Pilot</button>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- Workflow switcher chips -->
+  <div class="wf-switcher">
+    <div class="wf-chip active">
+      <div class="chip-dot"></div>
+      New Incident Intake
+    </div>
+    <div class="wf-chip">
+      <div class="chip-dot"></div>
+      Moments That Matter
+    </div>
+    <div class="wf-chip dim">
+      <div class="chip-dot"></div>
+      YouTube Launch Optimizer
+    </div>
+  </div>
+
+  <!-- Brief header -->
+  <div class="brief-header">
+    <div class="brief-meta-row">
+      <div class="meta-item">
+        <span class="meta-key">Application</span>
+        <span class="meta-val">Signal Studio</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-key">Workflow ID</span>
+        <span class="meta-val mono">new-incident</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-key">Mode</span>
+        <span class="meta-val">Engineer</span>
+      </div>
+    </div>
+
+    <h1 class="brief-title">New Incident<br>Intake</h1>
+    <p class="brief-desc">Analyse NDIS support incidents end-to-end — narrative enhancement, question generation, and observation synthesis.</p>
+
+    <div class="brief-stats">
+      <div class="bstat">
+        <span class="bstat-n">8</span>
+        <span class="bstat-l">Steps</span>
+      </div>
+      <div class="bstat">
+        <span class="bstat-n">3</span>
+        <span class="bstat-l">Predicates</span>
+      </div>
+      <div class="bstat">
+        <span class="bstat-n">6</span>
+        <span class="bstat-l">LLM Calls</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entry -->
+  <div class="sec-lbl">How to Start</div>
+  <div class="entry-row">
+    <div class="entry-card primary" style="flex:0.6;">
+      <div class="entry-ico">
+        <svg width="12" height="12" fill="none" stroke="rgba(255,255,255,0.6)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      </div>
+      <div class="entry-ttl">Start Fresh</div>
+      <div class="entry-sub">Empty fields</div>
+    </div>
+    <div class="entry-card" style="flex:1.4;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div class="entry-ico" style="margin:0;flex-shrink:0;">
+          <svg width="12" height="12" fill="none" stroke="#9a7a4a" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        </div>
+        <div>
+          <div class="entry-ttl">Load Data</div>
+          <div class="entry-sub">Pre-fill from JSON export</div>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab active">File upload</button>
+        <button class="tab">Paste JSON</button>
+      </div>
+      <div class="drop-zone">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        Drop .json here or <span class="drop-lnk">browse</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="api-row">
+    <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+    API Integration — POST /api/workflow/intake
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v7 Noir</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0f0c0c;
+    --surface:   #1a1515;
+    --surface2:  #221c1c;
+    --surface3:  #2a2424;
+    --border:    #342d2d;
+    --border2:   #4a3f3f;
+    --text:      #e8dcc8;
+    --muted:     #8a7a6a;
+    --faint:     #5a4f4f;
+    --accent:    #FFDE59;
+    --accent2:   rgba(255,222,89,0.12);
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--bg);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: var(--text);
+  }
+
+  /* ── Top bar */
+  .topbar {
+    height: 44px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 19px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    line-height: 1;
+  }
+  .topbar-sep { width: 1px; height: 16px; background: var(--border); }
+  .topbar-name { font-size: 12px; color: var(--faint); letter-spacing: 0.02em; }
+  .topbar-right { margin-left: auto; display: flex; gap: 6px; }
+  .topbar-btn {
+    padding: 4px 11px; border-radius: 5px; font-size: 11px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border); background: transparent;
+    color: var(--faint); font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.04em; transition: all 0.15s;
+  }
+  .topbar-btn:hover { color: var(--text); border-color: var(--border2); }
+  .topbar-btn.active { background: var(--surface3); border-color: var(--border2); color: var(--muted); }
+
+  /* ── Layout */
+  .layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Sidebar */
+  .sidebar {
+    width: 210px; background: var(--surface); border-right: 1px solid var(--border);
+    flex-shrink: 0; display: flex; flex-direction: column; padding: 20px 0 0;
+  }
+  .sidebar-group { padding: 0 0 14px; }
+  .sidebar-group + .sidebar-group { border-top: 1px solid var(--border); padding-top: 14px; }
+  .group-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--faint); padding: 0 16px 8px;
+  }
+  .wf-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 16px;
+    cursor: pointer; border-left: 2px solid transparent; transition: all 0.14s;
+  }
+  .wf-row:hover { background: rgba(255,255,255,0.03); }
+  .wf-row.active { background: var(--surface2); border-left-color: var(--accent); }
+  .wf-row.unavailable { opacity: 0.25; cursor: not-allowed; }
+  .wf-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border2); flex-shrink: 0; }
+  .wf-row.active .wf-dot { background: var(--accent); box-shadow: 0 0 6px rgba(255,222,89,0.6); }
+  .wf-info { flex: 1; min-width: 0; }
+  .wf-name { font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wf-row.active .wf-name { color: var(--text); }
+  .wf-meta { font-size: 10px; color: var(--faint); font-family: 'DM Mono', monospace; margin-top: 1px; }
+  .sidebar-footer {
+    margin-top: auto; padding: 12px 16px 16px; border-top: 1px solid var(--border);
+  }
+  .api-btn {
+    font-size: 10px; font-family: 'DM Mono', monospace; color: var(--faint);
+    cursor: pointer; background: none; border: none; transition: color 0.14s;
+    display: flex; align-items: center; gap: 6px; letter-spacing: 0.06em;
+  }
+  .api-btn:hover { color: var(--muted); }
+
+  /* ── Main: two panel */
+  .main {
+    flex: 1; display: grid; grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr; overflow: hidden;
+  }
+
+  /* Left: identity — pure dark */
+  .identity {
+    padding: 44px 44px 36px;
+    display: flex; flex-direction: column; justify-content: center;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .app-tag {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--faint); margin-bottom: 16px;
+  }
+  .app-tag::before {
+    content: ''; width: 20px; height: 1px; background: var(--border2); flex-shrink: 0;
+  }
+  .wf-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 60px; line-height: 0.92; letter-spacing: 0.02em;
+    color: var(--text); margin-bottom: 20px;
+  }
+  .wf-title span { color: var(--accent); }
+  .wf-desc {
+    font-size: 13px; line-height: 1.65; color: var(--muted); max-width: 270px; margin-bottom: 28px;
+  }
+  .stats { display: flex; gap: 24px; align-items: flex-start; }
+  .stat { display: flex; flex-direction: column; gap: 3px; }
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif; font-size: 28px;
+    color: var(--accent); line-height: 1; letter-spacing: 0.06em;
+  }
+  .stat-lbl { font-size: 9px; color: var(--faint); letter-spacing: 0.14em; text-transform: uppercase; }
+  .stat-div { width: 1px; background: var(--border); align-self: stretch; margin-top: 4px; }
+
+  /* Right: actions — slightly lighter dark */
+  .actions {
+    padding: 40px 36px 32px;
+    display: flex; flex-direction: column; justify-content: center;
+    background: var(--bg);
+  }
+  .action-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--faint); margin-bottom: 16px;
+  }
+
+  /* Load card */
+  .load-card {
+    background: var(--surface); border: 1.5px solid var(--border2);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 12px;
+    transition: border-color 0.15s;
+  }
+  .load-card:hover { border-color: #6a5a4a; }
+  .load-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .load-icon {
+    width: 30px; height: 30px; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .load-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .load-sub { font-size: 11px; color: var(--faint); }
+  .tabs { display: flex; gap: 2px; margin-bottom: 10px; }
+  .tab {
+    padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; color: var(--faint);
+    background: transparent; font-family: 'DM Sans', sans-serif; transition: all 0.14s;
+  }
+  .tab.active { background: var(--surface2); border-color: var(--border2); color: var(--muted); }
+  .drop-zone {
+    border: 1.5px dashed var(--border2); border-radius: 7px; padding: 20px;
+    text-align: center; cursor: pointer; transition: all 0.14s;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .drop-zone:hover { border-color: #6a5a4a; background: var(--surface2); }
+  .drop-icon { color: var(--faint); }
+  .drop-text { font-size: 12px; color: var(--faint); }
+  .drop-link { color: #9a8060; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
+  .start-fresh { text-align: center; padding: 4px 0 16px; }
+  .fresh-text { font-size: 12px; color: var(--faint); }
+  .fresh-link { font-size: 12px; color: #9a8060; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+  .api-panel { border-top: 1px solid var(--border); padding-top: 14px; }
+  .api-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .api-label { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--faint); letter-spacing: 0.08em; }
+  .api-snippet {
+    background: var(--surface); border-radius: 5px; padding: 10px 12px;
+    font-family: 'DM Mono', monospace; font-size: 10px; line-height: 1.7; color: var(--faint);
+  }
+  .api-k { color: #6a9a7a; }
+  .api-s { color: #a09070; }
+  .api-v { color: #ccba9d; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">AWB</span>
+  <div class="topbar-sep"></div>
+  <span class="topbar-name">Agent Workflow Builder</span>
+  <div class="topbar-right">
+    <button class="topbar-btn" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--faint);border-color:var(--border)">&lt;/&gt; API</button>
+    <button class="topbar-btn active">Engineer</button>
+    <button class="topbar-btn">Pilot</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-group">
+      <div class="group-label">Signal Studio</div>
+      <div class="wf-row active">
+        <div class="wf-dot"></div>
+        <div class="wf-info">
+          <div class="wf-name">New Incident Intake</div>
+          <div class="wf-meta">8 steps · 3 predicates</div>
+        </div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-dot"></div>
+        <div class="wf-info">
+          <div class="wf-name">Moments That Matter</div>
+          <div class="wf-meta">12 steps · batch mode</div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-group">
+      <div class="group-label">FliHub</div>
+      <div class="wf-row unavailable">
+        <div class="wf-dot"></div>
+        <div class="wf-info">
+          <div class="wf-name">YouTube Launch Optimizer</div>
+          <div class="wf-meta">not on this machine</div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <button class="api-btn">
+        <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+        API Integration
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <div class="identity">
+      <div class="app-tag">Signal Studio</div>
+      <h1 class="wf-title">New<br><span>Incident</span><br>Intake</h1>
+      <p class="wf-desc">Analyse NDIS support incidents end-to-end — narrative enhancement, question generation, and observation synthesis.</p>
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-num">8</span>
+          <span class="stat-lbl">Steps</span>
+        </div>
+        <div class="stat-div"></div>
+        <div class="stat">
+          <span class="stat-num">3</span>
+          <span class="stat-lbl">Predicates</span>
+        </div>
+        <div class="stat-div"></div>
+        <div class="stat">
+          <span class="stat-num">6</span>
+          <span class="stat-lbl">LLM Calls</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <div class="action-label">How to start</div>
+      <div class="load-card">
+        <div class="load-head">
+          <div class="load-icon">
+            <svg width="14" height="14" fill="none" stroke="#8a7a6a" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          </div>
+          <div>
+            <div class="load-title">Load Data</div>
+            <div class="load-sub">Pre-fill from a JSON export</div>
+          </div>
+        </div>
+        <div class="tabs">
+          <button class="tab active">File upload</button>
+          <button class="tab">Paste JSON</button>
+        </div>
+        <div class="drop-zone">
+          <svg class="drop-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          <span class="drop-text">Drop a .json file here or <span class="drop-link">click to browse</span></span>
+        </div>
+      </div>
+      <div class="start-fresh">
+        <span class="fresh-text">or </span><span class="fresh-link">start with empty fields</span>
+      </div>
+      <div class="api-panel">
+        <div class="api-head">
+          <svg width="10" height="10" fill="none" stroke="#5a4f4f" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+          <span class="api-label">API Integration</span>
+        </div>
+        <pre class="api-snippet"><span class="api-k">{</span>
+  <span class="api-s">"workflowId"</span>: <span class="api-v">"new-incident"</span>,
+  <span class="api-s">"source"</span>:     <span class="api-v">"Signal Studio"</span>
+<span class="api-k">}</span></pre>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+</body>
+</html>

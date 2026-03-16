@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v14 Compact</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #1a1515;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: #e8dcc8;
+  }
+
+  /* Header */
+  .header {
+    height: 44px; display: flex; align-items: center; padding: 0 28px;
+    gap: 12px; border-bottom: 1px solid #2a2424; flex-shrink: 0;
+  }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #FFDE59; letter-spacing: 0.08em; }
+  .sep { width: 1px; height: 14px; background: #2a2424; }
+  .sub { font-size: 11px; color: #4a3f3f; }
+  .right { margin-left: auto; display: flex; gap: 4px; }
+  .mbt {
+    padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; background: transparent;
+    color: #4a3f3f; font-family: 'DM Sans', sans-serif; transition: all 0.14s;
+  }
+  .mbt.active { background: #2a2424; border-color: #3a3030; color: #8a7a6a; }
+
+  /* Compact ribbon — everything in one bar */
+  .ribbon {
+    background: #221c1c;
+    border-bottom: 1px solid #2a2424;
+    display: flex;
+    align-items: stretch;
+    flex-shrink: 0;
+  }
+
+  /* Workflow picker column */
+  .ribbon-workflows {
+    width: 200px; border-right: 1px solid #2a2424; padding: 16px 0; flex-shrink: 0;
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .rw-item {
+    display: flex; align-items: center; gap: 8px; padding: 7px 14px;
+    cursor: pointer; border-left: 2px solid transparent; transition: all 0.12s;
+  }
+  .rw-item:hover { background: rgba(255,255,255,0.03); }
+  .rw-item.active { background: #1a1515; border-left-color: #FFDE59; }
+  .rw-item.dim { opacity: 0.2; cursor: not-allowed; }
+  .rw-dot { width: 4px; height: 4px; border-radius: 50%; background: #3a3030; flex-shrink: 0; }
+  .rw-item.active .rw-dot { background: #FFDE59; }
+  .rw-name { font-size: 11px; color: #6a5a4a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+  .rw-item.active .rw-name { color: #ccba9d; }
+  .rw-group { font-size: 9px; color: #3a3030; text-transform: uppercase; letter-spacing: 0.12em; padding: 8px 14px 4px; }
+
+  /* Identity column */
+  .ribbon-identity {
+    flex: 1; padding: 20px 28px; display: flex; flex-direction: column; justify-content: center;
+    border-right: 1px solid #2a2424;
+  }
+  .ri-app { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #4a3f3f; margin-bottom: 6px; }
+  .ri-title { font-family: 'Bebas Neue', sans-serif; font-size: 30px; line-height: 1; color: #e8dcc8; letter-spacing: 0.02em; }
+  .ri-stats { display: flex; gap: 14px; margin-top: 8px; }
+  .ri-stat { display: flex; align-items: baseline; gap: 4px; }
+  .ri-n { font-family: 'DM Mono', monospace; font-size: 14px; color: #FFDE59; font-weight: 500; }
+  .ri-l { font-size: 9px; color: #4a3f4f; letter-spacing: 0.1em; text-transform: uppercase; }
+  .ri-sep { width: 1px; background: #2a2424; align-self: stretch; }
+
+  /* Action column */
+  .ribbon-actions {
+    width: 320px; padding: 16px 20px; display: flex; flex-direction: column; gap: 8px;
+    flex-shrink: 0;
+  }
+  .act-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #3a3030; margin-bottom: 2px; }
+  .act-row { display: flex; gap: 6px; }
+  .act-btn {
+    flex: 1; padding: 8px 10px; border: 1px solid #2a2424; border-radius: 6px;
+    background: #1a1515; cursor: pointer; transition: all 0.14s; text-align: center;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .act-btn:hover { border-color: #3a3030; background: #221c1c; }
+  .act-btn.primary { border-color: #3a3030; background: #2a2424; }
+  .act-btn.primary:hover { border-color: #FFDE59; }
+  .act-btn-lbl { font-size: 11px; color: #6a5a4a; font-weight: 500; }
+  .act-btn.primary .act-btn-lbl { color: #ccba9d; }
+  .act-btn-sub { font-size: 10px; color: #3a3030; }
+
+  .drop-mini {
+    border: 1px dashed #2a2424; border-radius: 5px; padding: 7px 10px;
+    text-align: center; cursor: pointer; transition: all 0.14s;
+    font-size: 10px; color: #3a3030; font-family: 'DM Mono', monospace;
+  }
+  .drop-mini:hover { border-color: #3a3030; color: #5a4f4f; }
+
+  /* Main content area — ready for the workflow itself */
+  .workspace {
+    flex: 1; padding: 40px 40px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .workspace-hint {
+    text-align: center; color: #2a2424; font-size: 12px; font-family: 'DM Mono', monospace;
+    letter-spacing: 0.06em;
+  }
+  .workspace-hint strong { display: block; font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: #221c1c; letter-spacing: 0.06em; margin-bottom: 10px; }
+  .desc-strip {
+    max-width: 480px; margin-top: 20px; text-align: center;
+    font-size: 13px; color: #2a2424; line-height: 1.6;
+  }
+  .api-mini {
+    display: flex; align-items: center; gap: 6px; margin-top: 32px;
+    font-size: 10px; color: #2a2424; font-family: 'DM Mono', monospace;
+    cursor: pointer; transition: color 0.14s; letter-spacing: 0.06em;
+  }
+  .api-mini:hover { color: #4a3f3f; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="logo">AWB</span>
+  <div class="sep"></div>
+  <span class="sub">Agent Workflow Builder</span>
+  <div class="right">
+    <button class="mbt active">Engineer</button>
+    <button class="mbt">Pilot</button>
+  </div>
+</div>
+
+<!-- Compact ribbon -->
+<div class="ribbon">
+
+  <!-- Workflow list -->
+  <div class="ribbon-workflows">
+    <div class="rw-group">Signal Studio</div>
+    <div class="rw-item active">
+      <div class="rw-dot"></div>
+      <span class="rw-name">New Incident Intake</span>
+    </div>
+    <div class="rw-item">
+      <div class="rw-dot"></div>
+      <span class="rw-name">Moments That Matter</span>
+    </div>
+    <div class="rw-group" style="padding-top:10px;">FliHub</div>
+    <div class="rw-item dim">
+      <div class="rw-dot"></div>
+      <span class="rw-name">YouTube Optimizer</span>
+    </div>
+  </div>
+
+  <!-- Identity -->
+  <div class="ribbon-identity">
+    <div class="ri-app">Signal Studio</div>
+    <div class="ri-title">New Incident Intake</div>
+    <div class="ri-stats">
+      <div class="ri-stat"><span class="ri-n">8</span><span class="ri-l">Steps</span></div>
+      <div class="ri-sep"></div>
+      <div class="ri-stat"><span class="ri-n">3</span><span class="ri-l">Predicates</span></div>
+      <div class="ri-sep"></div>
+      <div class="ri-stat"><span class="ri-n">6</span><span class="ri-l">LLM</span></div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="ribbon-actions">
+    <div class="act-lbl">Start</div>
+    <div class="act-row">
+      <div class="act-btn primary">
+        <svg width="11" height="11" fill="none" stroke="#FFDE59" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        <div>
+          <div class="act-btn-lbl">Load Data</div>
+          <div class="act-btn-sub">from JSON</div>
+        </div>
+      </div>
+      <div class="act-btn">
+        <svg width="11" height="11" fill="none" stroke="#5a4f4f" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <div>
+          <div class="act-btn-lbl">Start Fresh</div>
+          <div class="act-btn-sub">empty fields</div>
+        </div>
+      </div>
+    </div>
+    <div class="drop-mini">drop .json anywhere</div>
+  </div>
+
+</div>
+
+<!-- Workspace — ready for workflow steps -->
+<div class="workspace">
+  <div class="workspace-hint">
+    <strong>NEW INCIDENT INTAKE</strong>
+    Select a start option above to begin
+  </div>
+  <p class="desc-strip">Analyse NDIS support incidents end-to-end — narrative enhancement, question generation, and observation synthesis.</p>
+  <div class="api-mini">
+    <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+    API — POST /api/workflow/intake
+  </div>
+</div>
+
+</body>
+</html>

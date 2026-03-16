@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v3 Workflow Cards</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #f5f0e8;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* top nav */
+  .topnav {
+    background: #342d2d;
+    padding: 0 32px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topnav-left { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: #FFDE59;
+    letter-spacing: 0.04em;
+  }
+  .topnav-sep { width: 1px; height: 18px; background: #4a3f3f; }
+  .topnav-sub { font-size: 12px; color: #8a7a6a; }
+  .mode-group { display: flex; gap: 4px; }
+  .mode-pill {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #6a5a4a;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .mode-pill.active { background: #4a3f3f; border-color: #FFDE59; color: #FFDE59; }
+
+  /* main content */
+  .main {
+    flex: 1;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 48px 32px;
+  }
+
+  /* section label */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #9e9090;
+    margin-bottom: 14px;
+  }
+
+  /* workflow cards grid */
+  .workflow-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+
+  .app-group { display: contents; }
+  .app-group-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .app-group-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .app-group-name {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #9e9090;
+  }
+  .app-group-line { flex: 1; height: 1px; background: #e0d4b8; }
+
+  .workflow-cards-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .wf-card {
+    background: white;
+    border: 2px solid #e0d4b8;
+    border-radius: 14px;
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: all 0.18s;
+    position: relative;
+    width: 200px;
+    flex-shrink: 0;
+  }
+  .wf-card:hover {
+    border-color: #ccba9d;
+    box-shadow: 0 4px 16px rgba(52,45,45,0.1);
+    transform: translateY(-2px);
+  }
+  .wf-card.active {
+    border-color: #342d2d;
+    box-shadow: 0 4px 16px rgba(52,45,45,0.14);
+  }
+  .wf-card.unavailable { opacity: 0.38; cursor: not-allowed; }
+  .wf-card.unavailable:hover { transform: none; box-shadow: none; border-color: #e0d4b8; }
+
+  .wf-card-accent {
+    width: 28px; height: 4px;
+    border-radius: 2px;
+    background: #e0d4b8;
+    margin-bottom: 12px;
+    transition: background 0.18s;
+  }
+  .wf-card.active .wf-card-accent { background: #FFDE59; }
+
+  .wf-card-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #342d2d;
+    line-height: 1.25;
+    margin-bottom: 6px;
+  }
+  .wf-card-meta {
+    font-size: 11px;
+    color: #9e9090;
+  }
+  .wf-card-check {
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #342d2d;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .wf-card.active .wf-card-check { opacity: 1; }
+
+  /* selected workflow info banner */
+  .selected-banner {
+    background: #342d2d;
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .selected-banner-left { }
+  .selected-banner-app {
+    font-size: 11px;
+    color: #8a7a6a;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .selected-banner-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: #e8dcc8;
+    letter-spacing: 0.03em;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .selected-banner-desc {
+    font-size: 13px;
+    color: #8a7a6a;
+    max-width: 420px;
+    line-height: 1.4;
+  }
+  .selected-banner-right { flex-shrink: 0; }
+
+  /* entry options */
+  .entry-options {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 12px;
+  }
+  .entry-card {
+    background: white;
+    border: 1.5px solid #e0d4b8;
+    border-radius: 12px;
+    padding: 22px 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .entry-card:hover { border-color: #ccba9d; box-shadow: 0 2px 8px rgba(52,45,45,0.08); transform: translateY(-1px); }
+  .entry-icon {
+    width: 32px; height: 32px;
+    background: #faf5ec;
+    border: 1px solid #e0d4b8;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+  .entry-title { font-size: 14px; font-weight: 600; color: #342d2d; margin-bottom: 4px; }
+  .entry-desc { font-size: 12px; color: #9e9090; }
+
+  .entry-card-load { display: flex; flex-direction: column; }
+  .load-tabs { display: flex; gap: 4px; margin-bottom: 10px; }
+  .load-tab {
+    padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 500;
+    cursor: pointer; border: none; color: #9e9090; background: transparent;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .load-tab.active { background: #faf5ec; color: #342d2d; }
+  .drop-zone {
+    border: 1.5px dashed #e0d4b8; border-radius: 8px; padding: 20px;
+    text-align: center; color: #9e9090; font-size: 12px; cursor: pointer;
+    transition: all 0.15s; flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px;
+  }
+  .drop-zone:hover { border-color: #ccba9d; color: #6b5f5f; }
+  .drop-link { color: #ccba9d; }
+
+  /* api trigger */
+  .api-trigger {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #b0a090;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: color 0.15s;
+  }
+  .api-trigger:hover { color: #8a7a6a; }
+
+  footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    color: #c0b0a0;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.06em;
+  }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-left">
+    <span class="logo">AWB</span>
+    <div class="topnav-sep"></div>
+    <span class="topnav-sub">Agent Workflow Builder</span>
+  </div>
+  <div class="mode-group">
+    <button class="mode-pill active">Engineer</button>
+    <button class="mode-pill">Pilot</button>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- Workflow selection -->
+  <p class="section-label">Select Workflow</p>
+
+  <!-- Signal Studio group -->
+  <div class="app-group-row">
+    <div class="app-group-header">
+      <span class="app-group-name">Signal Studio</span>
+      <div class="app-group-line"></div>
+    </div>
+    <div class="workflow-cards-row">
+      <div class="wf-card active">
+        <div class="wf-card-accent"></div>
+        <div class="wf-card-check">
+          <svg width="10" height="10" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <div class="wf-card-name">New Incident Intake</div>
+        <div class="wf-card-meta">8 steps · 3 predicates</div>
+      </div>
+      <div class="wf-card">
+        <div class="wf-card-accent"></div>
+        <div class="wf-card-check">
+          <svg width="10" height="10" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <div class="wf-card-name">Moments That Matter</div>
+        <div class="wf-card-meta">12 steps · batch mode</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FliHub group -->
+  <div class="app-group-row">
+    <div class="app-group-header">
+      <span class="app-group-name">FliHub</span>
+      <div class="app-group-line"></div>
+    </div>
+    <div class="workflow-cards-row">
+      <div class="wf-card unavailable">
+        <div class="wf-card-accent"></div>
+        <div class="wf-card-name">YouTube Launch Optimizer</div>
+        <div class="wf-card-meta">Not available on this machine</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entry options for selected workflow -->
+  <p class="section-label">Start — New Incident Intake</p>
+  <div class="entry-options">
+
+    <div class="entry-card" style="display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center;gap:10px;">
+      <div class="entry-icon">＋</div>
+      <div>
+        <div class="entry-title">Start Fresh</div>
+        <div class="entry-desc">Begin with empty fields</div>
+      </div>
+    </div>
+
+    <div class="entry-card entry-card-load">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div class="entry-icon" style="margin-bottom:0;font-size:12px;">↑</div>
+        <div>
+          <div class="entry-title">Load Data</div>
+          <div class="entry-desc">Pre-fill from JSON export</div>
+        </div>
+      </div>
+      <div class="load-tabs">
+        <button class="load-tab active">File upload</button>
+        <button class="load-tab">Paste JSON</button>
+      </div>
+      <div class="drop-zone">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        Drop a .json file here or <span class="drop-link">click to browse</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="api-trigger">
+    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+    API Integration
+  </div>
+
+</div>
+
+<footer>AGENT WORKFLOW BUILDER — PROOF OF CONCEPT</footer>
+
+</body>
+</html>

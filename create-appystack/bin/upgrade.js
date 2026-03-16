@@ -115,21 +115,11 @@ async function main() {
   let { version, scaffoldCommit, source } = scaffoldInfo;
 
   if (source === 'prompt') {
-    // Ask user to supply the scaffold version
-    const answer = await activePrompts.text({
-      message: 'No scaffold record found. What version of AppyStack was used to scaffold this app?',
-      placeholder: '0.3.0',
-      initialValue: '0.3.0',
-    });
-
-    if (activePrompts.isCancel(answer)) {
-      prompts.cancel('Cancelled');
-      process.exit(0);
-    }
-
-    version = answer || '0.3.0';
+    // No scaffold record — assume earliest version so all updates are shown
+    version = '0.1.0';
     scaffoldCommit = null;
     writeAppystackJson(cwd, { version, scaffoldCommit });
+    prompts.note('No scaffold record found — treating as pre-0.1.0, showing all available updates.', 'Scaffold info');
   } else if (source === 'git') {
     prompts.note(
       `Scaffold commit detected: ${scaffoldCommit} (version inferred as ${version})`,

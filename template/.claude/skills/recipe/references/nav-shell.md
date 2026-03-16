@@ -231,3 +231,5 @@ A fixed or responsive grid of widget panels. Each widget independently fetches a
 - Active nav item: distinct background highlight (CSS variable for theming)
 - Transitions: `transition-all duration-200` on sidebar width change
 - Use TailwindCSS v4 CSS variables for sidebar/header colours — define in `client/src/styles/index.css`
+
+For a complete design system (palette, component patterns, typography), see the `ui-theme` recipe: `references/ui-theme.md`. The v2-linen theme is the standard for AppyDave operational/monitoring tools — use it alongside `nav-shell` for that look.

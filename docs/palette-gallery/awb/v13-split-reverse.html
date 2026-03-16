@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWB Landing — v13 Split Reverse</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #f5f0e8;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: #342d2d;
+  }
+
+  /* Top bar — cream */
+  .topbar {
+    height: 44px; display: flex; align-items: center; padding: 0 0 0 0;
+    border-bottom: 1px solid #e0d4b8; background: #ffffff; flex-shrink: 0; z-index: 10;
+  }
+  .logo-block {
+    width: 240px; height: 100%; display: flex; align-items: center; gap: 10px;
+    padding: 0 20px; border-right: 1px solid #e0d4b8; flex-shrink: 0;
+  }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 17px; color: #342d2d; letter-spacing: 0.1em; }
+  .logo-sep { width: 1px; height: 13px; background: #e0d4b8; }
+  .logo-sub { font-size: 11px; color: #b0a090; }
+  .topbar-main { flex: 1; display: flex; align-items: center; padding: 0 24px; gap: 10px; }
+  .topbar-wf { font-size: 12px; color: #9e9090; }
+  .topbar-wf strong { color: #342d2d; font-weight: 600; }
+  .topbar-right { margin-left: auto; display: flex; gap: 4px; }
+  .mbt {
+    padding: 3px 11px; border-radius: 5px; font-size: 11px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; background: transparent;
+    color: #9e9090; font-family: 'DM Sans', sans-serif; transition: all 0.14s;
+  }
+  .mbt:hover { border-color: #e0d4b8; color: #6b5f5f; }
+  .mbt.active { background: #342d2d; color: white; border-color: #342d2d; }
+
+  /* Layout: two columns, reversed from V6 */
+  .layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* LEFT: Dark actions panel */
+  .left {
+    width: 340px; background: #221c1c; border-right: 1px solid #342d2d;
+    flex-shrink: 0; display: flex; flex-direction: column;
+    padding: 32px 28px 28px; overflow-y: auto;
+  }
+  .act-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+    color: #4a3f3f; margin-bottom: 18px;
+  }
+
+  .load-card {
+    background: #1a1515; border: 1px solid #342d2d; border-radius: 10px;
+    padding: 16px 18px; margin-bottom: 10px; transition: border-color 0.15s;
+  }
+  .load-card:hover { border-color: #4a3f3f; }
+  .load-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .load-ico {
+    width: 28px; height: 28px; border-radius: 6px; background: #2a2424;
+    border: 1px solid #3a3030; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .load-title { font-size: 13px; font-weight: 600; color: #ccba9d; }
+  .load-sub { font-size: 11px; color: #5a4f4f; margin-top: 1px; }
+  .tabs { display: flex; gap: 2px; margin-bottom: 8px; }
+  .tab {
+    padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; color: #5a4f4f; background: transparent;
+    font-family: 'DM Sans', sans-serif; transition: all 0.14s;
+  }
+  .tab.active { background: #2a2424; border-color: #3a3030; color: #8a7a6a; }
+  .drop-zone {
+    border: 1.5px dashed #2a2424; border-radius: 7px; padding: 18px;
+    text-align: center; cursor: pointer; transition: all 0.14s;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+  }
+  .drop-zone:hover { border-color: #4a3f3f; background: #1a1515; }
+  .drop-icon { color: #3a3030; }
+  .drop-text { font-size: 11px; color: #4a3f4f; }
+  .drop-link { color: #7a6040; text-decoration: underline; text-underline-offset: 2px; }
+
+  .fresh-row {
+    text-align: center; padding: 6px 0 16px;
+    font-size: 12px; color: #4a3f4f;
+  }
+  .fresh-link { color: #7a6040; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+  .api-panel { border-top: 1px solid #2a2424; padding-top: 12px; margin-top: auto; }
+  .api-label-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .api-lbl { font-size: 10px; font-family: 'DM Mono', monospace; color: #4a3f3f; letter-spacing: 0.08em; }
+  .api-snippet {
+    background: #0f0c0c; border-radius: 5px; padding: 9px 11px;
+    font-family: 'DM Mono', monospace; font-size: 10px; line-height: 1.7; color: #5a4f4f;
+  }
+  .api-k { color: #6a9a7a; } .api-s { color: #9a8060; } .api-v { color: #ccba9d; }
+
+  /* RIGHT: Cream workflow identity */
+  .right {
+    flex: 1; background: #f5f0e8; display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Sidebar-style workflow list along top */
+  .wf-list-top {
+    display: flex; border-bottom: 1px solid #e0d4b8; background: #ffffff;
+    overflow-x: auto; flex-shrink: 0;
+  }
+  .wf-row {
+    display: flex; align-items: center; gap: 8px; padding: 10px 20px;
+    cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.14s; flex-shrink: 0;
+  }
+  .wf-row:hover { background: #faf5ec; }
+  .wf-row.active { border-bottom-color: #342d2d; }
+  .wf-row.dim { opacity: 0.3; cursor: not-allowed; }
+  .wf-row.dim:hover { background: transparent; }
+  .wf-dot { width: 5px; height: 5px; border-radius: 50%; background: #d8ccb8; flex-shrink: 0; }
+  .wf-row.active .wf-dot { background: #342d2d; }
+  .wf-name { font-size: 12px; color: #8a7a6a; font-weight: 500; }
+  .wf-row.active .wf-name { color: #342d2d; }
+  .wf-app { font-size: 9px; color: #c0b0a0; text-transform: uppercase; letter-spacing: 0.1em; margin-right: 4px; }
+
+  /* Identity — big centered */
+  .identity {
+    flex: 1; display: flex; flex-direction: column; justify-content: center;
+    padding: 48px 64px;
+  }
+  .app-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+    color: #b0a090; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .app-tag::before { content: ''; width: 20px; height: 1px; background: #c8b898; }
+  .wf-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 64px; line-height: 0.9;
+    letter-spacing: 0.02em; color: #342d2d; margin-bottom: 20px;
+  }
+  .wf-desc { font-size: 14px; line-height: 1.65; color: #6b5f5f; max-width: 340px; margin-bottom: 32px; }
+  .stats { display: flex; gap: 0; }
+  .stat {
+    display: flex; flex-direction: column; gap: 3px;
+    padding-right: 24px; margin-right: 24px; border-right: 1px solid #e0d4b8;
+  }
+  .stat:last-child { border-right: none; padding-right: 0; }
+  .stat-n { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: #342d2d; line-height: 1; letter-spacing: 0.04em; }
+  .stat-l { font-size: 10px; color: #b0a090; letter-spacing: 0.12em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-block">
+    <span class="logo">AWB</span>
+    <div class="logo-sep"></div>
+    <span class="logo-sub">Agent Workflow Builder</span>
+  </div>
+  <div class="topbar-main">
+    <span class="topbar-wf"><strong>Signal Studio</strong> / New Incident Intake</span>
+  </div>
+  <div class="topbar-right" style="padding-right:20px;">
+    <button class="mbt active">Engineer</button>
+    <button class="mbt">Pilot</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- LEFT: dark actions -->
+  <div class="left">
+    <div class="act-label">How to Start</div>
+
+    <div class="load-card">
+      <div class="load-head">
+        <div class="load-ico">
+          <svg width="13" height="13" fill="none" stroke="#8a7a6a" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        </div>
+        <div>
+          <div class="load-title">Load Data</div>
+          <div class="load-sub">Pre-fill from JSON</div>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab active">File upload</button>
+        <button class="tab">Paste JSON</button>
+      </div>
+      <div class="drop-zone">
+        <svg class="drop-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        <span class="drop-text">Drop .json here or <span class="drop-link">browse</span></span>
+      </div>
+    </div>
+
+    <div class="fresh-row">or <span class="fresh-link">start with empty fields</span></div>
+
+    <div class="api-panel">
+      <div class="api-label-row">
+        <svg width="10" height="10" fill="none" stroke="#4a3f3f" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+        <span class="api-lbl">API Integration</span>
+      </div>
+      <pre class="api-snippet"><span class="api-k">{</span>
+  <span class="api-s">"workflowId"</span>: <span class="api-v">"new-incident"</span>,
+  <span class="api-s">"source"</span>: <span class="api-v">"Signal Studio"</span>
+<span class="api-k">}</span></pre>
+    </div>
+  </div>
+
+  <!-- RIGHT: cream identity -->
+  <div class="right">
+    <!-- Workflow switcher across top -->
+    <div class="wf-list-top">
+      <div class="wf-row active">
+        <div class="wf-dot"></div>
+        <span class="wf-name">New Incident Intake</span>
+      </div>
+      <div class="wf-row">
+        <div class="wf-dot"></div>
+        <span class="wf-name">Moments That Matter</span>
+      </div>
+      <div class="wf-row dim">
+        <div class="wf-dot"></div>
+        <span class="wf-app">FliHub —</span>
+        <span class="wf-name">YouTube Launch Optimizer</span>
+      </div>
+    </div>
+
+    <!-- Big identity -->
+    <div class="identity">
+      <div class="app-tag">Signal Studio</div>
+      <h1 class="wf-title">New<br>Incident<br>Intake</h1>
+      <p class="wf-desc">Analyse NDIS support incidents end-to-end — narrative enhancement, question generation, and observation synthesis.</p>
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-n">8</span>
+          <span class="stat-l">Steps</span>
+        </div>
+        <div class="stat">
+          <span class="stat-n">3</span>
+          <span class="stat-l">Predicates</span>
+        </div>
+        <div class="stat">
+          <span class="stat-n">6</span>
+          <span class="stat-l">LLM Calls</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
