@@ -30,6 +30,20 @@ All server variables have defaults so the server starts without any `.env` file 
 Server variables are validated at startup in `template/server/src/config/env.ts`:
 
 ```typescript
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+import path from 'node:path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// IMPORTANT: Two non-obvious requirements for dotenv in an npm workspaces monorepo:
+// 1. Must use __dirname-relative path — process.cwd() is the workspace dir ('server/'),
+//    not the monorepo root, so dotenv.config() with no path never finds the root .env
+// 2. Must use override: true — without it, any PORT already in process.env (from a
+//    prior shell session, tmux, or Overmind) silently wins over the .env value
+dotenv.config({ path: path.resolve(__dirname, '../../../.env'), override: true });
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(5501),
@@ -43,6 +57,8 @@ if (!parsed.success) {
   process.exit(1);
 }
 ```
+
+> ⚠️ Omitting either the `path` fix or `override: true` causes the server to start on the wrong port. The client's `VITE_SOCKET_URL` will point at nothing, and every view shows "Loading..." indefinitely with no error. See `docs/troubleshooting.md` § 11 for the full post-mortem.
 
 `z.coerce.number()` converts the `PORT` string from `process.env` to a number. `safeParse` catches failures gracefully and calls `process.exit(1)` with a clear error message.
 

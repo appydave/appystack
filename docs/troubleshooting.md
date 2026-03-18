@@ -337,6 +337,77 @@ coverage: {
 
 ---
 
+## 11. Server Starts on Wrong Port — UI Stuck on "Loading..."
+
+> **Found 2026-03-17** during digital-stage-summit-2026 development. Wasted ~1 hour before root cause identified. Fix is now in the template.
+
+**Symptoms**
+
+- `start.sh` banner says `server: http://localhost:5071`
+- Server logs say `Server running on http://localhost:5171` (or some other port)
+- Browser shows "Loading..." indefinitely — never loads data
+- No error in the UI — just spins forever
+- Restarting via `./scripts/start.sh` loops: kills client port, leaves server on wrong port, Overmind conflicts
+
+**Root cause — two compounding bugs**
+
+**Bug 1: `dotenv` never found the `.env` file**
+
+When npm workspaces runs `npm run dev -w server`, it changes `process.cwd()` to the `server/` workspace directory. `dotenv.config()` with no path argument looks for `.env` relative to `cwd` — which is `server/`, not the monorepo root. It finds nothing and silently continues with `process.env` as-is.
+
+**Bug 2: `dotenv` doesn't override inherited shell variables**
+
+By default, `dotenv` never overwrites a `process.env` value that is already set. If a prior Overmind or tmux session left `PORT=5171` in the environment (from a different app, a crashed session, or any stray export), the new server process inherits it and `.env` has zero effect — even if Bug 1 is fixed.
+
+**Result:** Client's `VITE_SOCKET_URL=http://localhost:5071` points at nothing. Server is on 5171. Socket.io never connects. The `useSocket` hook never errors — it just hangs. Every view waiting on socket data shows "Loading..." forever with no user-visible error.
+
+**Fix — already applied to template (as of 2026-03-17)**
+
+`server/src/config/env.ts`:
+```typescript
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+import path from 'node:path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Fix 1: resolve .env from monorepo root, not process.cwd()
+// Fix 2: override: true ensures .env wins over any inherited shell/tmux PORT variable
+dotenv.config({ path: path.resolve(__dirname, '../../../.env'), override: true });
+```
+
+`scripts/start.sh` — before `overmind start`:
+```bash
+# Prevent stale PORT from shell bleeding into child processes
+unset PORT
+```
+
+**Fix — if you're hitting this on an older project**
+
+1. Apply the two-line fix to `server/src/config/env.ts` above
+2. Add `unset PORT` to `scripts/start.sh` before the `overmind start` call
+3. Run `./scripts/start.sh` — it will now self-recover
+
+**Why `start.sh` made it worse**
+
+The script checked for a process on `$SERVER_PORT` (5071 from `.env`). The rogue server was on 5171 — so the check found nothing. It killed Vite (5070), then called `overmind start` on top of an existing session. `.overmind.sock` still existed, Overmind conflicted, and the user was stuck in a kill-restart loop. The script now does a full `overmind stop` + `rm -f .overmind.sock` before anything else.
+
+**How to detect it quickly next time**
+
+```bash
+# Check what port the server process is actually on
+ps aux | grep "tsx src/index" | grep -v grep
+# Then:
+lsof -i :<pid_port> | grep LISTEN
+# Or just check all relevant ports:
+netstat -an | grep LISTEN | grep "507\|516\|517"
+```
+
+If the port in the log doesn't match `.env PORT=`, this bug is the cause.
+
+---
+
 ## Related Documentation
 
 - `docs/architecture.md` — Architecture guide, port allocation, config inheritance
