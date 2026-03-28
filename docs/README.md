@@ -43,11 +43,28 @@ npx create-appystack@latest my-app --scope @myorg --port 5500 --description "My 
 
 Recipes scaffold specific app architectures on top of the RVETS template. Available via `/recipe` in any project created with `create-appystack`.
 
-| Recipe / DSL | What it covers |
+| Recipe | What it covers |
 |---|---|
 | `nav-shell` | Left-sidebar navigation shell — header, collapsible sidebar, view switching |
 | `file-crud` | JSON file-based persistence — no database, real-time Socket.io sync, chokidar watcher |
-| `nav-shell` + `file-crud` | Complete CRUD app with nav and file persistence |
+| `entity-socket-crud` | Generic `entity:{operation}` Socket.io CRUD — one hook for all entities |
+| `local-service` | Procfile + Overmind persistent services, optional Platypus .app launcher |
+| `api-endpoints` | REST API layer with OpenAPI/Swagger, API key auth, CORS |
+| `readme` | Auto-generated README.md from codebase scan + 5 targeted questions |
+| `add-orm` | Prisma or Drizzle ORM — advisory first, then targeted migration |
+| `add-auth` | JWT authentication + protected routes + Socket.io auth middleware |
+| `add-tanstack-query` | HTTP caching alongside Socket.io — combined cache invalidation |
+| `add-state` | Zustand store replacing multiple React contexts |
+| `add-sync` | Cross-machine sync — 4 sub-types: pull-only, full push+pull, git data commit, shared folder |
+| `csv-bulk-import` | CSV upload modal — column validation, partial success, company scoping |
+| `domain-expert-uat` | Plain-English UAT plan generator for non-developer domain experts |
+| `appydave-palette` | AppyDave brand colour semantics — five rules for consistent visual identity |
+| `wizard-shell` | Multi-step workflow execution shell — pipeline circles, developer panel, view modes |
+
+**Combinations:** `nav-shell` + `file-crud` + `entity-socket-crud` = complete multi-entity CRUD app. See `/recipe` skill for full combination guide.
+
+| Domain DSL | What it covers |
+|---|---|
 | [Domain DSL format](../template/.claude/skills/recipe/references/domain-dsl.md) | How to write a domain DSL — entity fields, namish fields, relationships, nav mapping |
 | [care-provider-operations](../template/.claude/skills/recipe/domains/care-provider-operations.md) | Example domain: NDIS residential care (6 entities) |
 | [youtube-launch-optimizer](../template/.claude/skills/recipe/domains/youtube-launch-optimizer.md) | Example domain: YouTube content production pipeline (5 entities) |
