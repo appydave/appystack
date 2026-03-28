@@ -34,6 +34,7 @@ Recipes are:
 | `domain-expert-uat` | Generates a plain-English UAT plan for a non-developer domain expert. Groups test cases by business workflow, not technical entity. Covers happy path, validation errors, permission boundaries, and three-state field transitions. |
 | `appydave-palette` | AppyDave's visual brand as color semantics — the five rules that make any UI feel like it belongs to the AppyDave ecosystem. Not a component kit. Governs what each color zone *means* (dark = structure, warm-light = content, one accent = active state only). Load before any Mochaccino session or design exploration. |
 | `wizard-shell` | Multi-step workflow execution shell. Shell owns the header; step components own only their content. Covers landing screen (three-zone: Identity / Navigation / Action) and execution shell (6-zone layout with pipeline circles, developer panel, view modes). For prompt pipelines, intake wizards, interview flows. |
+| `add-sync` | Cross-machine synchronisation: code updates via Git, data sharing via Git or shared folders. Routing recipe — asks questions first to determine which sub-type(s) to implement. Four sub-types: A (pull-only), B (full push+pull with conflicts), C (git data commit), D (shared folder via Dropbox/Syncthing). Includes server service, routes, client hook, header pill, and modal — all production-tested from AngelEye, Signal Studio, and FliHub. |
 
 **Combinations:**
 - `nav-shell` + `file-crud` = complete CRUD app with sidebar nav and file persistence
@@ -49,6 +50,10 @@ Recipes are:
 - `domain-expert-uat` = run after features stabilise to generate non-developer test plans
 - `appydave-palette` = load before any Mochaccino session or design work to ground it in AppyDave color semantics
 - `wizard-shell` = for any app built around a structured multi-step workflow (combine with `appydave-palette` for visual treatment)
+- `add-sync` = cross-machine code/data synchronisation (pull-only, full push+pull, git data commit, shared folder — mix and match)
+- `add-sync` + `file-crud` = data stored as JSON files with git-based sync to other machines
+- `add-sync` + `local-service` = Overmind-aware restart after pulling code updates
+- `add-sync` + `add-auth` = role-gated push (only admins can push)
 
 **Reference files:**
 - `references/nav-shell.md` — full nav-shell recipe spec
@@ -66,6 +71,7 @@ Recipes are:
 - `references/domain-expert-uat.md` — plain-English UAT plan generator for non-developer domain experts
 - `references/appydave-palette.md` — AppyDave color semantics: the five rules, warm palette family, accent calibration, typography roles, anti-patterns, Mochaccino usage guide
 - `references/wizard-shell.md` — multi-step execution shell: landing screen three-zone layout, 6-zone execution layout, component ownership, step type visual grammar, pipeline circles, developer panel, view modes
+- `references/add-sync.md` — cross-machine sync: 4 sub-types (pull-only, full push+pull, git data commit, shared folder), routing questions, production code from AngelEye/Signal Studio/FliHub, 22 edge cases
 
 ---
 
