@@ -39,7 +39,7 @@ Before execution begins, the user sees a landing screen. Every landing screen ha
 
 | Zone | Purpose | Treatment |
 |------|---------|-----------|
-| **Identity** | What is this app, what workflow is selected | Warm cream surface (`#f5f0e8`), Bebas Neue title, stat row |
+| **Identity** | What is this app, what workflow is selected | Warm cream content surface, display title font, stat row |
 | **Navigation** | Workflow picker — switch between available workflows | Cards or tabs with warm border style |
 | **Action** | How to start — Load Data / Start Fresh / API | Distinct panel, clear primary button |
 
@@ -47,7 +47,7 @@ The zones must be visually distinct. Stacking them ambiguously is the most commo
 
 ### Three-Column Editorial Layout (recommended)
 
-The layout that proved most versatile across 17 design explorations:
+The layout that proved most versatile across design explorations:
 
 ```
 ┌─────────────────┬──────────────────┬────────────────┐
@@ -57,16 +57,16 @@ The layout that proved most versatile across 17 design explorations:
 └─────────────────┴──────────────────┴────────────────┘
 ```
 
-- Masthead above all three columns: dark `#342d2d`, `WORKFLOW BUILDER` in tracked small-caps, app name in Bebas Neue large, stat row inline (`8 STEPS | 3 PREDICATES | 6 LLM CALLS`)
-- Content area background: `#f5f0e8` (warm cream — not pure white)
-- Cards: `#e0d4b8` borders
-- Active/selected workflow: yellow left border stripe `border-l-4 border-l-[#FFDE59]`
+- Masthead above all three columns: dark structural background, app name in display title font, stat row inline (`8 STEPS | 3 PREDICATES | 6 LLM CALLS`) in tracked small-caps
+- Content area background: warm cream surface (not pure white)
+- Cards: warm muted borders from the palette
+- Active/selected workflow: accent highlight left border stripe
 
 ### Stats Display
 
 Stats (steps / predicates / LLM calls) should be:
 - Inline row format when supporting info: `8 STEPS | 3 PREDICATES | 6 LLM CALLS`
-- Small caps, tracked, muted warm (`#8a7a6a`)
+- Small caps, tracked, muted warm text
 - Large-number format only when the stat IS the story (scoreboard treatment) — use sparingly
 
 ---
@@ -87,24 +87,26 @@ Stats (steps / predicates / LLM calls) should be:
 └─────────────────┴──────────────────────────┴───────────────────┘
 ```
 
-### Zone Color Assignments
+### Zone Roles and Visual Weight
 
-| Zone | Element | Color |
-|------|---------|-------|
-| 1 Header strip | Background | `#342d2d` (dark warm) |
-| 1 Header strip | Text | `#e0d4b8` (warm light) |
-| 1 Header strip | Step type chip (active) | `#FFDE59` bg, `#342d2d` text |
-| 2 Section pipeline | Background | `#f5f0e8` (warm cream) |
-| 3 Left sidebar | Background | `#2a2424` (dark structural) |
-| 3 Left sidebar | Active step | `#FFDE59` left border, bright text |
-| 3 Left sidebar | Completed step | muted warm, checkmark |
-| 4 Step bar | Background | `#342d2d` (dark — zone break signal) |
-| 4 Step bar | Text | light warm |
-| 5 Main form | Background | `#f5f0e8` (warm cream — NOT pure white) |
-| 6 Developer panel | Background | `#1e1a17` (dark warm terminal) |
-| 6 Developer panel | Labels | `#a89880` (warm muted) |
-| 6 Developer panel | Values | `#e0d4b8` (warm light) |
-| 6 Developer panel | Left border | `#3a332e` separator |
+Each zone has a distinct visual role. Use the project's palette tokens (from `appydave-palette`) to assign colours — the descriptions below define the semantic role, not exact values.
+
+| Zone | Element | Semantic Role |
+|------|---------|---------------|
+| 1 Header strip | Background | **Dark structural** — anchors the top of the page, highest visual weight |
+| 1 Header strip | Text | Warm light text — readable against the dark background |
+| 1 Header strip | Step type chip (active) | **Accent highlight** background, dark structural text — draws the eye to current step type |
+| 2 Section pipeline | Background | **Warm cream surface** — light, airy, separates pipeline from the dark header |
+| 3 Left sidebar | Background | **Dark structural** (slightly deeper than header) — persistent navigation column |
+| 3 Left sidebar | Active step | Accent highlight left border, bright text |
+| 3 Left sidebar | Completed step | Muted warm text, checkmark indicator |
+| 4 Step bar | Background | **Dark structural** — acts as a visual break between zones 2 and 5 (see note below) |
+| 4 Step bar | Text | Warm light text |
+| 5 Main form | Background | **Warm cream surface** — the primary content area, never pure white |
+| 6 Developer panel | Background | **Darkest terminal tone** — the deepest dark in the palette, code/debug feel |
+| 6 Developer panel | Labels | Muted warm text — low contrast, secondary information |
+| 6 Developer panel | Values | Warm light text — readable but not dominant |
+| 6 Developer panel | Left border | Subtle dark separator from the palette |
 
 Zone 4 (step bar) being dark is intentional — it acts as a visual break between the section pipeline above and the form below. Without it, the two warm-cream zones blur together.
 
@@ -139,11 +141,11 @@ Define these upfront. Every agent or developer touching the codebase needs to kn
 | Step type | Type chip | Pipeline circle | Sidebar indicator | Card/form treatment |
 |-----------|-----------|----------------|-------------------|---------------------|
 | `human-input` / `elicit` | Neutral gray chip | Light outline, number | Gray dot | White, neutral border |
-| `llm-call` / `substep` | LLM accent chip | Yellow outline, number | Gray dot | Accent left border |
+| `llm-call` / `substep` | LLM accent chip | Accent outline, number | Gray dot | Accent left border |
 | `parallel` | Indigo chip | Indigo outline | Gray dot | Light tinted bg |
 | `checkpoint` | Amber chip | Amber outline | Gray dot | Amber tint bg + border |
 | `gate` / `transform` | Muted chip (auto-advances) | Gray outline, `?` | Dimmed | Auto-advances, no user input |
-| Active (any) | Yellow chip on dark bar | Yellow fill | Accent left border + highlight | — |
+| Active (any) | Accent highlight chip on dark bar | Accent highlight fill | Accent left border + highlight | — |
 | Completed (any) | — | Dark fill, checkmark | `✓` muted | — |
 
 Step types `gate` and `transform` auto-advance without user interaction. Show them in the pipeline at reduced opacity when pending; full when completed.
@@ -159,15 +161,15 @@ The pipeline renders numbered circles connected by horizontal lines, one per ste
 ```
 
 Circle state rules:
-- **Active**: yellow fill `#FFDE59`, dark text `#342d2d`
-- **LLM/transform step (upcoming)**: yellow outline, yellow text (signals "machine will act here")
+- **Active**: accent highlight fill, dark structural text
+- **LLM/transform step (upcoming)**: accent highlight outline, accent highlight text (signals "machine will act here")
 - **Gate/predicate step**: gray outline, gray `?` label
-- **Completed**: dark fill `#342d2d`, white checkmark SVG
+- **Completed**: dark structural fill, white checkmark SVG
 - **Default upcoming**: light gray outline, muted text
 - **Skipped**: transparent with strikethrough label
 
-Connecting lines: 2px horizontal. Dark when the step to its left is completed; gray otherwise.
-Step names appear below each circle at 9px, wrapping at word boundaries, max 2 lines.
+Connecting lines: thin horizontal. Dark when the step to its left is completed; gray otherwise.
+Step names appear below each circle at small size, wrapping at word boundaries, max 2 lines.
 
 SectionHeader only renders when the workflow has multiple sections. Do not render it for single-section workflows — it adds noise with no navigational value.
 
@@ -266,15 +268,14 @@ Before generating a build prompt, collect:
 | Anti-pattern | Why wrong |
 |---|---|
 | Step component renders its own title | Creates double-header. Shell owns the header, always. |
-| Pure white form background (`#fff`) | Too stark against warm zones — use `#f5f0e8` |
+| Pure white form background | Too stark against warm zones — use the warm cream surface from the palette |
 | Developer panels visible by default in preview mode | Noise for prompt engineers reviewing the experience |
 | ProgressBar and SectionHeader both rendered | Redundant — SectionHeader is section-scoped; a full-width progress bar above it is noise |
-| `max-h-*` on developer panel content | Clips content arbitrarily — use scrollable container or resizable handle |
-| Modals as narrow side drawers for variable content | Data panels, overview, settings need `min-w-[480px]` modals, not `w-72` drawers |
+| Fixed max-height on developer panel content | Clips content arbitrarily — use scrollable container or resizable handle |
+| Narrow side drawers for variable-width content | Data panels, overview, settings need proper-width modals, not narrow drawers |
 | Compact step names with qualifiers in parentheses | Fails the sidebar readability test — shorten and use action verbs |
 | Single navigation state visible at a time | User loses orientation — always show completed + active + pending together |
 
 ---
 
-*Reference implementation: `prompt.supportsignal.com.au/poc/wui/client/src/components/WizardShell.jsx`*
 *Design explorations: `docs/palette-gallery/awb/` (17 landing screen variants)*

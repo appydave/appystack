@@ -13,7 +13,7 @@ Give a design tool, agent, or AI-generated UI the color reasoning rules that mak
 
 **Stack Assumptions**
 - None. Works with Tailwind, plain CSS, HTML mockups, React, Svelte, anything.
-- When applied to AppyStack: use `@theme` block in `client/src/styles/index.css` with the token values below.
+- When applied to a specific project, generate appropriate theme tokens (CSS custom properties, Tailwind `@theme`, Sass variables, etc.) based on the reference palette below and the project's CSS framework.
 
 **Idempotency Check**
 Not applicable — this recipe governs decisions, not files.
@@ -73,13 +73,7 @@ Withhold the accent from:
 
 ### Rule 4 — The Left Border Stripe is How Selection Speaks
 
-The universal selection signal in this palette system is a 3px left border in the accent color:
-
-```css
-border-left: 3px solid [accent];
-```
-
-This appears in navigation items, list rows, session cards — any context where one item from a list is selected. It is the one prescriptive component rule in an otherwise component-agnostic system.
+The universal selection signal in this palette system is a 3px left border in the accent color. This appears in navigation items, list rows, session cards — any context where one item from a list is selected. It is the one prescriptive component rule in an otherwise component-agnostic system.
 
 ### Rule 5 — Typography Carries Meaning
 
@@ -91,15 +85,13 @@ Three fonts, three roles — never mixed:
 | DM Sans | UI text | Labels, nav items, body content, buttons, everything readable |
 | DM Mono | Technical content | IDs, code snippets, timestamps, API keys — signals machine-generated or precise data |
 
-```html
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-```
+Load these fonts using whatever mechanism suits the target project (Google Fonts link, `@font-face` declarations, npm packages, etc.) with appropriate system fallbacks: sans-serif for Bebas Neue and DM Sans, monospace for DM Mono.
 
 ---
 
-## The Warm Palette
+## Reference Palette
 
-All values are from two related applications (AWB and AngelEye) that converged on this family through design exploration. Use these as your reference points — exact values matter because they were calibrated together.
+All values are from two related applications (AWB and AngelEye) that converged on this family through design exploration. Use these as calibration reference points — they represent the tonal range that defines the AppyDave warmth. When generating theme tokens for a project, derive values from this palette rather than inventing new ones.
 
 ### Dark Family (structure, chrome, navigation)
 
@@ -194,42 +186,18 @@ The layout, component structure, and density are entirely the design tool's crea
 
 ---
 
-## Using This With AppyStack (Tailwind v4)
+## Example Implementation: Tailwind v4
 
-For AppyStack projects, the token names map directly. Drop into `client/src/styles/index.css`:
+For AppyStack projects using Tailwind v4, the reference palette maps naturally to a `@theme` block. Generate token names and values appropriate to the project, drawing from the reference palette above. A typical mapping would include:
 
-```css
-@import "tailwindcss";
+- Dark structural tokens (chrome, sidebar) from the Dark Family
+- Content surface tokens (background, card, surface) from the Light Family
+- Border tokens for both dark and light zones
+- Text tokens (foreground, muted, bright-on-dark) from the Mid Tones
+- Both accent values with names that signal their background context
+- Font family tokens for the three typography roles
 
-@theme {
-  /* Dark structural family */
-  --color-chrome:           #1a1515;
-  --color-chrome-mid:       #2a2424;
-
-  /* Content world */
-  --color-background:       #e8e0d4;
-  --color-surface:          #f0ebe4;
-  --color-card:             #f5f1eb;
-
-  /* Borders */
-  --color-border:           #d4cdc4;
-  --color-border-dark:      #3a3030;
-
-  /* Text */
-  --color-foreground:       #342d2d;
-  --color-muted:            #7a6e5e;
-  --color-bright-on-dark:   #ccba9d;
-
-  /* Accent — choose based on context */
-  --color-accent-light:     #c8841a;   /* on light surfaces */
-  --color-accent-dark:      #FFDE59;   /* on dark surfaces */
-
-  /* Fonts */
-  --font-brand:             'Bebas Neue', sans-serif;
-  --font-ui:                'DM Sans', system-ui, sans-serif;
-  --font-technical:         'DM Mono', monospace;
-}
-```
+Place theme tokens in the project's main CSS file (e.g., `client/src/styles/index.css`) using the `@theme` block after `@import "tailwindcss"`.
 
 ---
 

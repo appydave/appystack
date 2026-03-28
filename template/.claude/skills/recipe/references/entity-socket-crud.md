@@ -148,33 +148,21 @@ io.on('connection', (socket) => {
 
 ## Client: entitySocket.ts Singleton
 
-The singleton is already in the template at `client/src/lib/entitySocket.ts`. Do not recreate it. All hooks share this single connection. This is what prevents duplicate connections when multiple components use `useEntity`.
+The singleton is already in the template at `client/src/lib/entitySocket.ts`. Do not recreate it.
 
-```typescript
-// client/src/lib/entitySocket.ts
-import { io, Socket } from 'socket.io-client';
+**Pattern**: a module-scoped `Socket | null` variable with a `getEntitySocket()` function that lazily creates a single Socket.io connection on first call. All hooks share this connection. This is what prevents duplicate connections when multiple components use `useEntity`.
 
-let socket: Socket | null = null;
-
-export function getEntitySocket(): Socket {
-  if (!socket) {
-    socket = io({ path: '/socket.io', transports: ['websocket'] });
-  }
-  return socket;
-}
-```
+If the file is missing for any reason, create one that exports `getEntitySocket(): Socket` using lazy initialization with `io()` from `socket.io-client`.
 
 ---
 
-## Client: useEntity Hook
+## Client: useEntity Hook Contract
 
-One hook handles all entities. Import it anywhere in the client and pass the entity name string.
+One hook handles all entities. The hook is generic over the entity type `T`.
+
+**Interface**
 
 ```typescript
-// client/src/hooks/useEntity.ts
-import { useState, useEffect, useCallback } from 'react';
-import { getEntitySocket } from '../lib/entitySocket.js';
-
 export interface UseEntityResult<T> {
   records: T[];
   loading: boolean;
@@ -184,98 +172,24 @@ export interface UseEntityResult<T> {
   refresh: () => void;
 }
 
-export function useEntity<T extends Record<string, unknown>>(entityName: string): UseEntityResult<T> {
-  const [records, setRecords] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [entityError, setEntityError] = useState<string | null>(null);
-
-  const socket = getEntitySocket();
-
-  const refresh = useCallback(() => {
-    socket.emit('entity:list', { entity: entityName });
-  }, [entityName, socket]);
-
-  useEffect(() => {
-    const onListResult = (data: { entity: string; records: unknown[] }) => {
-      if (data.entity !== entityName) return;
-      setRecords(data.records as T[]);
-      setLoading(false);
-    };
-    const onCreated = (data: { entity: string; record: unknown }) => {
-      if (data.entity !== entityName) return;
-      refresh();
-    };
-    const onUpdated = (data: { entity: string; record: unknown }) => {
-      if (data.entity !== entityName) return;
-      refresh();
-    };
-    const onDeleted = (data: { entity: string; id: string }) => {
-      if (data.entity !== entityName) return;
-      setRecords(prev => prev.filter(r => r['id'] !== data.id));
-    };
-    const onError = (data: { entity: string; operation: string; message: string }) => {
-      if (data.entity !== entityName) return;
-      setEntityError(`${data.operation} failed: ${data.message}`);
-    };
-    const onExternalChange = (data: { entity: string }) => {
-      if (data.entity !== entityName) return;
-      refresh();
-    };
-
-    socket.on('entity:list:result', onListResult);
-    socket.on('entity:created', onCreated);
-    socket.on('entity:updated', onUpdated);
-    socket.on('entity:deleted', onDeleted);
-    socket.on('entity:error', onError);
-    socket.on('entity:external-change', onExternalChange);
-
-    refresh();
-
-    return () => {
-      socket.off('entity:list:result', onListResult);
-      socket.off('entity:created', onCreated);
-      socket.off('entity:updated', onUpdated);
-      socket.off('entity:deleted', onDeleted);
-      socket.off('entity:error', onError);
-      socket.off('entity:external-change', onExternalChange);
-    };
-  }, [entityName, refresh, socket]);
-
-  const saveRecord = useCallback((record: Partial<T>) => {
-    socket.emit('entity:save', { entity: entityName, record: record as Record<string, unknown> });
-  }, [entityName, socket]);
-
-  const deleteRecord = useCallback((id: string) => {
-    socket.emit('entity:delete', { entity: entityName, id });
-  }, [entityName, socket]);
-
-  return { records, loading, entityError, saveRecord, deleteRecord, refresh };
-}
+export function useEntity<T extends Record<string, unknown>>(entityName: string): UseEntityResult<T>
 ```
 
-**Usage in a view component:**
+**Lifecycle**
+
+1. On mount, call `getEntitySocket()` to obtain the shared singleton connection
+2. Register listeners for all six server → client events (`entity:list:result`, `entity:created`, `entity:updated`, `entity:deleted`, `entity:error`, `entity:external-change`), each filtering by `entityName`
+3. Emit `entity:list` to request the initial dataset
+4. On `entity:list:result` — set `records`, set `loading` to false
+5. On `entity:created` / `entity:updated` / `entity:external-change` — call `refresh()` (re-emit `entity:list`)
+6. On `entity:deleted` — optimistically remove the record from local state by `id`
+7. On `entity:error` — set `entityError` with a descriptive message
+8. On unmount, remove all six listeners via `socket.off()` using the same function references
+
+**Usage**
 
 ```typescript
-import { useEntity } from '../hooks/useEntity.js';
-import type { Company } from '@appystack-template/shared';
-
-function CompanyList() {
-  const { records, loading, entityError, saveRecord, deleteRecord } = useEntity<Company>('companies');
-
-  if (loading) return <p>Loading...</p>;
-  if (entityError) return <p>Error: {entityError}</p>;
-
-  return (
-    <ul>
-      {records.map(company => (
-        <li key={company.id as string}>
-          {company.name as string}
-          <button onClick={() => deleteRecord(company.id as string)}>Delete</button>
-        </li>
-      ))}
-    </ul>
-  );
-}
+const { records, loading, saveRecord, deleteRecord } = useEntity<Company>('companies');
 ```
 
 ---

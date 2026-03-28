@@ -48,8 +48,8 @@ Add the ability for an AppyStack app to synchronise code and/or data between mac
 | **D: Shared Folder Sync** | Watch a folder synced by Dropbox/Syncthing, show incoming changes | Large files, non-git content, peer-to-peer without GitHub |
 
 Sub-types can be combined:
-- **A + C** = Users pull code updates AND commit their data changes (Signal Studio pattern)
-- **B alone** = Full collaboration hub (FliHub pattern)
+- **A + C** = Users pull code updates AND commit their data changes (non-developer users who create data locally but receive app updates from a developer)
+- **B alone** = Full collaboration hub where everyone pushes and pulls code and data
 - **A + D** = Pull code from Git, receive data via shared folder
 - **C + D** = Commit data to Git AND receive files via shared folder
 
@@ -444,158 +444,66 @@ export function useGitSync() {
 
 ### UI: Sync Pill (Header Indicator)
 
-A compact pill in the app header. Color-coded by state. Clickable when action is available.
+A compact pill displayed in the app header. Communicates sync state at a glance. Clickable when an action is available.
 
-```typescript
-// client/src/components/SyncPill.tsx
-import { useState } from 'react';
-import { useGitSync } from '../hooks/useGitSync.js';
-import SyncModal from './SyncModal.js';
-import type { GitSyncStatus } from '@scope/shared';
+**Capabilities:**
+- Renders as a small rounded pill showing a short label and colour-coded background
+- Shows a spinner animation while a pull is in progress
+- Clickable only when `state` is `behind` or `diverged` — opens the SyncModal
+- Non-clickable states show a tooltip with branch name and local commit hash
+- Uses the `useGitSync` hook for all state
 
-interface PillStyle { bg: string; text: string; label: string; animation?: string; }
+**State table:**
 
-function getPillStyle(status: GitSyncStatus, pulling: boolean): PillStyle {
-  if (pulling) return { bg: 'bg-amber-500/15', text: 'text-amber-700', label: 'Pulling\u2026' };
-  switch (status.state) {
-    case 'clean':   return { bg: 'bg-green-600/15', text: 'text-green-700', label: 'Synced' };
-    case 'behind':  return { bg: 'bg-amber-500', text: 'text-white', label: `${status.behind} behind`, animation: 'sync-pulse' };
-    case 'dirty':   return { bg: 'bg-red-500/15', text: 'text-red-700', label: 'Dirty' };
-    case 'ahead':   return { bg: 'bg-blue-500/15', text: 'text-blue-700', label: `${status.ahead} ahead` };
-    case 'diverged':return { bg: 'bg-purple-500/15', text: 'text-purple-700', label: 'Diverged' };
-    case 'error':   return { bg: 'bg-muted-foreground/10', text: 'text-muted-foreground', label: 'Sync error' };
-    default:        return { bg: 'bg-muted-foreground/10', text: 'text-muted-foreground', label: 'Unknown' };
-  }
-}
+| State | Colour Semantic | Label | Clickable? | Extra |
+|-------|----------------|-------|------------|-------|
+| `pulling` (transient) | warning | "Pulling..." | No | Show spinner icon |
+| `clean` | success | "Synced" | No | — |
+| `behind` | warning (solid) | "{N} behind" | Yes → opens modal | Pulsing animation (see below) |
+| `dirty` | danger | "Dirty" | No | — |
+| `ahead` | info | "{N} ahead" | No | — |
+| `diverged` | accent | "Diverged" | Yes → opens modal | — |
+| `error` | muted | "Sync error" | No | — |
 
-export default function SyncPill() {
-  const { status, pulling, pullResult, pull, clearPullResult } = useGitSync();
-  const [modalOpen, setModalOpen] = useState(false);
+**Label language:** Use the labels chosen during routing question Q6. The table above shows developer-style defaults.
 
-  if (!status) return null;
+**Pulsing animation:** When state is `behind`, the pill should gently pulse (opacity cycles between full and ~60% over 2 seconds, repeating). This draws attention without alarm. Implement this as a CSS keyframe animation added to the app's stylesheet.
 
-  const style = getPillStyle(status, pulling);
-  const clickable = status.state === 'behind' || status.state === 'diverged';
-
-  return (
-    <>
-      <button
-        onClick={() => clickable && (clearPullResult(), setModalOpen(true))}
-        title={clickable ? undefined : `Branch: ${status.branch} | Local: ${status.localCommit}`}
-        className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full font-medium ${style.bg} ${style.text} ${clickable ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} transition-opacity`}
-        style={style.animation ? { animation: `${style.animation} 2s ease-in-out infinite` } : undefined}
-      >
-        {pulling && (
-          <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-        )}
-        {style.label}
-      </button>
-      <SyncModal isOpen={modalOpen} onClose={() => { setModalOpen(false); clearPullResult(); }}
-        status={status} onPull={pull} pulling={pulling} pullResult={pullResult} />
-    </>
-  );
-}
-```
-
-**CSS animation** (add to `client/src/styles/index.css`):
-```css
-@keyframes sync-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-```
+**Interactions:**
+- Clicking the pill when clickable: clears any previous pull result, then opens SyncModal
+- If `status` is null (not yet loaded), render nothing
 
 ### UI: Sync Modal (Pull Confirmation)
 
-Shows commit list, confirms pull, displays result, auto-closes on success. Prevents dismissal during pull.
+A confirmation dialog that shows what will be pulled, executes the pull, and displays the result.
 
-```typescript
-// client/src/components/SyncModal.tsx
-import type { GitSyncStatus, GitPullResult } from '@scope/shared';
+**Capabilities:**
 
-interface SyncModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  status: GitSyncStatus;
-  onPull: () => void;
-  pulling: boolean;
-  pullResult: GitPullResult | null;
-}
+The modal has three visual phases, determined by pull state:
 
-function relativeTime(dateStr: string): string {
-  const diffSec = Math.round((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (diffSec < 60) return `${diffSec}s ago`;
-  const diffMin = Math.round(diffSec / 60);
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHr = Math.round(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
-  return `${Math.round(diffHr / 24)}d ago`;
-}
+**Phase 1 — Pre-pull (no pullResult yet):**
+- Title: "Pull {N} commit(s)?"
+- Body: scrollable list of up to 10 pending commits, each showing:
+  - Short SHA (monospace)
+  - Relative time (e.g. "5m ago", "2h ago")
+  - Commit message (truncated to one line)
+  - Author name
+- Footer: Cancel button + Pull Now button (both disabled while pulling; Pull Now shows spinner while pulling)
 
-export default function SyncModal({ isOpen, onClose, status, onPull, pulling, pullResult }: SyncModalProps) {
-  if (!isOpen) return null;
+**Phase 2 — Success (pullResult.success === true):**
+- Body: success message — "Pulled {N} commit(s)." plus "Server restarting..." if `restartTriggered`
+- Footer: no buttons (modal auto-closes after 3 seconds)
 
-  const commits = status.behindCommits ?? [];
-  const isSuccess = pullResult?.success === true;
-  const isFailure = pullResult?.success === false;
+**Phase 3 — Failure (pullResult.success === false):**
+- Body: error message from `pullResult.error`
+- Footer: Close button only
 
-  if (isSuccess) setTimeout(onClose, 3000);
+**Interaction rules:**
+- Backdrop click dismisses the modal UNLESS a pull is in progress
+- On close, clear the pull result
+- Success auto-close: 3-second timer then close
 
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
-      onClick={(e) => { if (e.target === e.currentTarget && !pulling) onClose(); }}>
-      <div className="bg-card rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
-          Pull {status.behind} commit{status.behind !== 1 ? 's' : ''}?
-        </h2>
-
-        {/* Commit list (before pull) */}
-        {commits.length > 0 && !pullResult && (
-          <ul className="space-y-2 mb-4 max-h-64 overflow-y-auto">
-            {commits.slice(0, 10).map((c) => (
-              <li key={c.sha} className="text-sm border-b border-border pb-2 last:border-0">
-                <div className="flex items-baseline gap-2">
-                  <code className="text-xs font-mono text-primary">{c.sha}</code>
-                  <span className="text-muted-foreground text-xs">{relativeTime(c.date)}</span>
-                </div>
-                <div className="text-foreground truncate">{c.message}</div>
-                <div className="text-xs text-muted-foreground">{c.author}</div>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {isSuccess && (
-          <p className="text-green-700 text-sm mb-4">
-            Pulled {pullResult.commitsPulled} commit{pullResult.commitsPulled !== 1 ? 's' : ''}.
-            {pullResult.restartTriggered ? ' Server restarting\u2026' : ''}
-          </p>
-        )}
-        {isFailure && (
-          <p className="text-red-600 text-sm mb-4">{pullResult.error ?? 'Pull failed'}</p>
-        )}
-
-        <div className="flex justify-end gap-3">
-          {isFailure ? (
-            <button onClick={onClose} className="px-4 py-2 text-sm rounded-md bg-muted-foreground/10 text-foreground hover:bg-muted-foreground/20">Close</button>
-          ) : isSuccess ? null : (
-            <>
-              <button onClick={onClose} disabled={pulling} className="px-4 py-2 text-sm rounded-md bg-muted-foreground/10 text-foreground hover:bg-muted-foreground/20 disabled:opacity-50">Cancel</button>
-              <button onClick={onPull} disabled={pulling} className="px-4 py-2 text-sm rounded-md bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 flex items-center gap-2">
-                {pulling && <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>}
-                {pulling ? 'Pulling\u2026' : 'Pull Now'}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-```
+**Props:** `isOpen`, `onClose`, `status: GitSyncStatus`, `onPull`, `pulling: boolean`, `pullResult: GitPullResult | null`
 
 ### Environment Configuration
 
@@ -739,16 +647,20 @@ router.post('/resolve', async (req, res) => {
 
 ### Additional Client: Push + Conflict UI
 
-The push flow adds:
-1. A "Push" button in the sync modal (visible when state is `dirty` or `ahead`)
-2. A confirmation step showing changed files grouped by type
-3. A conflict resolution panel when pull results in rebase conflicts
+The push flow adds these capabilities to the sync modal:
 
-These are more complex components — see FliHub's `SyncTool.tsx` for the full pattern. Key UX principles:
+**Push confirmation (visible when state is `dirty` or `ahead`):**
+- Show count of changed files, grouped by file type (collapsible sections)
+- Display an auto-generated commit message that the user can edit
+- Cancel and Push buttons
 
-- **Push confirmation modal**: Show file count, grouped file list (collapsible by type), auto-generated commit message (editable), Cancel/Push buttons
-- **Conflict panel**: List conflicting files, per-file "Keep mine" / "Keep theirs" buttons, remaining conflict count
-- **Role gating**: If `add-auth` is applied, gate push behind an admin or developer role
+**Conflict resolution panel (visible after a pull results in rebase conflicts):**
+- List each conflicting file path
+- Per-file "Keep mine" / "Keep theirs" action buttons
+- Running count of remaining unresolved conflicts
+- When all conflicts are resolved, the rebase continues automatically
+
+**Role gating:** If `add-auth` is applied, gate push operations behind an admin or developer role.
 
 ---
 
@@ -855,54 +767,36 @@ Mount: `app.use('/api/git', gitDataRouter);`
 
 ### Client: Data Sync Button (Header)
 
-A cloud icon with pulsing amber dot when data files are dirty. Click opens a dropdown showing changed files with friendly names.
+A button in the header area that indicates whether local data files have uncommitted changes. Provides one-click commit + push of the data folder.
 
-**Key UX patterns from Signal Studio:**
-- Parse file paths to show domain-friendly names: `data/companies/sunrise-abc123.json` → "Company: Sunrise Care" (Modified)
-- Color-coded git status: Modified (amber), Added (green), Deleted (red), New/Untracked (blue)
+**Capabilities:**
+- Shows an icon (e.g. cloud) with a notification indicator when data files are dirty
+- Click opens a dropdown or popover listing changed data files
+- Parse file paths to show domain-friendly names: e.g. `data/companies/sunrise-abc123.json` becomes "Company: Sunrise Care (Modified)"
+- Each file shows its git status using semantic colour:
+  - Modified → warning colour
+  - Added → success colour
+  - Deleted → danger colour
+  - Untracked → info colour
 - "Commit to Git" button — one-click commit + push of data folder
 - "Check remote" button — shows behind/ahead count
-- Separate from code sync — users understand "my data changes" vs "app updates"
+- Visually and conceptually separate from code sync — users should understand "my data changes" vs "app updates"
 
 ### Per-Entity Sync Badge
 
 For detail views — shows whether an individual record has been pushed to a remote system.
 
-```typescript
-// client/src/components/SyncStatusBadge.tsx
-interface SyncStatusBadgeProps {
-  supportsignalId?: string;  // or any remote system ID field
-  lastPushedAt?: string;
-  updatedAt?: string;
-}
+**Props:** `remoteId?: string` (any remote system ID field), `lastPushedAt?: string`, `updatedAt?: string`
 
-type SyncState = 'never' | 'stale' | 'synced';
+**State derivation:**
 
-const styles: Record<SyncState, { bg: string; text: string; dot: string; label: string }> = {
-  never:  { bg: '#fef2f2', text: '#991b1b', dot: '#ef4444', label: 'Not pushed' },
-  stale:  { bg: '#fffbeb', text: '#92400e', dot: '#f59e0b', label: 'Changed since push' },
-  synced: { bg: '#f0fdf4', text: '#166534', dot: '#22c55e', label: 'In sync' },
-};
+| Condition | State | Colour Semantic | Label | Tooltip |
+|-----------|-------|----------------|-------|---------|
+| No `remoteId` or no `lastPushedAt` | `never` | danger | "Not pushed" | "Never pushed" |
+| `updatedAt` > `lastPushedAt` | `stale` | warning | "Changed since push" | "Edited after last push" |
+| Otherwise | `synced` | success | "In sync" | "Last pushed: {formatted date}" |
 
-export default function SyncStatusBadge({ supportsignalId, lastPushedAt, updatedAt }: SyncStatusBadgeProps) {
-  let state: SyncState = 'never';
-  if (supportsignalId && lastPushedAt) {
-    state = updatedAt && new Date(updatedAt) > new Date(lastPushedAt) ? 'stale' : 'synced';
-  }
-
-  const s = styles[state];
-  const title = state === 'synced' ? `Last pushed: ${new Date(lastPushedAt!).toLocaleString()}` :
-                state === 'stale' ? 'Edited after last push' : 'Never pushed';
-
-  return (
-    <span title={title} style={{ background: s.bg, color: s.text }}
-      className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium">
-      <span style={{ background: s.dot }} className="w-1.5 h-1.5 rounded-full" />
-      {s.label}
-    </span>
-  );
-}
-```
+**Rendering:** A small pill with a coloured dot and label text. Uses semantic colour tokens, not hardcoded values.
 
 ---
 
@@ -1084,7 +978,7 @@ RELAY_DIR=../relay   # path to shared folder (Dropbox, Syncthing, etc.)
 
 6. **Dirty tree blocks pull** — always check `git status --porcelain` before attempting pull. A pull on a dirty tree leads to unpredictable merge behaviour. Show the user: "You have unsaved changes — commit or discard before pulling."
 
-7. **Stash non-data changes during data sync** — if code and data are in the same repo, stash code changes before rebasing for data push, then restore. Signal Studio does this. Without it, code changes get caught up in the data commit.
+7. **Stash non-data changes during data sync** — if code and data are in the same repo, stash code changes before rebasing for data push, then restore. Without it, code changes get caught up in the data commit.
 
 8. **Concurrent sync prevention** — use a boolean flag (`syncInProgress`) to prevent a second sync while the first is running. Return 409 Conflict.
 
@@ -1104,11 +998,11 @@ RELAY_DIR=../relay   # path to shared folder (Dropbox, Syncthing, etc.)
 
 14. **Relative time for commits** — "5m ago" is more useful than "2026-03-28T17:20:00Z". Parse ISO dates to relative time in the modal.
 
-15. **Pill animation draws attention without alarm** — the `sync-pulse` (opacity 1→0.6→1 over 2s) is noticeable but not stressful. Solid color + animation for actionable states (behind), transparent color + no animation for informational states (clean, ahead).
+15. **Pill animation draws attention without alarm** — the pulsing animation (opacity cycles between full and ~60% over 2 seconds) is noticeable but not stressful. Solid colour + animation for actionable states (behind), transparent colour + no animation for informational states (clean, ahead).
 
-16. **Non-developer language** — "3 behind" means nothing to Angela. Consider: "Update available" (behind), "Your changes haven't been shared" (dirty), "Everything up to date" (clean). Decide this during the routing questions.
+16. **Non-developer language** — "3 behind" means nothing to non-technical users. Consider: "Update available" (behind), "Your changes haven't been shared" (dirty), "Everything up to date" (clean). Decide this during the routing questions.
 
-17. **Separate data sync from code sync visually** — Signal Studio uses two different UI elements: GitSyncButton (cloud icon, header) for data commits, and a separate mechanism for code updates. Users understand "my data" vs "the app" as two different things.
+17. **Separate data sync from code sync visually** — use two distinct UI elements: a data sync button (header) for data commits, and a sync pill for code updates. Users understand "my data" vs "the app" as two different things.
 
 18. **Don't show SHA hashes to non-developers** — commit SHAs are noise. Show commit messages only, or better, translate to domain language ("Added company: Sunrise Care").
 
@@ -1146,13 +1040,13 @@ Then generate a concrete build prompt with real file paths, component names, and
 
 | Scenario | Sub-type |
 |----------|----------|
-| David pushes code, Angela/Lars pull via UI | A (pull-only) |
+| Developer pushes code, non-technical users pull via UI | A (pull-only) |
 | Two developers collaborating on same app | B (full push + pull) |
 | App stores data as JSON files, needs to commit + push data changes | C (git data commit) |
 | Sharing data between machines via Dropbox/Syncthing | D (shared folder) |
-| Signal Studio pattern (data commit + code pull) | A + C |
-| FliHub pattern (full sync + file relay) | B + D |
-| AngelEye pattern (simple pull-only) | A |
+| Non-developer users who create data locally but receive app updates from a developer | A + C |
+| Full collaboration hub with both git sync and file relay | B + D |
+| Simple one-way pull for users receiving updates | A |
 | Solo developer, CLI only | Don't need this recipe — use `/push` skill |
 
 ---

@@ -117,39 +117,25 @@ export const navConfig: NavConfig = [
 
 ## State Model
 
-All shell state lives in `NavContext`:
+All shell state lives in a `NavContext` provider. It exposes the following contract:
 
-```typescript
-// client/src/contexts/NavContext.tsx
+**State**
+- `activeView: string` — which view key is currently rendering
+- `collapsed: boolean` — whether the sidebar is in collapsed (icon-only) state
+- `contextNav: NavConfig | null` — a sub-tool override nav config; `null` means use the static `navConfig`
 
-interface NavContextValue {
-  activeView: string             // which view is currently rendering
-  collapsed: boolean             // is the sidebar collapsed?
-  contextNav: NavConfig | null   // sub-tool override nav; null = use static navConfig
+**Actions**
+- `navigate(viewKey: string)` — switch the active view
+- `toggleCollapsed()` — toggle sidebar between expanded and collapsed states
+- `setContextNav(nav: NavConfig | null)` — replace the sidebar nav temporarily (pass `null` to restore the default)
 
-  navigate: (viewKey: string) => void
-  toggleCollapsed: () => void
-  setContextNav: (nav: NavConfig | null) => void
-}
-```
-
-The `collapsed` state controls sidebar width: `collapsed ? 'w-12' : 'w-56'`. Use Tailwind transition utilities for smooth animation. A collapse toggle handle renders at the sidebar bottom (or top) — always visible even when collapsed.
+**Sidebar behaviour**: When collapsed, the sidebar shows a narrow icon-only strip. When expanded, it shows a comfortable width with room for labels and group headings. Use a smooth width transition between states. A collapse toggle handle renders at the sidebar bottom (or top) — always visible in both states.
 
 ---
 
 ## Content Panel Switching
 
-```typescript
-// ContentPanel.tsx
-const viewMap: Record<string, React.ComponentType> = {
-  dashboard: DashboardView,
-  settings:  SettingsView,
-  // one entry per nav item key
-}
-
-const View = viewMap[activeView] ?? viewMap['dashboard']
-return <View />
-```
+The ContentPanel component maintains a map from view keys to React components. It looks up the current `activeView` from NavContext and renders the matching component. If no match is found, it falls back to the default view (typically the first nav item).
 
 View stubs are generated empty. Domain logic is filled in separately (by the developer, a data recipe, or a compound recipe step).
 
@@ -225,11 +211,10 @@ A fixed or responsive grid of widget panels. Each widget independently fetches a
 
 ## Styling Notes
 
-- Sidebar width: `w-56` expanded, `w-12` collapsed (icon-only or just toggle handle)
-- Header height: `h-14`
+- Sidebar width: a narrow collapsed width (icon-only or just the toggle handle) and a comfortable expanded width with room for labels and group headings
+- Header height: a fixed height that accommodates the app name and action icons without crowding
 - Content panel: fills remaining space, independently scrollable
 - Active nav item: distinct background highlight (CSS variable for theming)
-- Transitions: `transition-all duration-200` on sidebar width change
+- Transitions: smooth width transition on sidebar collapse/expand
 - Use TailwindCSS v4 CSS variables for sidebar/header colours — define in `client/src/styles/index.css`
-
-For a complete design system (palette, component patterns, typography), see the `ui-theme` recipe: `references/ui-theme.md`. The v2-linen theme is the standard for AppyDave operational/monitoring tools — use it alongside `nav-shell` for that look.
+- For a complete design system (palette, component patterns, typography), see the project's existing theme variables in `client/src/styles/index.css`, or the `ui-theme` recipe (`references/ui-theme.md`) if one exists
