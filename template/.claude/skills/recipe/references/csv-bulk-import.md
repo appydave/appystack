@@ -50,7 +50,6 @@ server/src/
 ├── routes/
 │   └── {entity}/
 │       └── import.ts          ← POST /api/{entity}/import
-│           Multer file upload, CSV parse, validation, write, result
 
 client/src/
 ├── components/
@@ -59,119 +58,28 @@ client/src/
     └── use{Entity}Import.ts     ← encapsulates fetch + result state
 ```
 
-**Server dependencies added:**
-```bash
-npm install multer csv-parse
-npm install -D @types/multer
-```
+**Server dependencies added:** `multer` (multipart file upload) and `csv-parse` (CSV parsing). Plus `@types/multer` as a dev dependency.
 
 ---
 
 ## Server: Import Endpoint
 
-```typescript
-// server/src/routes/{entity}/import.ts
-import { Router } from 'express'
-import multer from 'multer'
-import { parse } from 'csv-parse/sync'
-import { saveRecord } from '../../data/fileStore.js'
-import { io } from '../../index.js'          // Socket.io instance for post-import notification
-import { authenticate } from '../../middleware/authenticate.js'  // if auth is installed
+**Route contract:** `POST /api/{entity}/import`
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } })
+Accepts multipart form data with:
+- `file` — a `.csv` file (enforce a sensible size limit, e.g. 5 MB)
+- `scopeId` (optional) — restricts imported records to a scope (company, team, org). Required when auth with scoping is installed.
 
-// Derive from entity type — see "Required Columns Configuration" below
-const REQUIRED_COLUMNS = ['field1', 'field2', 'field3']
-const ENTITY = '{entity}'
+**Processing pipeline:**
 
-export const {entity}ImportRouter = Router()
+1. **Reject if no file** — return 400
+2. **Parse CSV** — extract rows using column headers as keys. Reject with 400 if the file is not valid CSV.
+3. **Validate headers** — check that all required columns are present. If any are missing, reject the entire request before writing anything. Return the list of missing columns and the full list of required columns so the user can fix the file.
+4. **Validate and write each row** — iterate rows, apply per-field validation (format, required, enum membership), then write valid rows using the existing persistence layer (`saveRecord`, Prisma, etc.).
+5. **Emit refresh notification** — if any records were created, emit `entity:external-change` over Socket.io so open list views refresh.
+6. **Return results** — respond with `{ total, created, failed, failures }` where each failure includes the row number (1-indexed, accounting for the header row) and the reason.
 
-{entity}ImportRouter.post(
-  '/api/{entity}/import',
-  authenticate,               // remove if no auth
-  upload.single('file'),
-  async (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' })
-    }
-
-    // If scope restriction is needed (e.g. companyId, teamId, orgId)
-    const scopeId = req.body.scopeId as string | undefined
-    if (!scopeId) {
-      return res.status(400).json({ error: 'scopeId is required' })
-    }
-
-    // Parse CSV
-    let rows: Record<string, string>[]
-    try {
-      rows = parse(req.file.buffer, { columns: true, skip_empty_lines: true, trim: true })
-    } catch {
-      return res.status(400).json({ error: 'Could not parse CSV — check file format' })
-    }
-
-    // Column validation (all-or-nothing: fail before any writes)
-    const headers = rows[0] ? Object.keys(rows[0]) : []
-    const missing = REQUIRED_COLUMNS.filter(col => !headers.includes(col))
-    if (missing.length > 0) {
-      return res.status(400).json({
-        error: `Missing required columns: ${missing.join(', ')}`,
-        requiredColumns: REQUIRED_COLUMNS,
-      })
-    }
-
-    // Per-row processing (partial success: write valid rows, report failures)
-    const results: { row: number; status: 'created' | 'failed'; reason?: string }[] = []
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]
-      const rowNum = i + 2  // 1-indexed + header row
-
-      // Row-level validation — apply entity-specific validation rules per field
-      // Examples: regex patterns, date parsing, enum membership, numeric ranges
-      // See "The Recipe Intelligence Prompts" step 2 for how to gather these
-      for (const col of REQUIRED_COLUMNS) {
-        if (!row[col]?.trim()) {
-          results.push({ row: rowNum, status: 'failed', reason: `Missing required field: ${col}` })
-          continue
-        }
-      }
-      // Add field-specific format validation here (dates, identifiers, enums, etc.)
-
-      // Write
-      try {
-        await saveRecord(ENTITY, {
-          ...row,
-          scopeId,
-          status: 'active',
-        })
-        results.push({ row: rowNum, status: 'created' })
-      } catch (err) {
-        results.push({ row: rowNum, status: 'failed', reason: String(err) })
-      }
-    }
-
-    // Notify open views to refresh
-    const created = results.filter(r => r.status === 'created').length
-    if (created > 0) {
-      io.emit('entity:external-change', { entity: ENTITY })
-    }
-
-    const failed = results.filter(r => r.status === 'failed')
-    return res.json({
-      total: rows.length,
-      created,
-      failed: failed.length,
-      failures: failed,
-    })
-  }
-)
-```
-
-**Mount in `server/src/index.ts`:**
-```typescript
-import { {entity}ImportRouter } from './routes/{entity}/import.js'
-app.use({entity}ImportRouter)
-```
+**Scope enforcement:** If auth is installed, the server determines the effective scope from the authenticated user — not from the client-submitted `scopeId`. Admins may import into any scope; non-admins always import into their own assigned scope regardless of what the request body says. This prevents privilege escalation via modified form data.
 
 ---
 
@@ -184,7 +92,7 @@ The recipe supports both. Ask the developer which they prefer:
 | **All-or-nothing** | Any invalid row → entire import rejected, nothing written | Data integrity is critical; operator must fix CSV before any records are created |
 | **Partial success** | Valid rows are written; failed rows reported with row number and reason | Large imports where some rows may have typos; operator fixes failures after the fact |
 
-The template above implements **partial success**. This is the recommended default because large real-world CSV files almost always contain a few bad rows, and forcing operators to fix every row before any are imported creates frustration. To switch to all-or-nothing: validate all rows first, return early if any fail, then do the writes in a second pass.
+**Recommended default: partial success.** Large real-world CSV files almost always contain a few bad rows, and forcing operators to fix every row before any are imported creates frustration. To implement all-or-nothing: validate all rows first, return early if any fail, then do the writes in a second pass.
 
 ---
 
@@ -208,30 +116,6 @@ The import modal component manages a multi-state flow. Build it with these capab
 - **Result summary** — after import completes, show: how many records were created out of the total, and a per-row failure list with row number and reason.
 
 **Hook:** Extract the fetch call and result state into a `use{Entity}Import` hook. The hook accepts a `File` and scope ID, calls `POST /api/{entity}/import` with `FormData`, and returns `{ result, error, importing, doImport }`.
-
----
-
-## Scope Restriction Pattern
-
-Scope restriction is the most important non-obvious requirement. If the app has roles:
-
-| User role | Scope selector | Behaviour |
-|-----------|----------------|-----------|
-| Admin | Visible, all scopes listed | Can import into any scope |
-| Non-admin | Hidden or read-only | Import automatically scoped to their assigned scope |
-
-The server enforces this regardless of what the client sends:
-
-```typescript
-// In the import endpoint — enforce scoping server-side even if client misbehaves
-const effectiveScopeId = req.user?.role === 'admin'
-  ? (req.body.scopeId as string)
-  : req.user?.scopeId   // non-admin always uses their own scope
-
-if (!effectiveScopeId) {
-  return res.status(400).json({ error: 'scopeId could not be determined' })
-}
-```
 
 ---
 

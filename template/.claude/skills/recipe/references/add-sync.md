@@ -166,281 +166,81 @@ export interface GitPullResult {
 }
 ```
 
-### Server Service
+### Server: Git Operation Principles
 
-```typescript
-// server/src/services/git-sync.service.ts
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-import path from 'path';
-import { logger } from '../config/logger.js';
-import type { GitSyncState, GitSyncStatus, GitPullResult, CommitSummary } from '@scope/shared';
+These principles apply to ALL git operations across every sub-type. They are the genuine hard-won knowledge from production.
 
-const execFileAsync = promisify(execFile);
-const REPO_ROOT = path.resolve(process.cwd(), '..');
+1. **Use `execFile`, never `exec`** — no shell interpolation, no injection risk from crafted branch names or commit messages. Promisify it: `const execFileAsync = promisify(execFile)`.
+2. **Set `GIT_TERMINAL_PROMPT=0` in env** — without this, git hangs forever waiting for SSH credentials or GPG passphrase on a headless server.
+3. **Set timeouts on every git call** — fetch: 15s, status: 5s, pull/rebase: 120s, push: 60s. A stuck git process blocks the mutex forever.
+4. **Use a promise-chain mutex** — poll-check and user-initiated pull can race. Chain all git operations through a single promise to serialise without blocking the event loop. Pattern: `lockChain = lockChain.then(fn, fn)`.
+5. **`git fetch` failure is non-fatal** — network goes down. Return `error` state, don't crash. Next poll retries.
+6. **`git pull --rebase` over `--merge`** — keeps linear history (cleaner for data repos). But on conflict, always `rebase --abort`. Never leave a repo in mid-rebase state.
+7. **Dirty tree blocks pull** — always check `git status --porcelain` before pull. Show the user why they can't pull.
+8. **cwd is the monorepo root** — `path.resolve(process.cwd(), '..')` from server package. All git commands run from there.
 
-// execFile (not exec) — no shell injection risk
-// GIT_TERMINAL_PROMPT=0 — prevents hanging on credential prompts
-async function git(args: string[], timeoutMs = 15_000): Promise<string> {
-  const { stdout } = await execFileAsync('git', args, {
-    cwd: REPO_ROOT,
-    timeout: timeoutMs,
-    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
-  });
-  return stdout.trim();
-}
+### Server: git-sync.service.ts Contract
 
-// Promise-chain mutex — prevents concurrent git operations (poll vs pull race)
-let lockChain = Promise.resolve();
+**`git(args, timeoutMs)` — internal helper**
+- Wraps `execFileAsync('git', args, { cwd: REPO_ROOT, timeout, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } })`
+- Returns trimmed stdout
 
-function withGitLock<T>(fn: () => Promise<T>): Promise<T> {
-  const next = lockChain.then(fn, fn);
-  lockChain = next.then(() => {}, () => {});
-  return next;
-}
+**`withGitLock(fn)` — internal mutex**
+- Serialises all git operations through a promise chain
+- Prevents poll vs. pull race conditions
 
-function deriveState(dirty: boolean, behind: number, ahead: number): GitSyncState {
-  if (dirty) return 'dirty';
-  if (behind > 0 && ahead > 0) return 'diverged';
-  if (behind > 0) return 'behind';
-  if (ahead > 0) return 'ahead';
-  return 'clean';
-}
+**`checkStatus(): Promise<GitSyncStatus>`**
+- Acquires git lock
+- Steps: fetch (non-fatal) → get branch name → get local/remote commit SHAs → `rev-list --left-right --count HEAD...@{upstream}` for ahead/behind → `status --porcelain` for dirty check → if behind > 0, `log --format=%h|%s|%an|%aI HEAD..@{upstream} -10` for commit list
+- State derivation (this IS the spec):
+  ```
+  if dirty       → 'dirty'
+  if behind && ahead → 'diverged'
+  if behind      → 'behind'
+  if ahead       → 'ahead'
+  else           → 'clean'
+  ```
+- On fetch failure: return `{ state: 'error', error: 'Fetch failed: ...' }`
+- On no upstream: return `{ state: 'error', error: 'No upstream: ...' }`
 
-function parseCommitLog(raw: string): CommitSummary[] {
-  if (!raw) return [];
-  return raw.split('\n').map((line) => {
-    const [sha, message, author, date] = line.split('|');
-    return { sha, message, author, date };
-  });
-}
+**`pullUpstream(): Promise<GitPullResult>`**
+- Acquires git lock
+- Refuses if dirty (check `status --porcelain` first) — returns error, does not attempt pull
+- Records `previousCommit` before pull
+- Runs `git pull --rebase` (120s timeout)
+- On failure: `rebase --abort` (swallow errors), return failure result
+- On success: count commits pulled via `rev-list --count previousCommit..HEAD`
+- Overmind-aware restart: if `process.env.OVERMIND_SOCKET` exists, schedule `process.exit(0)` after 2s delay (lets response reach client), set `restartTriggered: true`
 
-export function checkStatus(): Promise<GitSyncStatus> {
-  return withGitLock(async (): Promise<GitSyncStatus> => {
-    const now = new Date().toISOString();
+### Server: Routes
 
-    // 1. fetch (failure non-fatal → error state)
-    try {
-      await git(['fetch', '--quiet'], 15_000);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      logger.warn({ err }, 'git fetch failed');
-      return {
-        state: 'error', branch: '', localCommit: '', remoteCommit: '',
-        behind: 0, ahead: 0, dirty: false, lastChecked: now,
-        error: `Fetch failed: ${message}`,
-      };
-    }
+| Method | Path | What it does | Error cases |
+|--------|------|-------------|-------------|
+| GET | `/api/git-sync/status` | Calls `checkStatus()`, returns result | 500 if service throws |
+| POST | `/api/git-sync/pull` | Calls `pullUpstream()`, returns result | 500 if service throws |
 
-    // 2. branch + commits
-    const branch = await git(['rev-parse', '--abbrev-ref', 'HEAD']);
-    const localCommit = await git(['rev-parse', '--short', 'HEAD']);
+Mount: `app.use('/api/git-sync', gitSyncRouter)`
 
-    let remoteCommit: string;
-    try {
-      remoteCommit = await git(['rev-parse', '--short', '@{upstream}']);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return {
-        state: 'error', branch, localCommit, remoteCommit: '',
-        behind: 0, ahead: 0, dirty: false, lastChecked: now,
-        error: `No upstream: ${message}`,
-      };
-    }
+### Client: useGitSync Hook Contract
 
-    // 3. ahead/behind
-    const revList = await git(['rev-list', '--left-right', '--count', 'HEAD...@{upstream}']);
-    const [aheadStr, behindStr] = revList.split(/\s+/);
-    const ahead = parseInt(aheadStr, 10) || 0;
-    const behind = parseInt(behindStr, 10) || 0;
+**File**: `client/src/hooks/useGitSync.ts`
 
-    // 4. dirty check
-    const porcelain = await git(['status', '--porcelain'], 5_000);
-    const dirty = porcelain.length > 0;
+**Exposes:**
+- `status: GitSyncStatus | null` — current sync state, null until first check completes
+- `pulling: boolean` — true while pull request is in flight
+- `pullResult: GitPullResult | null` — result of last pull attempt
+- `pull(): Promise<GitPullResult | null>` — triggers pull, updates status after
+- `clearPullResult(): void` — clears the last pull result
 
-    // 5. behind commits (for modal display)
-    let behindCommits: CommitSummary[] | undefined;
-    if (behind > 0) {
-      const logOutput = await git(['log', '--format=%h|%s|%an|%aI', 'HEAD..@{upstream}', '-10']);
-      behindCommits = parseCommitLog(logOutput);
-    }
+**Lifecycle:**
+- On mount: fetch poll interval from `/api/info` (field: `gitSyncPollMs`), fall back to 120s
+- Immediately check status, then start interval polling
+- Cleanup: clear interval on unmount, guard against setting state after unmount
 
-    return {
-      state: deriveState(dirty, behind, ahead),
-      branch, localCommit, remoteCommit,
-      behind, ahead, dirty, lastChecked: now,
-      behindCommits,
-    };
-  });
-}
-
-export function pullUpstream(): Promise<GitPullResult> {
-  return withGitLock(async (): Promise<GitPullResult> => {
-    // Refuse on dirty tree
-    const porcelain = await git(['status', '--porcelain'], 5_000);
-    if (porcelain.length > 0) {
-      return {
-        success: false, previousCommit: '', newCommit: '',
-        commitsPulled: 0, restartTriggered: false,
-        error: 'Uncommitted changes detected — commit or stash before pulling',
-      };
-    }
-
-    const previousCommit = await git(['rev-parse', '--short', 'HEAD']);
-
-    try {
-      await git(['pull', '--rebase'], 120_000);
-    } catch (err) {
-      // Abort rebase on failure
-      try { await git(['rebase', '--abort'], 10_000); } catch { /* already clean */ }
-      const message = err instanceof Error ? err.message : String(err);
-      return {
-        success: false, previousCommit, newCommit: previousCommit,
-        commitsPulled: 0, restartTriggered: false,
-        error: `Pull failed: ${message}`,
-      };
-    }
-
-    const newCommit = await git(['rev-parse', '--short', 'HEAD']);
-    const countOutput = await git(['rev-list', '--count', `${previousCommit}..HEAD`]);
-    const commitsPulled = parseInt(countOutput, 10) || 0;
-
-    // Restart if running under Overmind
-    let restartTriggered = false;
-    if (process.env.OVERMIND_SOCKET) {
-      restartTriggered = true;
-      logger.info('Pull complete — scheduling process exit for Overmind restart');
-      setTimeout(() => process.exit(0), 2000);
-    }
-
-    return { success: true, previousCommit, newCommit, commitsPulled, restartTriggered };
-  });
-}
-```
-
-### Server Routes
-
-```typescript
-// server/src/routes/git-sync.ts
-import { Router } from 'express';
-import { checkStatus, pullUpstream } from '../services/git-sync.service.js';
-import { apiSuccess, apiFailure } from '../helpers/response.js';
-import { logger } from '../config/logger.js';
-
-const router = Router();
-
-router.get('/status', async (_req, res) => {
-  try {
-    const status = await checkStatus();
-    return apiSuccess(res, status);
-  } catch (err) {
-    logger.error({ err }, 'git-sync status check failed');
-    return apiFailure(res, 'Git sync status check failed', 500);
-  }
-});
-
-router.post('/pull', async (_req, res) => {
-  try {
-    const result = await pullUpstream();
-    return apiSuccess(res, result);
-  } catch (err) {
-    logger.error({ err }, 'git-sync pull failed');
-    return apiFailure(res, 'Git pull failed', 500);
-  }
-});
-
-export { router as gitSyncRouter };
-```
-
-Mount in `server/src/index.ts`:
-```typescript
-import { gitSyncRouter } from './routes/git-sync.js';
-app.use('/api/git-sync', gitSyncRouter);
-```
-
-### Client Hook
-
-```typescript
-// client/src/hooks/useGitSync.ts
-import { useState, useEffect, useCallback } from 'react';
-import type { GitSyncStatus, GitPullResult } from '@scope/shared';
-
-const DEFAULT_POLL_MS = 120_000;
-
-export function useGitSync() {
-  const [status, setStatus] = useState<GitSyncStatus | null>(null);
-  const [pulling, setPulling] = useState(false);
-  const [pullResult, setPullResult] = useState<GitPullResult | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    let intervalId: ReturnType<typeof setInterval> | undefined;
-
-    async function getPollInterval(): Promise<number> {
-      try {
-        const res = await fetch('/api/info');
-        const json = await res.json();
-        if (json.status === 'ok' && typeof json.data?.gitSyncPollMs === 'number') {
-          return json.data.gitSyncPollMs;
-        }
-      } catch { /* server down — use default */ }
-      return DEFAULT_POLL_MS;
-    }
-
-    async function check() {
-      try {
-        const res = await fetch('/api/git-sync/status');
-        const json = await res.json();
-        if (mounted && json.status === 'ok') setStatus(json.data);
-      } catch { /* server down */ }
-    }
-
-    async function start() {
-      const pollMs = await getPollInterval();
-      if (!mounted) return;
-      await check();
-      if (!mounted) return;
-      intervalId = setInterval(check, pollMs);
-    }
-
-    start();
-    return () => { mounted = false; if (intervalId) clearInterval(intervalId); };
-  }, []);
-
-  const pull = useCallback(async (): Promise<GitPullResult | null> => {
-    setPulling(true);
-    setPullResult(null);
-    try {
-      const res = await fetch('/api/git-sync/pull', { method: 'POST' });
-      const json = await res.json();
-      const result = json.data as GitPullResult;
-      setPullResult(result);
-
-      if (result.restartTriggered) {
-        // Poll /health until server returns, then reload page
-        const pollHealth = setInterval(async () => {
-          try {
-            const h = await fetch('/health');
-            if (h.ok) { clearInterval(pollHealth); window.location.reload(); }
-          } catch { /* still restarting */ }
-        }, 2000);
-      } else {
-        // Re-check status immediately
-        try {
-          const sr = await fetch('/api/git-sync/status');
-          const sj = await sr.json();
-          if (sj.status === 'ok') setStatus(sj.data);
-        } catch { /* ignore */ }
-      }
-      return result;
-    } catch { return null; } finally { setPulling(false); }
-  }, []);
-
-  const clearPullResult = useCallback(() => setPullResult(null), []);
-
-  return { status, pulling, pullResult, pull, clearPullResult };
-}
-```
+**Restart-aware behaviour:**
+- When `pullResult.restartTriggered` is true, start polling `/health` every 2s
+- When `/health` returns 200, call `window.location.reload()`
+- When restart is NOT triggered, re-fetch status immediately after pull
 
 ### UI: Sync Pill (Header Indicator)
 
@@ -553,97 +353,28 @@ export interface GitResolveResult {
 }
 ```
 
-### Additional Server Service Methods
+### Server: Additional Service Contracts
 
-Add to `git-sync.service.ts`:
+**`pushChanges(message?: string): Promise<GitPushResult>`**
+- Acquires git lock
+- Check `status --porcelain` — if clean, return error "Nothing to commit"
+- `git add -A` then `git commit -m <message>`
+- If no message provided, auto-generate: count files by extension, format as `sync: N files (.json, .ts)`
+- `git push` (60s timeout) — on failure, return error (commit is already local, push can be retried)
 
-```typescript
-export function pushChanges(message?: string): Promise<GitPushResult> {
-  return withGitLock(async (): Promise<GitPushResult> => {
-    const porcelain = await git(['status', '--porcelain'], 5_000);
-    if (porcelain.length === 0) {
-      return { success: false, commitMessage: '', filesCommitted: 0, error: 'Nothing to commit' };
-    }
+**`resolveConflict(filePath, strategy: 'keep-mine' | 'keep-theirs'): Promise<GitResolveResult>`**
+- Acquires git lock
+- **Path traversal guard**: reject if `filePath` contains `..` or is absolute
+- `git checkout --ours|--theirs -- <filePath>` then `git add <filePath>`
+- Count remaining conflicts: parse `status --porcelain` for lines starting with `UU` or `AA`
+- If remaining === 0, attempt `git rebase --continue`
 
-    const files = porcelain.split('\n').filter(Boolean);
-    const commitMessage = message || buildCommitMessage(files);
+### Server: Additional Routes
 
-    await git(['add', '-A'], 10_000);
-    await git(['commit', '-m', commitMessage], 30_000);
-
-    try {
-      await git(['push'], 60_000);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, commitMessage, filesCommitted: files.length, error: `Push failed: ${msg}` };
-    }
-
-    return { success: true, commitMessage, filesCommitted: files.length };
-  });
-}
-
-export function resolveConflict(filePath: string, strategy: 'keep-mine' | 'keep-theirs'): Promise<GitResolveResult> {
-  return withGitLock(async (): Promise<GitResolveResult> => {
-    // Path traversal guard
-    if (filePath.includes('..') || path.isAbsolute(filePath)) {
-      return { success: false, remaining: -1, error: 'Invalid file path' };
-    }
-
-    const flag = strategy === 'keep-mine' ? '--ours' : '--theirs';
-    await git(['checkout', flag, '--', filePath], 10_000);
-    await git(['add', filePath], 5_000);
-
-    // Count remaining conflicts
-    const status = await git(['status', '--porcelain'], 5_000);
-    const remaining = status.split('\n').filter(l => l.startsWith('UU') || l.startsWith('AA')).length;
-
-    if (remaining === 0) {
-      // All conflicts resolved — continue rebase
-      try { await git(['rebase', '--continue'], 30_000); } catch { /* may need more resolves */ }
-    }
-
-    return { success: true, remaining };
-  });
-}
-
-function buildCommitMessage(files: string[]): string {
-  const types = new Map<string, number>();
-  for (const f of files) {
-    const ext = path.extname(f.slice(3).trim()) || 'other';
-    types.set(ext, (types.get(ext) || 0) + 1);
-  }
-  const summary = [...types.entries()].map(([ext, n]) => `${n} ${ext}`).join(', ');
-  return `sync: ${files.length} file${files.length !== 1 ? 's' : ''} (${summary})`;
-}
-```
-
-### Additional Server Routes
-
-```typescript
-// Add to git-sync.ts router
-router.post('/push', async (req, res) => {
-  try {
-    const message = req.body?.message as string | undefined;
-    const result = await pushChanges(message);
-    return apiSuccess(res, result);
-  } catch (err) {
-    logger.error({ err }, 'git-sync push failed');
-    return apiFailure(res, 'Git push failed', 500);
-  }
-});
-
-router.post('/resolve', async (req, res) => {
-  try {
-    const { filePath, strategy } = req.body as { filePath: string; strategy: 'keep-mine' | 'keep-theirs' };
-    if (!filePath || !strategy) return apiFailure(res, 'filePath and strategy required', 400);
-    const result = await resolveConflict(filePath, strategy);
-    return apiSuccess(res, result);
-  } catch (err) {
-    logger.error({ err }, 'git-sync resolve failed');
-    return apiFailure(res, 'Conflict resolution failed', 500);
-  }
-});
-```
+| Method | Path | What it does | Error cases |
+|--------|------|-------------|-------------|
+| POST | `/api/git-sync/push` | Calls `pushChanges(req.body.message?)` | 500 if service throws |
+| POST | `/api/git-sync/resolve` | Calls `resolveConflict(filePath, strategy)` | 400 if filePath/strategy missing, 500 if service throws |
 
 ### Additional Client: Push + Conflict UI
 
@@ -670,100 +401,25 @@ For apps using `file-crud` where data lives in `data/` as JSON files. This sub-t
 
 **Discovered in**: Signal Studio (Git Sync Button)
 
-### Server Routes
+### Server: git-data.service Principles
 
-```typescript
-// server/src/routes/git-data.ts
-import { Router } from 'express';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-import path from 'path';
-import { apiSuccess, apiFailure } from '../helpers/response.js';
+All git operation principles from Sub-Type A apply. Additional principles specific to data sync:
 
-const execFileAsync = promisify(execFile);
-const REPO_ROOT = path.resolve(process.cwd(), '..');
-const DATA_DIR = 'data'; // relative to REPO_ROOT
+1. **Scope git operations to `data/` directory** — use `git status data/ --porcelain -u` and `git add data/` to avoid touching code files
+2. **Stash non-data changes during sync** — if code and data are in the same repo, `git stash push --include-untracked` before rebasing, then `git stash pop` after push. Without this, code changes get caught up in the data commit.
+3. **Concurrent sync prevention** — use a boolean flag (`syncInProgress`) to prevent a second sync while the first is running. Return 409 Conflict.
+4. **Auto-generate timestamped commit messages** — format: `data: sync YYYY-MM-DD HH:MM:SS`
+5. **Sequence: add → commit → stash non-data → fetch → rebase → push → unstash** — on any failure in the fetch/rebase/push chain, `rebase --abort` then `stash pop` to restore the working tree
 
-async function git(args: string[], timeoutMs = 15_000): Promise<string> {
-  const { stdout } = await execFileAsync('git', args, {
-    cwd: REPO_ROOT, timeout: timeoutMs,
-    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
-  });
-  return stdout.trim();
-}
+### Server: Routes
 
-const router = Router();
+| Method | Path | What it does | Error cases |
+|--------|------|-------------|-------------|
+| GET | `/api/git/status` | `git status data/ --porcelain -u`, returns `{ dirty: boolean, files: string[] }` | 500 if git fails |
+| POST | `/api/git/sync` | Commit data/ changes, stash non-data, fetch+rebase+push, unstash | 409 if sync already in progress, 500 if git fails |
+| GET | `/api/git/remote-status` | Fetch then `rev-list --left-right --count HEAD...origin/main`, returns `{ behind, ahead }` | Returns `{ behind: 0, ahead: 0, error }` on failure (non-fatal) |
 
-// What data files have changed?
-router.get('/status', async (_req, res) => {
-  try {
-    const output = await git(['status', DATA_DIR, '--porcelain', '-u']);
-    const files = output ? output.split('\n').filter(Boolean) : [];
-    return apiSuccess(res, { dirty: files.length > 0, files });
-  } catch (err) {
-    return apiFailure(res, 'Git status check failed', 500);
-  }
-});
-
-// Commit data changes + push
-let syncInProgress = false;
-
-router.post('/sync', async (_req, res) => {
-  if (syncInProgress) return apiFailure(res, 'Sync already in progress', 409);
-  syncInProgress = true;
-
-  try {
-    await git(['add', DATA_DIR], 10_000);
-    const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    await git(['commit', '-m', `data: sync ${timestamp}`], 30_000);
-
-    // Stash non-data changes, fetch, rebase, push, restore
-    let stashed = false;
-    const nonDataChanges = await git(['status', '--porcelain', '-u']);
-    if (nonDataChanges.length > 0) {
-      await git(['stash', 'push', '--include-untracked'], 10_000);
-      stashed = true;
-    }
-
-    try {
-      await git(['fetch', '--quiet'], 15_000);
-      await git(['rebase', 'origin/main'], 60_000);
-      await git(['push'], 60_000);
-    } catch (err) {
-      // Abort rebase, restore stash
-      try { await git(['rebase', '--abort'], 10_000); } catch { /* clean */ }
-      if (stashed) try { await git(['stash', 'pop'], 10_000); } catch { /* manual */ }
-      const message = err instanceof Error ? err.message : String(err);
-      return apiFailure(res, `Sync failed: ${message}`, 500);
-    }
-
-    if (stashed) await git(['stash', 'pop'], 10_000);
-    return apiSuccess(res, { message: 'Data synced to Git' });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return apiFailure(res, message, 500);
-  } finally {
-    syncInProgress = false;
-  }
-});
-
-// Check remote status (behind/ahead)
-router.get('/remote-status', async (_req, res) => {
-  try {
-    await git(['fetch', '--quiet'], 15_000);
-    const revList = await git(['rev-list', '--left-right', '--count', 'HEAD...origin/main']);
-    const [aheadStr, behindStr] = revList.split(/\s+/);
-    return apiSuccess(res, { behind: parseInt(behindStr, 10) || 0, ahead: parseInt(aheadStr, 10) || 0 });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return apiSuccess(res, { behind: 0, ahead: 0, error: message });
-  }
-});
-
-export { router as gitDataRouter };
-```
-
-Mount: `app.use('/api/git', gitDataRouter);`
+Mount: `app.use('/api/git', gitDataRouter)`
 
 ### Client: Data Sync Button (Header)
 
@@ -821,18 +477,9 @@ The app does NOT manage the sync mechanism (Dropbox/Syncthing handles that). The
 3. Shows the user what's different
 4. Lets the user accept incoming changes (copy relay → data)
 
-### Server Service
+### Shared Types
 
 ```typescript
-// server/src/services/folder-sync.service.ts
-import fs from 'fs/promises';
-import path from 'path';
-import { watch } from 'chokidar';
-import { logger } from '../config/logger.js';
-
-const DATA_ROOT = process.env.DATA_DIR ?? path.resolve(process.cwd(), '..', 'data');
-const RELAY_ROOT = process.env.RELAY_DIR ?? path.resolve(process.cwd(), '..', 'relay');
-
 export interface FolderSyncStatus {
   configured: boolean;
   relayExists: boolean;
@@ -847,112 +494,42 @@ export interface FileChange {
   size?: number;
   modified?: string;
 }
-
-export async function getFolderSyncStatus(): Promise<FolderSyncStatus> {
-  const relayExists = await fs.access(RELAY_ROOT).then(() => true, () => false);
-  if (!relayExists) return { configured: false, relayExists: false, incoming: [], outgoing: [] };
-
-  const incoming = await detectChanges(RELAY_ROOT, DATA_ROOT, 'incoming');
-  const outgoing = await detectChanges(DATA_ROOT, RELAY_ROOT, 'outgoing');
-
-  return { configured: true, relayExists: true, incoming, outgoing };
-}
-
-async function detectChanges(sourceDir: string, targetDir: string, direction: 'incoming' | 'outgoing'): Promise<FileChange[]> {
-  const changes: FileChange[] = [];
-
-  try {
-    const sourceFiles = await walkDir(sourceDir);
-    for (const relPath of sourceFiles) {
-      const sourceStat = await fs.stat(path.join(sourceDir, relPath));
-      try {
-        const targetStat = await fs.stat(path.join(targetDir, relPath));
-        if (sourceStat.mtimeMs > targetStat.mtimeMs) {
-          changes.push({ relativePath: relPath, direction, type: 'modified', size: sourceStat.size, modified: sourceStat.mtime.toISOString() });
-        }
-      } catch {
-        changes.push({ relativePath: relPath, direction, type: 'added', size: sourceStat.size, modified: sourceStat.mtime.toISOString() });
-      }
-    }
-  } catch { /* source dir empty or unreadable */ }
-
-  return changes;
-}
-
-async function walkDir(dir: string, base = dir): Promise<string[]> {
-  const entries = await fs.readdir(dir, { withFileTypes: true });
-  const paths: string[] = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) paths.push(...await walkDir(full, base));
-    else paths.push(path.relative(base, full));
-  }
-  return paths;
-}
-
-export async function acceptIncoming(relativePath: string): Promise<void> {
-  // Path traversal guard
-  if (relativePath.includes('..') || path.isAbsolute(relativePath)) throw new Error('Invalid path');
-
-  const source = path.join(RELAY_ROOT, relativePath);
-  const target = path.join(DATA_ROOT, relativePath);
-
-  await fs.mkdir(path.dirname(target), { recursive: true });
-  await fs.copyFile(source, target);
-}
-
-export async function acceptAllIncoming(): Promise<number> {
-  const status = await getFolderSyncStatus();
-  let count = 0;
-  for (const change of status.incoming) {
-    if (change.type !== 'deleted') {
-      await acceptIncoming(change.relativePath);
-      count++;
-    }
-  }
-  return count;
-}
 ```
 
-### Server Routes
+### Server: folder-sync.service Contract
 
-```typescript
-// server/src/routes/folder-sync.ts
-import { Router } from 'express';
-import { getFolderSyncStatus, acceptIncoming, acceptAllIncoming } from '../services/folder-sync.service.js';
-import { apiSuccess, apiFailure } from '../helpers/response.js';
+**Configuration:**
+- `DATA_ROOT`: from `DATA_DIR` env or `path.resolve(process.cwd(), '..', 'data')`
+- `RELAY_ROOT`: from `RELAY_DIR` env or `path.resolve(process.cwd(), '..', 'relay')`
 
-const router = Router();
+**`getFolderSyncStatus(): Promise<FolderSyncStatus>`**
+- Check if relay dir exists (if not: `{ configured: false, relayExists: false, ... }`)
+- Detect incoming changes: walk relay dir, compare each file against data dir by mtime
+- Detect outgoing changes: walk data dir, compare each file against relay dir by mtime
+- A file is `added` if it exists in source but not target, `modified` if source mtime > target mtime
 
-router.get('/status', async (_req, res) => {
-  try {
-    const status = await getFolderSyncStatus();
-    return apiSuccess(res, status);
-  } catch (err) {
-    return apiFailure(res, 'Folder sync status failed', 500);
-  }
-});
+**`acceptIncoming(relativePath: string): void`**
+- **Path traversal guard**: reject if path contains `..` or is absolute
+- Create parent directory in data dir (recursive), copy file from relay to data
 
-router.post('/accept', async (req, res) => {
-  try {
-    const { path: filePath } = req.body;
-    if (filePath) {
-      await acceptIncoming(filePath);
-      return apiSuccess(res, { accepted: 1 });
-    } else {
-      const count = await acceptAllIncoming();
-      return apiSuccess(res, { accepted: count });
-    }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return apiFailure(res, message, 500);
-  }
-});
+**`acceptAllIncoming(): number`**
+- Get status, accept all non-deleted incoming files, return count
 
-export { router as folderSyncRouter };
-```
+**Detection algorithm summary:**
+- Walk source directory recursively, collecting all file paths relative to root
+- For each file: stat in source, try stat in target
+  - Target missing → `added`
+  - Source mtime > target mtime → `modified`
+  - Otherwise → skip (in sync)
 
-Mount: `app.use('/api/folder-sync', folderSyncRouter);`
+### Server: Routes
+
+| Method | Path | What it does | Error cases |
+|--------|------|-------------|-------------|
+| GET | `/api/folder-sync/status` | Calls `getFolderSyncStatus()` | 500 if service throws |
+| POST | `/api/folder-sync/accept` | If `body.path`: accept single file. If no path: accept all. Returns `{ accepted: N }` | 500 if invalid path or copy fails |
+
+Mount: `app.use('/api/folder-sync', folderSyncRouter)`
 
 ### Environment
 

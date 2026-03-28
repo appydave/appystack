@@ -66,7 +66,7 @@ Configuration mistakes cause silent disconnections that look like code bugs. Set
 
 2. **Security tab -> Overrides** — enable "First message" and "System prompt" overrides. Without this the agent may connect and then immediately disconnect with a generic "interruption" message. This is the single most common cause of unexplained disconnections.
 
-3. **Tools tab** — for each client tool you register, mark it as **blocking** (the agent waits for the result before speaking). If not blocking, the agent speaks before the data returns.
+3. **Tools tab** — for each client tool you register, mark it as **blocking** (the agent waits for the result before speaking). If not blocking, the agent speaks before the data arrives.
 
 4. **Call History** — after any test connection, check here for specific error messages. The browser console shows generic disconnect events; the dashboard shows the actual reason.
 
@@ -80,34 +80,19 @@ ELEVENLABS_AGENT_ID=agent_...     # from your agent's Settings page
 
 ## Step 1: Install Dependencies
 
-```bash
-# Server workspace
-cd server && npm install @elevenlabs/elevenlabs-js
+**Server workspace:** `@elevenlabs/elevenlabs-js`
 
-# Client workspace — always latest
-cd client && npm install @elevenlabs/react@latest
-```
-
-Always install `@latest` explicitly. The ElevenLabs SDK moves fast — v0.12.2 fixed a WebSocket race condition, v0.14.0 reduced audio latency from 250ms to 100ms. A pinned old version misses months of stability fixes.
+**Client workspace:** `@elevenlabs/react` — always install `@latest` explicitly. The ElevenLabs SDK moves fast — v0.12.2 fixed a WebSocket race condition, v0.14.0 reduced audio latency from 250ms to 100ms. A pinned old version misses months of stability fixes.
 
 ---
 
 ## Step 2: Environment
 
-Add to `server/.env` and `server/.env.example`:
-```bash
-ELEVENLABS_API_KEY=sk_your_key_here
-ELEVENLABS_AGENT_ID=your_agent_id_here
-```
+Add `ELEVENLABS_API_KEY` and `ELEVENLABS_AGENT_ID` to `server/.env`, `server/.env.example`, and the Zod schema in `server/src/config/env.ts`.
 
-Add to `server/src/config/env.ts` Zod schema:
-```typescript
-ELEVENLABS_API_KEY: z.string().min(1).refine(
-  (val) => val.length === 64 && val.startsWith('sk_'),
-  'ELEVENLABS_API_KEY must be 64 chars starting with sk_'
-),
-ELEVENLABS_AGENT_ID: z.string().min(1),
-```
+**Validation rules:**
+- `ELEVENLABS_API_KEY` — 64 characters, starts with `sk_`. Validate this in the Zod schema with a `.refine()`.
+- `ELEVENLABS_AGENT_ID` — non-empty string.
 
 **Use `dotenv.config({ override: true })`** in your env loader. Without `override: true`, dotenv silently keeps a previously-set shell variable and you get a clipped or wrong key, which produces a 401 from ElevenLabs with no obvious cause.
 
@@ -115,52 +100,19 @@ ELEVENLABS_AGENT_ID: z.string().min(1),
 
 ## Step 3: Server — Token Endpoint
 
-One route file, one endpoint. No Socket.io.
+**Contract:**
 
-```typescript
-// server/src/routes/voice.ts
-import { Router } from 'express';
-import { env } from '../config/env.js';
+| | |
+|---|---|
+| **File** | `server/src/routes/voice.ts` |
+| **Method** | `POST /api/voice/token` |
+| **Purpose** | Fetch a short-lived WebRTC token from ElevenLabs so the browser can connect directly. The API key never leaves the server. |
+| **Upstream API** | `GET https://api.elevenlabs.io/v1/convai/conversation/token?agent_id={AGENT_ID}` with header `xi-api-key` |
+| **Success response** | `{ token: string }` |
+| **Error response** | `500 { error: "Failed to generate voice token" }` — log the upstream error server-side |
+| **Env vars used** | `ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID` |
 
-const router = Router();
-
-/**
- * POST /api/voice/token
- * Returns a short-lived WebRTC token for direct browser -> ElevenLabs connection.
- * The API key never leaves the server.
- */
-router.post('/token', async (req, res) => {
-  try {
-    const url = `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${env.ELEVENLABS_AGENT_ID}`;
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'xi-api-key': env.ELEVENLABS_API_KEY,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`ElevenLabs API ${response.status}: ${body}`);
-    }
-
-    const { token } = await response.json() as { token: string };
-    res.json({ token });
-  } catch (err) {
-    console.error('[voice/token]', err);
-    res.status(500).json({ error: 'Failed to generate voice token' });
-  }
-});
-
-export default router;
-```
-
-Mount in `server/src/index.ts`:
-```typescript
-import voiceRouter from './routes/voice.js';
-app.use('/api/voice', voiceRouter);
-```
+Mount this router at `/api/voice` in `server/src/index.ts`.
 
 **Endpoint note:** The correct ElevenLabs endpoint is `GET /v1/convai/conversation/token?agent_id=...`, not a POST to `/get_signed_url`. Earlier docs showed a different endpoint — the token endpoint above is current.
 
@@ -168,169 +120,76 @@ app.use('/api/voice', voiceRouter);
 
 ## Step 4: Client Tools
 
-Client tools are browser functions the ElevenLabs agent calls during conversation. Each tool must return a `string` — serialize your data as JSON.
+Client tools are browser functions the ElevenLabs agent calls during conversation. Define them in a dedicated file (e.g. `client/src/voice/clientTools.ts`).
 
-```typescript
-// client/src/voice/clientTools.ts
+**Contract:**
 
-/**
- * Define one function per capability you want the voice agent to have.
- * Each function must return Promise<string> — serialize result as JSON.
- *
- * These are registered at session start. The agent calls them by name
- * based on its tool configuration in the ElevenLabs dashboard.
- */
-
-export const clientTools = {
-  // Example: query your app's API
-  listItems: async (): Promise<string> => {
-    const res = await fetch('/api/items');
-    const data = await res.json();
-    return JSON.stringify(data);
-  },
-
-  // Example: parameterised lookup
-  getItem: async (params: { id: string }): Promise<string> => {
-    const res = await fetch(`/api/items/${params.id}`);
-    const data = await res.json();
-    return JSON.stringify(data);
-  },
-};
-```
+| Property | Rule |
+|---|---|
+| **Shape** | An object where each key is a tool name and each value is an async function |
+| **Return type** | Every tool must return `Promise<string>` — use `JSON.stringify()` on your data |
+| **Parameters** | Each tool receives a params object matching its dashboard configuration |
+| **Registration** | Pass the tools object to `startSession()` — they are registered at session start |
+| **Dashboard match** | Tool names must exactly match what you configure in the ElevenLabs dashboard |
 
 **Tool design rules:**
 - Return `JSON.stringify(result)` not raw objects. The SDK expects strings.
 - Keep results concise — the agent reads them aloud. Don't return large arrays.
-- Match tool names exactly to what you configure in the ElevenLabs dashboard.
 - Mark each tool as **blocking** in the dashboard or the agent speaks before data arrives.
 
 ---
 
-## Step 5: Client Hook
+## Step 5: Client Hook — Voice Agent State Machine
 
-```typescript
-// client/src/hooks/useVoiceAgent.ts
-import { useState, useCallback } from 'react';
-import { useConversation } from '@elevenlabs/react';
-import { clientTools } from '../voice/clientTools.js';
+Create a hook (e.g. `client/src/hooks/useVoiceAgent.ts`) that wraps the `useConversation` hook from `@elevenlabs/react`.
 
-export type VoiceStatus = 'idle' | 'connecting' | 'connected' | 'listening' | 'speaking' | 'disconnected' | 'error';
+**States:**
 
-export interface VoiceMessage {
-  id: string;
-  text: string;
-  role: 'user' | 'agent';
-}
+| State | Meaning | Transitions to |
+|---|---|---|
+| `idle` | Initial state, page just loaded | `connecting` (on start) |
+| `connecting` | Requesting mic + fetching token + starting session | `connected` (success) or `error` (failure) |
+| `connected` | WebRTC session established | `listening`, `speaking`, `disconnected` |
+| `listening` | Agent is listening to user speech | `speaking`, `disconnected` |
+| `speaking` | Agent is speaking a response | `listening`, `disconnected` |
+| `disconnected` | Session ended normally | `connecting` (on restart) |
+| `error` | Something failed — stores error message | `connecting` (on retry) |
 
-export function useVoiceAgent() {
-  const [status, setStatus] = useState<VoiceStatus>('idle');
-  const [messages, setMessages] = useState<VoiceMessage[]>([]);
-  const [error, setError] = useState<string | null>(null);
+**What the hook exposes:**
 
-  const conversation = useConversation({
-    onConnect: () => {
-      setStatus('connected');
-      setError(null);
-    },
-    onDisconnect: () => {
-      setStatus('disconnected');
-    },
-    onMessage: (message: any) => {
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        text: message.message ?? '',
-        role: message.source === 'user' ? 'user' : 'agent',
-      }]);
-    },
-    onModeChange: (mode: any) => {
-      if (mode.mode === 'speaking') setStatus('speaking');
-      else if (mode.mode === 'listening') setStatus('listening');
-    },
-    onError: (err: any) => {
-      setError(typeof err === 'string' ? err : err?.message ?? 'Voice error');
-      setStatus('error');
-    },
-  });
+| Return value | Type | Purpose |
+|---|---|---|
+| `status` | The state machine value above | Drive UI state |
+| `messages` | Array of `{ id, text, role: 'user' \| 'agent' }` | Display conversation transcript |
+| `error` | `string \| null` | Show error messages |
+| `start()` | async function | Request mic (with echo cancellation + noise suppression), fetch token from your server, start WebRTC session |
+| `stop()` | async function | End session, return to idle |
 
-  const start = useCallback(async () => {
-    try {
-      setStatus('connecting');
-      setError(null);
-      setMessages([]);
+**Start sequence** (order matters):
+1. Set status to `connecting`, clear previous errors and messages
+2. Request microphone with `echoCancellation`, `noiseSuppression`, `autoGainControl`
+3. POST to `/api/voice/token` to get the WebRTC token
+4. Call `conversation.startSession()` with `conversationToken`, `connectionType: 'webrtc'`, and `clientTools`
 
-      // Request mic with echo cancellation before connecting
-      await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      });
-
-      // Get WebRTC token from your server
-      const res = await fetch('/api/voice/token', { method: 'POST' });
-      if (!res.ok) throw new Error(`Token request failed: ${res.status}`);
-      const { token } = await res.json();
-
-      // Start session — browser connects directly to ElevenLabs via WebRTC
-      await conversation.startSession({
-        conversationToken: token,
-        connectionType: 'webrtc',  // enables built-in echo cancellation
-        clientTools,
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to start';
-      setError(msg);
-      setStatus('error');
-    }
-  }, [conversation]);
-
-  const stop = useCallback(async () => {
-    await conversation.endSession();
-    setStatus('idle');
-  }, [conversation]);
-
-  return { status, messages, error, start, stop };
-}
-```
+**SDK callbacks to handle:** `onConnect`, `onDisconnect`, `onMessage`, `onModeChange` (speaking/listening), `onError`.
 
 ---
 
 ## Step 6: Voice UI Component
 
-```typescript
-// client/src/components/VoiceAgent.tsx
-import { useVoiceAgent } from '../hooks/useVoiceAgent.js';
+Create a component (e.g. `client/src/components/VoiceAgent.tsx`) that consumes the voice agent hook.
 
-export function VoiceAgent() {
-  const { status, messages, error, start, stop } = useVoiceAgent();
+**Capabilities:**
 
-  const isActive = status === 'connected' || status === 'listening' || status === 'speaking';
-  const isConnecting = status === 'connecting';
+| Element | Behavior |
+|---|---|
+| **Status display** | Shows current state from the hook |
+| **Error display** | Visible only when error is non-null |
+| **Start button** | Disabled when `connecting`, `connected`, `listening`, or `speaking`. Enabled when `idle`, `disconnected`, or `error`. Label changes to "Connecting..." during `connecting` state. |
+| **Stop button** | Disabled when not in an active session. Enabled when `connected`, `listening`, or `speaking`. |
+| **Message list** | Renders each message with role label (user vs agent) |
 
-  return (
-    <div>
-      <div>Status: {status}</div>
-
-      {error && <div>{error}</div>}
-
-      <button onClick={start} disabled={isActive || isConnecting}>
-        {isConnecting ? 'Connecting...' : 'Start'}
-      </button>
-
-      <button onClick={stop} disabled={!isActive}>
-        Stop
-      </button>
-
-      <div>
-        {messages.map(msg => (
-          <div key={msg.id}>
-            <strong>{msg.role === 'user' ? 'You' : 'Agent'}:</strong> {msg.text}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-```
-
-**Button state rule:** Start is disabled when `connecting`, `connected`, `listening`, or `speaking`. It is enabled when `idle`, `disconnected`, or `error`. Do not disable on `idle` — that is the default state on page load.
+**Button state rule:** Start must NOT be disabled on `idle` — that is the default state on page load.
 
 ---
 
@@ -351,63 +210,25 @@ project-root/
 
 ---
 
-## Anti-Patterns (From Real Production Experience — FliVoice)
+## Anti-Patterns (From Real Production Experience)
 
 **Never relay audio through Socket.io.**
-```typescript
-// WRONG — attempting to pipe voice through your app's Socket.io
-socket.emit('voice:audio', audioBuffer);
-
-// CORRECT — ElevenLabs WebRTC handles audio directly, no relay needed
-```
-This was the central mistake in the FliVoice build. Socket.io relay adds complexity, failure points, and disables the SDK's built-in echo cancellation.
+The WebRTC connection handles audio directly. Routing voice through your app's Socket.io adds complexity, failure points, and disables the SDK's built-in echo cancellation. This was the central mistake in the FliVoice build.
 
 **Never create a server-side Conversation instance.**
-```typescript
-// WRONG — server-side audio relay architecture
-import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
-const client = new ElevenLabsClient({ apiKey });
-await client.conversationalAI.createConversation(...); // don't do this for browser apps
-
-// CORRECT — server fetches a token only, browser drives everything
-```
+The server fetches a token only. The browser drives the entire conversation via WebRTC. Do not use `ElevenLabsClient.conversationalAI.createConversation()` for browser-based apps.
 
 **Never use shell aliases inside exec() for server-side tool calls.**
-```typescript
-// WRONG — aliases don't exist in child processes
-exec('jump search "query"'); // "command not found"
-
-// CORRECT — absolute path
-exec('/absolute/path/to/tool search "query"');
-```
+Aliases don't exist in child processes. Use absolute paths.
 
 **Always use `connectionType: 'webrtc'`.**
-```typescript
-// Without this, echo cancellation is disabled and the agent hears itself speak
-await conversation.startSession({
-  conversationToken: token,
-  connectionType: 'webrtc', // required
-  clientTools,
-});
-```
+Without this, echo cancellation is disabled and the agent hears itself speak.
 
 **Always return `JSON.stringify()` from client tools.**
-```typescript
-// WRONG — SDK expects string, not object
-return { items: [...] };
-
-// CORRECT
-return JSON.stringify({ items: [...] });
-```
+The SDK expects string return values, not objects.
 
 **Never pin to an old SDK version.**
-```bash
-# WRONG — locks to a version with known WebSocket race conditions
-npm install @elevenlabs/react@0.2.1
-
-# CORRECT
-npm install @elevenlabs/react@latest
-```
+Always install `@elevenlabs/react@latest`. Older versions have known WebSocket race conditions.
 
 ---
 
