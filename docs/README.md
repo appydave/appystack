@@ -43,23 +43,40 @@ npx create-appystack@latest my-app --scope @myorg --port 5500 --description "My 
 
 Recipes scaffold specific app architectures on top of the RVETS template. Available via `/recipe` in any project created with `create-appystack`.
 
+### Layout — app shell and visual structure
+
 | Recipe | What it covers |
 |---|---|
 | `nav-shell` | Left-sidebar navigation shell — header, collapsible sidebar, view switching |
+| `wizard-shell` | Multi-step workflow execution shell — pipeline circles, developer panel, view modes |
+| `appydave-palette` | AppyDave brand colour semantics — five rules for consistent visual identity |
+
+### Data — storage, access, and movement
+
+| Recipe | What it covers |
+|---|---|
 | `file-crud` | JSON file-based persistence — no database, real-time Socket.io sync, chokidar watcher |
 | `entity-socket-crud` | Generic `entity:{operation}` Socket.io CRUD — one hook for all entities |
-| `local-service` | Procfile + Overmind persistent services, optional Platypus .app launcher |
-| `api-endpoints` | REST API layer with OpenAPI/Swagger, API key auth, CORS |
-| `readme` | Auto-generated README.md from codebase scan + 5 targeted questions |
 | `add-orm` | Prisma or Drizzle ORM — advisory first, then targeted migration |
+| `add-sync` | Cross-machine sync — 4 sub-types: pull-only, full push+pull, git data commit, shared folder |
+
+### Capabilities — layer features onto an existing app
+
+| Recipe | What it covers |
+|---|---|
 | `add-auth` | JWT authentication + protected routes + Socket.io auth middleware |
 | `add-tanstack-query` | HTTP caching alongside Socket.io — combined cache invalidation |
 | `add-state` | Zustand store replacing multiple React contexts |
-| `add-sync` | Cross-machine sync — 4 sub-types: pull-only, full push+pull, git data commit, shared folder |
+| `api-endpoints` | REST API layer with OpenAPI/Swagger, API key auth, CORS |
+| `local-service` | Procfile + Overmind persistent services, optional Platypus .app launcher |
 | `csv-bulk-import` | CSV upload modal — column validation, partial success, company scoping |
+
+### Process — non-code artifacts for people
+
+| Recipe | What it covers |
+|---|---|
+| `readme` | Auto-generated README.md from codebase scan + 5 targeted questions |
 | `domain-expert-uat` | Plain-English UAT plan generator for non-developer domain experts |
-| `appydave-palette` | AppyDave brand colour semantics — five rules for consistent visual identity |
-| `wizard-shell` | Multi-step workflow execution shell — pipeline circles, developer panel, view modes |
 
 **Combinations:** `nav-shell` + `file-crud` + `entity-socket-crud` = complete multi-entity CRUD app. See `/recipe` skill for full combination guide.
 
