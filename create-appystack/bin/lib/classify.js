@@ -14,6 +14,8 @@ export const CLASSIFICATION = {
     'Procfile', // process manager config — generic client/server split, safe to refresh
     'scripts/start.sh', // startup script — reads PORT + CLIENT_URL from .env, port-conflict prompts, health-check browser open; no hardcoded values, safe to auto-update
     '.claude/skills/mochaccino/SKILL.md', // template-owned skill — no project-specific values, safe to auto-update
+    '.claude/skills/app-idea/SKILL.md', // template-owned skill — generic feature intake queue, safe to auto-update
+    '.claude/skills/app-idea/references/templates.md', // app-idea templates — no project-specific values
   ],
   neverPatterns: [
     // exact filenames (basename match)
