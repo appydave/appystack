@@ -88,7 +88,7 @@ platypus \
   /Applications/YourApp.app
 ```
 
-Replace `YourApp` with your app name (e.g. `SignalStudio`, `FliHub`).
+Replace `YourApp` with your app name.
 
 **After creation:**
 - Double-click `YourApp.app` or launch from Spotlight (`Cmd+Space` → type app name)

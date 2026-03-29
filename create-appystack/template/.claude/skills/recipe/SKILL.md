@@ -22,7 +22,7 @@ Recipes are:
 |--------|----------------|
 | `nav-shell` | Left-sidebar navigation shell with header, collapsible sidebar, main content area, and optional footer. Menus can switch dynamically when sub-tools are active. Domain-agnostic layout scaffold. |
 | `file-crud` | JSON file-based persistence for one or more entities. Each record is a file named `{slug}-{id}.json`. Real-time Socket.io sync. No database required. Includes chokidar file watcher. |
-| `entity-socket-crud` | Generic Socket.io CRUD pattern for any number of entities. One `entity:{operation}` contract, one `useEntity` hook, per-entity server handlers — all following the same structure. Discovered in Signal Studio production. Requires `file-crud` infrastructure. |
+| `entity-socket-crud` | Generic Socket.io CRUD pattern for any number of entities. One `entity:{operation}` contract, one `useEntity` hook, per-entity server handlers — all following the same structure. Requires `file-crud` infrastructure. |
 | `local-service` | Persistent local service management via Procfile + Overmind. Services survive terminal close. Optional Platypus `.app` launcher for Spotlight launch. Includes CLAUDE.md port-check rule to prevent AI agents from restarting running servers. |
 | `api-endpoints` | REST API layer with OpenAPI/Swagger documentation. Exposes entities as external-facing endpoints with API key auth and CORS. Layers on top of `file-crud`. |
 | `readme` | Generates a polished, app-specific README.md by reading the codebase and asking 5 targeted questions. Run at Stage 1 (after first recipes applied) and again at Stage 2 (when app is substantially complete). |
@@ -34,6 +34,7 @@ Recipes are:
 | `domain-expert-uat` | Generates a plain-English UAT plan for a non-developer domain expert. Groups test cases by business workflow, not technical entity. Covers happy path, validation errors, permission boundaries, and three-state field transitions. |
 | `appydave-palette` | AppyDave's visual brand as color semantics — the five rules that make any UI feel like it belongs to the AppyDave ecosystem. Not a component kit. Governs what each color zone *means* (dark = structure, warm-light = content, one accent = active state only). Load before any Mochaccino session or design exploration. |
 | `wizard-shell` | Multi-step workflow execution shell. Shell owns the header; step components own only their content. Covers landing screen (three-zone: Identity / Navigation / Action) and execution shell (6-zone layout with pipeline circles, developer panel, view modes). For prompt pipelines, intake wizards, interview flows. |
+| `add-sync` | Cross-machine synchronisation: code updates via Git, data sharing via Git or shared folders. Routing recipe — asks questions first to determine which sub-type(s) to implement. Four sub-types: A (pull-only), B (full push+pull with conflicts), C (git data commit), D (shared folder via Dropbox/Syncthing). Includes server service, routes, client hook, header pill, and modal — all production-tested from production AppyStack apps. |
 
 **Combinations:**
 - `nav-shell` + `file-crud` = complete CRUD app with sidebar nav and file persistence
@@ -49,6 +50,10 @@ Recipes are:
 - `domain-expert-uat` = run after features stabilise to generate non-developer test plans
 - `appydave-palette` = load before any Mochaccino session or design work to ground it in AppyDave color semantics
 - `wizard-shell` = for any app built around a structured multi-step workflow (combine with `appydave-palette` for visual treatment)
+- `add-sync` = cross-machine code/data synchronisation (pull-only, full push+pull, git data commit, shared folder — mix and match)
+- `add-sync` + `file-crud` = data stored as JSON files with git-based sync to other machines
+- `add-sync` + `local-service` = Overmind-aware restart after pulling code updates
+- `add-sync` + `add-auth` = role-gated push (only admins can push)
 
 **Reference files:**
 - `references/nav-shell.md` — full nav-shell recipe spec
@@ -66,6 +71,7 @@ Recipes are:
 - `references/domain-expert-uat.md` — plain-English UAT plan generator for non-developer domain experts
 - `references/appydave-palette.md` — AppyDave color semantics: the five rules, warm palette family, accent calibration, typography roles, anti-patterns, Mochaccino usage guide
 - `references/wizard-shell.md` — multi-step execution shell: landing screen three-zone layout, 6-zone execution layout, component ownership, step type visual grammar, pipeline circles, developer panel, view modes
+- `references/add-sync.md` — cross-machine sync: 4 sub-types (pull-only, full push+pull, git data commit, shared folder), routing questions, production code from production AppyStack apps, 22 edge cases
 
 ---
 
@@ -77,11 +83,11 @@ Domain DSLs are structured markdown files that define every entity in a specific
 
 | Domain | Entities | Application type |
 |--------|----------|-----------------|
-| `care-provider-operations` | Company, Site, User, Participant, Incident, Moment | NDIS/disability care management |
+| `care-provider-operations` | Company, Site, User, Participant, Incident, Moment | Care provider operations |
 | `youtube-launch-optimizer` | Channel, Video, Script, ThumbnailVariant, LaunchTask | YouTube content production pipeline |
 
 **Domain files:**
-- `domains/care-provider-operations.md` — 6-entity residential care domain (NDIS context, Australian)
+- `domains/care-provider-operations.md` — 6-entity residential care domain (residential care context)
 - `domains/youtube-launch-optimizer.md` — 5-entity YouTube production domain
 - `references/domain-dsl.md` — format spec: how to write a new domain DSL from scratch
 

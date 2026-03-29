@@ -68,10 +68,10 @@ File name pattern:  {name-slug}-{5char-id}.json
 
 Examples:
   name = "NERO Banana"          → nero-banana-a7k3p.json
-  name = "David Kruwys"         → david-kruwys-a1f4q.json  (ID: a1f4q)
-  name corrected to "David Cruwys" → david-cruwys-a1f4q.json  (same ID, new slug)
+  name = "Jane Smyth"           → jane-smyth-a1f4q.json  (ID: a1f4q)
+  name corrected to "Jane Smith" → jane-smith-a1f4q.json  (same ID, new slug)
   name = "Acme Corp"            → acme-corp-x9q2m.json
-  name = "St. Mary's Group Home" → st-marys-group-home-k3p7r.json
+  name = "Sunrise Group Home"   → sunrise-group-home-k3p7r.json
 ```
 
 **Why this matters**: If the name changes, the slug prefix in the filename changes but the 5-char suffix stays constant. The ID is how you find, update, and delete a record regardless of what the name is. This is the stable identity; the slug is the human label.
@@ -91,16 +91,7 @@ Examples:
 
 ### ID Generation
 
-```typescript
-// server/src/data/idgen.ts
-export function generateId(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
-  return Array.from({ length: 5 }, () =>
-    chars[Math.floor(Math.random() * chars.length)]
-  ).join('')
-}
-// Collision probability at 1,000 records: ~0.015% — acceptable for local/small-team use
-```
+6-character alphanumeric random ID generator (`server/src/data/idgen.ts`). Characters: `a-z0-9`. Collision probability at 1,000 records is ~0.015% — acceptable for local/small-team use.
 
 ---
 
@@ -112,44 +103,25 @@ export function generateId(): string {
 
 **Performance**: Folder scan at 1,000 records = ~5-20ms (filenames only). Reading all files for summary fields = ~50-200ms. Acceptable for local/small-team tools. Cache mitigates repeated calls.
 
-### In-Memory Cache
+---
 
-The server maintains a per-entity index cache. chokidar invalidates it on any file change.
+## fileStore.ts Contract
 
-```typescript
-// server/src/data/fileStore.ts
-import path from 'path'
-import fs from 'fs/promises'
+`server/src/data/fileStore.ts` is the entity-agnostic persistence layer. It exposes four functions and an in-memory cache.
 
-// Data lives at the monorepo root. process.cwd() is server/ when nodemon runs,
-// so '../data' resolves to <monorepo-root>/data/.
-// Override with DATA_DIR env var if your deployment layout differs.
-const DATA_ROOT = process.env.DATA_DIR ?? path.resolve(process.cwd(), '..', 'data')
+**Functions:**
 
-const indexCache = new Map<string, EntityIndex[]>()
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `listRecords` | `(entity: string) => Promise<EntityIndex[]>` | Reads entity folder, returns index (cached). Extracts ID and slug from filenames, reads each file for name field. |
+| `getRecord` | `(entity: string, id: string) => Promise<EntityRecord>` | Finds file by ID suffix, parses and returns full record. |
+| `saveRecord` | `(entity: string, record: Partial<EntityRecord>) => Promise<EntityRecord>` | If `record.id` exists: update (rename file if name changed). If no `id`: generate one, write new file. Invalidates cache after write. |
+| `deleteRecord` | `(entity: string, id: string) => Promise<void>` | Deletes the file matching the ID. Invalidates cache after delete. |
+| `invalidateCache` | `(entity: string) => void` | Clears the in-memory index for the given entity. Called by chokidar on any file change in `data/`. |
 
-export async function listRecords(entity: string): Promise<EntityIndex[]> {
-  if (indexCache.has(entity)) return indexCache.get(entity)!
+**Path resolution:** `DATA_ROOT` defaults to `path.resolve(process.cwd(), '..', 'data')` — since `process.cwd()` is `server/` when nodemon runs, this resolves to `<monorepo-root>/data/`. Override via `DATA_DIR` env var if the deployment layout differs.
 
-  const folder = path.join(DATA_ROOT, entity)
-  const files = (await fs.readdir(folder)).filter(f => f.endsWith('.json'))
-
-  const index = await Promise.all(files.map(async (filename) => {
-    const id = extractId(filename)              // last segment before .json
-    const slug = extractSlug(filename)           // everything before the last -xxxxx
-    const content = JSON.parse(await fs.readFile(path.join(folder, filename), 'utf-8'))
-    return { id, name: content.name ?? slugToName(slug), filename }
-  }))
-
-  indexCache.set(entity, index)
-  return index
-}
-
-// Called by chokidar on any change in data/
-export function invalidateCache(entity: string) {
-  indexCache.delete(entity)
-}
-```
+**Cache strategy:** An in-memory `Map<string, EntityIndex[]>` keyed by entity name. Populated on first `listRecords` call, invalidated on any write operation or chokidar event. No TTL — invalidation is event-driven.
 
 ---
 
@@ -271,7 +243,7 @@ The file-based persistence layer also enables a local-first workflow:
 
 Domain-specific entity definitions for common application types. See the `domains/` folder:
 
-- [`domains/care-provider-operations.md`](../domains/care-provider-operations.md) — NDIS/disability care: Company, Site, User, Participant, Incident, Moment (6 entities)
+- [`domains/care-provider-operations.md`](../domains/care-provider-operations.md) — Care provider operations: Company, Site, User, Participant, Incident, Moment (6 entities)
 - [`domains/youtube-launch-optimizer.md`](../domains/youtube-launch-optimizer.md) — YouTube content production: Channel, Video, Script, ThumbnailVariant, LaunchTask (5 entities)
 
 Each domain DSL defines: entity names, namish fields, key domain fields, relationships, entity classification, and suggested nav mapping. Load one as-is, adapt it, or write your own — see [`references/domain-dsl.md`](./domain-dsl.md) for the format spec.

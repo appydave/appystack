@@ -1,6 +1,6 @@
 # Recipe: Entity Socket CRUD
 
-All CRUD operations for any entity flow through a generic `entity:{operation}` Socket.io contract. No bespoke socket handlers per entity — one contract, all entities. Discovered in Signal Studio, a real production app built on AppyStack.
+All CRUD operations for any entity flow through a generic `entity:{operation}` Socket.io contract. No bespoke socket handlers per entity — one contract, all entities. Discovered in a production app built on AppyStack.
 
 This recipe documents the client-side hook and server-side handler pattern that makes multi-entity CRUD apps work cleanly. It sits on top of the `file-crud` recipe (which provides `fileStore.ts`, `idgen.ts`, and `watcher.ts`).
 
@@ -77,66 +77,28 @@ project-root/
 
 ---
 
-## Server Handler Template
+## Server Handler Contract
 
-One file per entity. Copy this, change `ENTITY` and the function name. All handlers follow this exact structure with try-catch.
+One file per entity: `server/src/sockets/{entity}Handlers.ts`. Each handler exports a single `register{Entity}Handlers(io: Server, socket: Socket): void` function.
 
-```typescript
-// server/src/sockets/companyHandlers.ts
-import type { Server, Socket } from 'socket.io';
-import { listRecords, getRecord, saveRecord, deleteRecord } from '../data/fileStore.js';
+**What each handler does:**
+- Listens for all four entity events (`entity:list`, `entity:get`, `entity:save`, `entity:delete`)
+- Filters by entity name — if `payload.entity` does not match, return immediately (this is how multiple handlers coexist on the same events)
+- Calls the corresponding `fileStore` function (`listRecords`, `getRecord`, `saveRecord`, `deleteRecord`)
+- Emits results back per the socket event contract above
+- On save: distinguishes create vs update by presence of `record.id`, broadcasts `entity:created` or `entity:updated` to all clients via `io.emit`
+- On delete: broadcasts `entity:deleted` to all clients via `io.emit`
 
-const ENTITY = 'companies'; // change per entity
+**Handler Rules**
 
-export function registerCompanyHandlers(io: Server, socket: Socket): void {
-  socket.on('entity:list', async (payload) => {
-    if (payload?.entity !== ENTITY) return;
-    try {
-      const records = await listRecords(ENTITY);
-      socket.emit('entity:list:result', { entity: ENTITY, records });
-    } catch (err) {
-      socket.emit('entity:error', { entity: ENTITY, operation: 'list', message: String(err) });
-    }
-  });
+1. **Always filter by entity name.** Every handler listens on the same four generic events. The `if (payload?.entity !== ENTITY) return` guard is what makes this work — without it, every handler fires for every entity.
+2. **Always try-catch every handler.** All fileStore calls are async and can throw. An unhandled rejection silently kills the handler.
+3. **Always emit `entity:error` on failure.** Include `entity`, `operation`, and `message` fields. Silent server failures mean the client waits forever (loading spinner that never resolves). Always close the loop with an error event.
+4. **Never fire-and-forget.** Every code path must emit either a result event or an error event. No exceptions.
 
-  socket.on('entity:get', async (payload) => {
-    if (payload?.entity !== ENTITY) return;
-    try {
-      const record = await getRecord(ENTITY, payload.id);
-      socket.emit('entity:get:result', { entity: ENTITY, record });
-    } catch (err) {
-      socket.emit('entity:error', { entity: ENTITY, operation: 'get', message: String(err) });
-    }
-  });
-
-  socket.on('entity:save', async (payload) => {
-    if (payload?.entity !== ENTITY) return;
-    try {
-      const saved = await saveRecord(ENTITY, payload.record);
-      io.emit('entity:updated', { entity: ENTITY, record: saved });
-    } catch (err) {
-      socket.emit('entity:error', { entity: ENTITY, operation: 'save', message: String(err) });
-    }
-  });
-
-  socket.on('entity:delete', async (payload) => {
-    if (payload?.entity !== ENTITY) return;
-    try {
-      await deleteRecord(ENTITY, payload.id);
-      io.emit('entity:deleted', { entity: ENTITY, id: payload.id });
-    } catch (err) {
-      socket.emit('entity:error', { entity: ENTITY, operation: 'delete', message: String(err) });
-    }
-  });
-}
-```
-
-**Mount in `server/src/index.ts`:**
+**Mount pattern:** Register all entity handlers inside `io.on('connection')` in `server/src/index.ts`:
 
 ```typescript
-import { registerCompanyHandlers } from './sockets/companyHandlers.js';
-import { registerSiteHandlers } from './sockets/siteHandlers.js';
-
 io.on('connection', (socket) => {
   registerCompanyHandlers(io, socket);
   registerSiteHandlers(io, socket);
@@ -148,33 +110,21 @@ io.on('connection', (socket) => {
 
 ## Client: entitySocket.ts Singleton
 
-The singleton is already in the template at `client/src/lib/entitySocket.ts`. Do not recreate it. All hooks share this single connection. This is what prevents duplicate connections when multiple components use `useEntity`.
+The singleton is already in the template at `client/src/lib/entitySocket.ts`. Do not recreate it.
 
-```typescript
-// client/src/lib/entitySocket.ts
-import { io, Socket } from 'socket.io-client';
+**Pattern**: a module-scoped `Socket | null` variable with a `getEntitySocket()` function that lazily creates a single Socket.io connection on first call. All hooks share this connection. This is what prevents duplicate connections when multiple components use `useEntity`.
 
-let socket: Socket | null = null;
-
-export function getEntitySocket(): Socket {
-  if (!socket) {
-    socket = io({ path: '/socket.io', transports: ['websocket'] });
-  }
-  return socket;
-}
-```
+If the file is missing for any reason, create one that exports `getEntitySocket(): Socket` using lazy initialization with `io()` from `socket.io-client`.
 
 ---
 
-## Client: useEntity Hook
+## Client: useEntity Hook Contract
 
-One hook handles all entities. Import it anywhere in the client and pass the entity name string.
+One hook handles all entities. The hook is generic over the entity type `T`.
+
+**Interface**
 
 ```typescript
-// client/src/hooks/useEntity.ts
-import { useState, useEffect, useCallback } from 'react';
-import { getEntitySocket } from '../lib/entitySocket.js';
-
 export interface UseEntityResult<T> {
   records: T[];
   loading: boolean;
@@ -184,98 +134,24 @@ export interface UseEntityResult<T> {
   refresh: () => void;
 }
 
-export function useEntity<T extends Record<string, unknown>>(entityName: string): UseEntityResult<T> {
-  const [records, setRecords] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [entityError, setEntityError] = useState<string | null>(null);
-
-  const socket = getEntitySocket();
-
-  const refresh = useCallback(() => {
-    socket.emit('entity:list', { entity: entityName });
-  }, [entityName, socket]);
-
-  useEffect(() => {
-    const onListResult = (data: { entity: string; records: unknown[] }) => {
-      if (data.entity !== entityName) return;
-      setRecords(data.records as T[]);
-      setLoading(false);
-    };
-    const onCreated = (data: { entity: string; record: unknown }) => {
-      if (data.entity !== entityName) return;
-      refresh();
-    };
-    const onUpdated = (data: { entity: string; record: unknown }) => {
-      if (data.entity !== entityName) return;
-      refresh();
-    };
-    const onDeleted = (data: { entity: string; id: string }) => {
-      if (data.entity !== entityName) return;
-      setRecords(prev => prev.filter(r => r['id'] !== data.id));
-    };
-    const onError = (data: { entity: string; operation: string; message: string }) => {
-      if (data.entity !== entityName) return;
-      setEntityError(`${data.operation} failed: ${data.message}`);
-    };
-    const onExternalChange = (data: { entity: string }) => {
-      if (data.entity !== entityName) return;
-      refresh();
-    };
-
-    socket.on('entity:list:result', onListResult);
-    socket.on('entity:created', onCreated);
-    socket.on('entity:updated', onUpdated);
-    socket.on('entity:deleted', onDeleted);
-    socket.on('entity:error', onError);
-    socket.on('entity:external-change', onExternalChange);
-
-    refresh();
-
-    return () => {
-      socket.off('entity:list:result', onListResult);
-      socket.off('entity:created', onCreated);
-      socket.off('entity:updated', onUpdated);
-      socket.off('entity:deleted', onDeleted);
-      socket.off('entity:error', onError);
-      socket.off('entity:external-change', onExternalChange);
-    };
-  }, [entityName, refresh, socket]);
-
-  const saveRecord = useCallback((record: Partial<T>) => {
-    socket.emit('entity:save', { entity: entityName, record: record as Record<string, unknown> });
-  }, [entityName, socket]);
-
-  const deleteRecord = useCallback((id: string) => {
-    socket.emit('entity:delete', { entity: entityName, id });
-  }, [entityName, socket]);
-
-  return { records, loading, entityError, saveRecord, deleteRecord, refresh };
-}
+export function useEntity<T extends Record<string, unknown>>(entityName: string): UseEntityResult<T>
 ```
 
-**Usage in a view component:**
+**Lifecycle**
+
+1. On mount, call `getEntitySocket()` to obtain the shared singleton connection
+2. Register listeners for all six server → client events (`entity:list:result`, `entity:created`, `entity:updated`, `entity:deleted`, `entity:error`, `entity:external-change`), each filtering by `entityName`
+3. Emit `entity:list` to request the initial dataset
+4. On `entity:list:result` — set `records`, set `loading` to false
+5. On `entity:created` / `entity:updated` / `entity:external-change` — call `refresh()` (re-emit `entity:list`)
+6. On `entity:deleted` — optimistically remove the record from local state by `id`
+7. On `entity:error` — set `entityError` with a descriptive message
+8. On unmount, remove all six listeners via `socket.off()` using the same function references
+
+**Usage**
 
 ```typescript
-import { useEntity } from '../hooks/useEntity.js';
-import type { Company } from '@appystack-template/shared';
-
-function CompanyList() {
-  const { records, loading, entityError, saveRecord, deleteRecord } = useEntity<Company>('companies');
-
-  if (loading) return <p>Loading...</p>;
-  if (entityError) return <p>Error: {entityError}</p>;
-
-  return (
-    <ul>
-      {records.map(company => (
-        <li key={company.id as string}>
-          {company.name as string}
-          <button onClick={() => deleteRecord(company.id as string)}>Delete</button>
-        </li>
-      ))}
-    </ul>
-  );
-}
+const { records, loading, saveRecord, deleteRecord } = useEntity<Company>('companies');
 ```
 
 ---
@@ -331,53 +207,11 @@ Silent server failures mean the client waits forever (loading spinner that never
 
 ## Cascade Nullification on Delete
 
-For file-based apps, **do not cascade delete**. Set foreign key references to null instead. This prevents data loss when a referenced entity is deleted — related records remain but with a null FK, which is recoverable.
+For file-based apps, **do not cascade delete** — nullify foreign key references instead. When a referenced entity is deleted, set all FK fields pointing to it to `null` in related records. This prevents data loss: related records remain but with a null FK, which is recoverable.
 
-```typescript
-// server/src/data/cascadeService.ts
-import { listRecords, saveRecord } from './fileStore.js';
+**Contract:** A `nullifyRefs(entityName, id, refs)` function in `server/src/data/cascadeService.ts` takes the deleted entity name, its ID, and an array of `[targetEntity, fkField]` pairs. For each pair, it lists all records of the target entity, finds those where `fkField === id`, and saves them back with `fkField` set to `null`.
 
-/**
- * When an entity record is deleted, nullify references to it in other entities.
- * refs: array of [entityName, fieldName] pairs that reference the deleted id.
- *
- * Example: delete a company with id 'abc12'
- *   nullifyRefs('companies', 'abc12', [['sites', 'companyId'], ['users', 'companyId']])
- */
-export async function nullifyRefs(
-  entityName: string,
-  id: string,
-  refs: [string, string][]
-): Promise<void> {
-  for (const [entity, field] of refs) {
-    const records = await listRecords(entity);
-    for (const record of records) {
-      if (record[field] === id) {
-        await saveRecord(entity, { ...record, [field]: null });
-      }
-    }
-  }
-}
-```
-
-**Use in a delete handler:**
-
-```typescript
-socket.on('entity:delete', async (payload) => {
-  if (payload?.entity !== ENTITY) return;
-  try {
-    // nullify before deleting so related records aren't orphaned silently
-    await nullifyRefs(ENTITY, payload.id, [
-      ['sites', 'companyId'],
-      ['users', 'companyId'],
-    ]);
-    await deleteRecord(ENTITY, payload.id);
-    io.emit('entity:deleted', { entity: ENTITY, id: payload.id });
-  } catch (err) {
-    socket.emit('entity:error', { entity: ENTITY, operation: 'delete', message: String(err) });
-  }
-});
-```
+**Rule:** Always call `nullifyRefs` before `deleteRecord` in any delete handler that has downstream references. Nullify first, then delete — so related records are not orphaned silently.
 
 ---
 
