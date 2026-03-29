@@ -2,7 +2,7 @@
 
 A residential disability support provider app. Manages the org hierarchy (companies → sites → workers), the people being supported (participants), and the two types of care records workers create during shifts — incidents and moments.
 
-Grounded in regulated disability care context, but the structure applies to any regulated residential care setting.
+Grounded in Australian NDIS (National Disability Insurance Scheme) context, but the structure applies to any regulated residential care setting.
 
 **Use with**: `file-crud` recipe. Optionally combine with `nav-shell` recipe.
 
@@ -59,24 +59,24 @@ A staff member (support worker, team leader, or admin) employed by a Company.
 | `createdAt` | string | ISO 8601 timestamp |
 
 Namish field: `name`
-Example filename: `jane-smith-ab9p2x.json`
+Example filename: `angela-brown-ab9p2x.json`
 Relationship: `companyId` → Company
 
 ---
 
 ### Participant
-A person receiving support under a care plan, supported by a Company at a primary Site.
+A person receiving support under an NDIS plan, supported by a Company at a primary Site.
 
 | Field | Type | Notes |
 |-------|------|-------|
 | `firstName` | string | |
 | `lastName` | string | **namish field** (composite `firstName-lastName`) |
 | `preferredName` | string \| null | optional — if different from first name |
-| `referenceNumber` | string | Care plan reference number, e.g. `512384901` |
+| `ndisNumber` | string | NDIS plan number, e.g. `512384901` |
 | `dateOfBirth` | string | ISO 8601 date |
 | `companyId` | string | FK → Company |
 | `defaultSiteId` | string | FK → Site (primary home) |
-| `baselineDataTier` | number | Funding tier: `1` / `2` / `3` / `4` |
+| `baselineDataTier` | number | NDIS funding tier: `1` / `2` / `3` / `4` |
 | `status` | string | `'active'` / `'inactive'` / `'transitioned'` |
 
 Namish field: composite `${firstName}-${lastName}`
@@ -164,7 +164,7 @@ data/
 ├── sites/
 │   └── thornbury-house-th7k3m.json
 ├── users/
-│   └── jane-smith-ab9p2x.json
+│   └── angela-brown-ab9p2x.json
 ├── participants/
 │   └── rosie-fairweather-rf3n8k.json
 ├── incidents/

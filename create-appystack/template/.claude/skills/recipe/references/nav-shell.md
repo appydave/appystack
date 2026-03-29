@@ -202,7 +202,7 @@ These are identified but not yet built. Noted here so they're visible when plann
 Horizontal tab or link bar across the top. No sidebar. For apps with 3–5 flat sections of equal weight. Navigation is shallow; no hierarchy needed.
 
 **Workspace Shell** (VS Code style)
-Activity bar (icon strip, far left) selects a panel type. The panel area changes completely per activity — not just nav items but full tool panels, file trees, form widgets. Two levels of state: `activeActivity` + `activeView`. Best for tool-heavy apps where each "mode" has its own set of controls (e.g. a recording workflow vs settings vs file browser).
+Activity bar (icon strip, far left) selects a panel type. The panel area changes completely per activity — not just nav items but full tool panels, file trees, form widgets. Two levels of state: `activeActivity` + `activeView`. Best for tool-heavy apps where each "mode" has its own set of controls (e.g. FliHub's recording workflow vs settings vs file browser).
 
 **Dashboard Shell**
 A fixed or responsive grid of widget panels. Each widget independently fetches and displays data. No single `activeView` — multiple views live simultaneously. Per-widget Socket.io subscriptions. Best for monitoring, ops tools, reporting apps where seeing multiple things at once is the goal.

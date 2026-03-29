@@ -1,6 +1,6 @@
 # Recipe: Entity Socket CRUD
 
-All CRUD operations for any entity flow through a generic `entity:{operation}` Socket.io contract. No bespoke socket handlers per entity — one contract, all entities. Discovered in a production app built on AppyStack.
+All CRUD operations for any entity flow through a generic `entity:{operation}` Socket.io contract. No bespoke socket handlers per entity — one contract, all entities. Discovered in Signal Studio, a real production app built on AppyStack.
 
 This recipe documents the client-side hook and server-side handler pattern that makes multi-entity CRUD apps work cleanly. It sits on top of the `file-crud` recipe (which provides `fileStore.ts`, `idgen.ts`, and `watcher.ts`).
 

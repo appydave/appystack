@@ -18,11 +18,8 @@ Add the ability for an AppyStack app to synchronise code and/or data between mac
 - Git repository with a remote (GitHub, GitLab, etc.)
 - For shared-folder sub-types: Dropbox, Syncthing, or similar already configured at the OS level
 
-**Idempotency Check**
-- Does `server/src/services/git-sync.service.ts` exist? → Git sync already installed
-- Does `server/src/routes/git-sync.ts` exist? → Git sync routes already installed
-- Does `client/src/hooks/useGitSync.ts` exist? → Git sync hook already installed
-- Does `server/src/services/folder-sync.service.ts` exist? → Folder sync already installed
+**Upgrade Awareness**
+Do not treat file existence as proof of feature completeness. If sync files already exist, read them and compare their capabilities against this recipe. Implement anything missing. A previous run may have scaffolded partial sync — the recipe should bring it up to spec, not skip it.
 
 **Does Not Touch**
 - Entity CRUD logic — sync is infrastructure, not domain
@@ -111,7 +108,7 @@ This is critical for non-technical users. The same git state needs different wor
 |----------|---------------|---------------|---------------|---------------|
 | Developer | "3 behind" | "Dirty" | "2 ahead" | "Pull" |
 | Non-technical user | "Update available" | "You have unsaved changes" | "Your changes haven't been shared yet" | "Get latest" |
-| Operator | "3 updates available" | "Uncommitted changes" | "2 changes to push" | "Sync now" |
+| Operator | "3 updates from David" | "Uncommitted changes" | "2 changes to push" | "Sync now" |
 
 **Ask**: "What words should the sync pill use? Developer jargon, plain English, or something custom?"
 
@@ -121,7 +118,7 @@ This is critical for non-technical users. The same git state needs different wor
 
 The simplest and most common pattern. One person (the developer) pushes code; everyone else's app detects the update and offers a one-click pull.
 
-**Discovered in**: a production AppyStack app
+**Discovered in**: AngelEye (Wave 12, March 2026)
 
 ### Shared Types
 
@@ -151,6 +148,8 @@ export interface GitSyncStatus {
   behind: number;
   ahead: number;
   dirty: boolean;
+  dirtyFiles: string[];
+  dirtyCount: number;
   lastChecked: string;
   error?: string;
   behindCommits?: CommitSummary[];
@@ -205,7 +204,7 @@ These principles apply to ALL git operations across every sub-type. They are the
 
 **`pullUpstream(): Promise<GitPullResult>`**
 - Acquires git lock
-- Refuses if dirty (check `status --porcelain` first) — returns error, does not attempt pull
+- If dirty: stash local changes first (`git stash push -m "auto-stash before pull"`), then proceed with pull. After successful pull, pop stash. If stash pop conflicts, preserve the stash and warn the user — but nothing is lost. Never refuse a pull just because the tree is dirty.
 - Records `previousCommit` before pull
 - Runs `git pull --rebase` (120s timeout)
 - On failure: `rebase --abort` (swallow errors), return failure result
@@ -249,28 +248,30 @@ A compact pill displayed in the app header. Communicates sync state at a glance.
 **Capabilities:**
 - Renders as a small rounded pill showing a short label and colour-coded background
 - Shows a spinner animation while a pull is in progress
-- Clickable only when `state` is `behind` or `diverged` — opens the SyncModal
-- Non-clickable states show a tooltip with branch name and local commit hash
+- Always clickable — every state opens the modal. Never leave the user with a dead-end indicator
+- Shows a status dot (coloured circle) and optional count badge (commits behind or files changed)
 - Uses the `useGitSync` hook for all state
 
 **State table:**
 
 | State | Colour Semantic | Label | Clickable? | Extra |
 |-------|----------------|-------|------------|-------|
-| `pulling` (transient) | warning | "Pulling..." | No | Show spinner icon |
-| `clean` | success | "Synced" | No | — |
-| `behind` | warning (solid) | "{N} behind" | Yes → opens modal | Pulsing animation (see below) |
-| `dirty` | danger | "Dirty" | No | — |
-| `ahead` | info | "{N} ahead" | No | — |
+| `pulling` (transient) | warning | "Pulling..." | Yes → opens modal | Show spinner icon |
+| `clean` | success | "Synced" | Yes → opens modal | Reassurance view (branch, last checked) |
+| `behind` | warning (solid) | "{N} behind" | Yes → opens modal | Pulsing animation, count badge |
+| `dirty` | danger | "{N} changed" | Yes → opens modal | Shows file list grouped by type |
+| `ahead` | info | "{N} ahead" | Yes → opens modal | — |
 | `diverged` | accent | "Diverged" | Yes → opens modal | — |
-| `error` | muted | "Sync error" | No | — |
+| `error` | muted | "Sync error" | Yes → opens modal | Shows error details |
 
 **Label language:** Use the labels chosen during routing question Q6. The table above shows developer-style defaults.
 
-**Pulsing animation:** When state is `behind`, the pill should gently pulse (opacity cycles between full and ~60% over 2 seconds, repeating). This draws attention without alarm. Implement this as a CSS keyframe animation added to the app's stylesheet.
+**Pulsing animation:** When state is `behind`, the pill should gently pulse using a CSS keyframe named `sync-pulse` (opacity cycles between full and ~60% over 2 seconds, repeating). This draws attention without alarm.
+
+**Cursor:** Always show a pointer cursor on hover — never `cursor-default`. The pill is always interactive.
 
 **Interactions:**
-- Clicking the pill when clickable: clears any previous pull result, then opens SyncModal
+- Clicking the pill in any state: clears any previous pull result, then opens SyncModal with state-appropriate content
 - If `status` is null (not yet loaded), render nothing
 
 ### UI: Sync Modal (Pull Confirmation)
@@ -279,22 +280,28 @@ A confirmation dialog that shows what will be pulled, executes the pull, and dis
 
 **Capabilities:**
 
-The modal has three visual phases, determined by pull state:
+The modal shows state-specific content. Every `GitSyncState` has a distinct heading, body, and action set:
 
-**Phase 1 — Pre-pull (no pullResult yet):**
-- Title: "Pull {N} commit(s)?"
-- Body: scrollable list of up to 10 pending commits, each showing:
-  - Short SHA (monospace)
-  - Relative time (e.g. "5m ago", "2h ago")
-  - Commit message (truncated to one line)
-  - Author name
-- Footer: Cancel button + Pull Now button (both disabled while pulling; Pull Now shows spinner while pulling)
+**State: `clean`** — Reassurance view. Shows branch name, last checked time, local commit. No actions needed. Close button.
 
-**Phase 2 — Success (pullResult.success === true):**
+**State: `behind`** — Pull confirmation. Title: "Pull {N} commit(s)?". Body: scrollable list of up to 10 pending commits (short SHA, relative time, message, author). Footer: Cancel + Pull Now buttons.
+
+**State: `dirty`** — File list view. Shows changed files grouped by type (Source, Components, Config, etc.) with count. Explains that local changes will be stashed before pull if the user proceeds. If behind > 0, offer "Stash & Pull" button. If not behind, just informational.
+
+**State: `ahead`** — Shows local commits not yet on remote. Informational only for Sub-type A; for Sub-type B, shows a Push button.
+
+**State: `diverged`** — Shows both ahead and behind counts. Explains the situation. Offers Pull (with stash if dirty) as the safe action.
+
+**State: `error`** — Shows the error message. Offers a Retry button that re-checks status.
+
+**State: `pulling`** — Shows progress spinner and "Pulling..." message. All buttons disabled.
+
+**After pull — Success (pullResult.success === true):**
 - Body: success message — "Pulled {N} commit(s)." plus "Server restarting..." if `restartTriggered`
+- If changes were stashed, show "Your local changes have been restored."
 - Footer: no buttons (modal auto-closes after 3 seconds)
 
-**Phase 3 — Failure (pullResult.success === false):**
+**After pull — Failure (pullResult.success === false):**
 - Body: error message from `pullResult.error`
 - Footer: Close button only
 
@@ -328,7 +335,7 @@ GIT_SYNC_POLL_MS=120000
 
 Extends Sub-type A with push capability and conflict resolution. For apps where multiple people contribute changes.
 
-**Discovered in**: a production AppyStack app
+**Discovered in**: FliHub (B044 Sync Hub)
 
 ### Additional Shared Types
 
@@ -399,7 +406,7 @@ The push flow adds these capabilities to the sync modal:
 
 For apps using `file-crud` where data lives in `data/` as JSON files. This sub-type lets users commit their data changes to git and optionally push them.
 
-**Discovered in**: a production AppyStack app
+**Discovered in**: Signal Studio (Git Sync Button)
 
 ### Server: git-data.service Principles
 
@@ -460,12 +467,12 @@ For detail views — shows whether an individual record has been pushed to a rem
 
 For data that syncs via Dropbox, Syncthing, or similar — no Git involved. The app watches a folder for incoming changes and exposes UI to review and accept them.
 
-**Discovered in**: a production AppyStack app
+**Discovered in**: FliHub (Relay System)
 
 ### Architecture
 
 ```
-Machine A (User A)                    Machine B (User B)
+Machine A (David)                     Machine B (Angela)
   app writes to data/     ──┐
                              ├── Dropbox / Syncthing ──► relay/ folder
   app reads relay/ folder ◄──┘                           app watches relay/ folder
@@ -553,7 +560,7 @@ RELAY_DIR=../relay   # path to shared folder (Dropbox, Syncthing, etc.)
 
 5. **`git pull --rebase` vs `git pull --merge`** — rebase keeps linear history (cleaner for data-only repos). But on conflict, you must handle `rebase --abort`. Never leave a repo in mid-rebase state.
 
-6. **Dirty tree blocks pull** — always check `git status --porcelain` before attempting pull. A pull on a dirty tree leads to unpredictable merge behaviour. Show the user: "You have unsaved changes — commit or discard before pulling."
+6. **Dirty tree: stash, don't refuse** — always check `git status --porcelain` before pull. If dirty, stash local changes automatically, pull, then pop stash. If stash pop conflicts, preserve the stash and warn the user — but nothing is lost. Never refuse a pull just because the tree is dirty. Never offer a "reset" or "discard" button in the UI — if someone needs to nuke local state, they can do it from a terminal with full awareness.
 
 7. **Stash non-data changes during data sync** — if code and data are in the same repo, stash code changes before rebasing for data push, then restore. Without it, code changes get caught up in the data commit.
 
@@ -601,7 +608,7 @@ After routing questions, collect:
 
 1. **Sub-type(s)** — which combination (A, B, C, D)?
 2. **Poll interval** — how often to check for updates? (default: 120s)
-3. **Language style** — developer, plain English, or custom labels for each state?
+3. **Language style** — developer, plain English, or custom labels for each state? (Default: plain English for Sub-type A pull-only deployments where users are non-technical; developer style for Sub-type B.)
 4. **Restart behaviour** — Overmind-aware restart or manual?
 5. **Data folder path** — if Sub-type C, what path? (default: `data/`)
 6. **Relay folder path** — if Sub-type D, what path? (default: `relay/`)

@@ -32,7 +32,7 @@ Not applicable — this recipe governs decisions, not files.
 
 ## The Core Rules
 
-These five rules are what made 22 Mochaccino designs feel like family despite being structurally unrelated.
+These five rules are what made 17 AWB designs and 5 AngelEye Mochaccino designs feel like family despite being structurally unrelated.
 
 ### Rule 1 — Stay Warm
 
@@ -91,7 +91,7 @@ Load these fonts using whatever mechanism suits the target project (Google Fonts
 
 ## Reference Palette
 
-All values are from production AppyDave applications that converged on this family through design exploration. Use these as calibration reference points — they represent the tonal range that defines the AppyDave warmth. When generating theme tokens for a project, derive values from this palette rather than inventing new ones.
+All values are from two related applications (AWB and AngelEye) that converged on this family through design exploration. Use these as calibration reference points — they represent the tonal range that defines the AppyDave warmth. When generating theme tokens for a project, derive values from this palette rather than inventing new ones.
 
 ### Dark Family (structure, chrome, navigation)
 
@@ -201,4 +201,4 @@ Place theme tokens in the project's main CSS file (e.g., `client/src/styles/inde
 
 ---
 
-*Design gallery: `docs/palette-gallery/index.html` — 22 Mochaccino variants across multiple AppyDave applications. Open in a browser to browse. Delete cards you no longer want as reference.*
+*Design gallery: `docs/palette-gallery/index.html` — 17 AWB variants + 5 AngelEye Mochaccino variants (Observer + Organiser views). Open in a browser to browse. Delete cards you no longer want as reference.*

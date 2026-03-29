@@ -1,6 +1,6 @@
 # Recipe: CSV Bulk Import
 
-Adds a CSV bulk import modal to any entity in an AppyStack app. Discovered in a production AppyStack app's client import feature. The pattern handles column validation, partial success reporting, and optional scope restriction for non-admin users.
+Adds a CSV bulk import modal to any entity in an AppyStack app. Discovered in Signal Studio's participant import feature. The pattern handles column validation, partial success reporting, and optional scope restriction for non-admin users.
 
 ---
 

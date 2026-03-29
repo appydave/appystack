@@ -1,6 +1,6 @@
 # Recipe: Domain Expert UAT
 
-Generates a plain-English User Acceptance Test plan that a non-developer domain expert can execute. No coding knowledge required. Test cases are grouped by business workflow, not by technical entity. Discovered in a production AppyStack app — the domain expert runs UAT sessions directly against the app without developer involvement.
+Generates a plain-English User Acceptance Test plan that a non-developer domain expert can execute. No coding knowledge required. Test cases are grouped by business workflow, not by technical entity. Discovered in Signal Studio — Angela (domain expert) runs UAT sessions directly against the app without developer involvement.
 
 This recipe is "Recipes as Intelligence" applied to testing: Claude reads the entity schema and domain DSL, reasons about the domain expert's mental model, and writes test cases in the language of the business — not the language of the API.
 
@@ -35,7 +35,7 @@ Does `docs/uat/` exist? If yes → list existing test files and their coverage a
 
 ## What Makes a Good Domain Expert UAT Plan
 
-A production app's UAT plan (14 files, 3,000+ lines) revealed the key patterns:
+The signal Studio UAT plan (14 files, 3,000+ lines) revealed the key patterns:
 
 **Write in the domain expert's language, not the developer's:**
 - WRONG: "Emit `entity:save` with `{ entity: 'participants', record: { firstName: 'Maria' } }`"
@@ -122,7 +122,7 @@ Does docs/uat/ exist? If yes, list files and their coverage.
 **Step 3 — Ask about the domain expert persona:**
 > "Who will be running these UAT sessions? Describe them in plain English — their role, what they're responsible for, what they call the things in the app."
 >
-> *Example answer:* "The tester is an operations coordinator. She calls participants 'clients'. She thinks of companies as 'providers' and sites as 'locations'. She's comfortable with web forms but not with dev tools."
+> *Example answer:* "Angela is a care coordinator. She calls participants 'clients'. She thinks of companies as 'providers' and sites as 'houses'. She's comfortable with web forms but not with dev tools."
 
 **Step 4 — Ask about business workflows:**
 > "What are the 3–7 major workflows this person executes in the app? Don't describe screens — describe what they're trying to accomplish."
@@ -193,7 +193,7 @@ A care coordinator doesn't "do company CRUD" — they "set up a new care provide
 Happy-path-only UAT plans miss the most important tests. Every entity needs: missing required field, invalid field format, and (if applicable) duplicate-key rejection.
 
 **Don't use technical field names in test steps:**
-If the field is called `referenceNumber` in the type, call it "reference number" in the test. If `defaultSiteId`, call it "their primary site". Always use the domain expert's vocabulary.
+If the field is called `ndisNumber` in the type, call it "NDIS number" in the test. If `defaultSiteId`, call it "their primary site". Always use the domain expert's vocabulary.
 
 **Don't assume the domain expert will read the CLAUDE.md:**
 The UAT plan is a standalone document. Include all setup instructions in the README. Never say "see CLAUDE.md for how to start the app."

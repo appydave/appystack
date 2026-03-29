@@ -68,10 +68,10 @@ File name pattern:  {name-slug}-{5char-id}.json
 
 Examples:
   name = "NERO Banana"          → nero-banana-a7k3p.json
-  name = "Jane Smyth"           → jane-smyth-a1f4q.json  (ID: a1f4q)
-  name corrected to "Jane Smith" → jane-smith-a1f4q.json  (same ID, new slug)
+  name = "David Kruwys"         → david-kruwys-a1f4q.json  (ID: a1f4q)
+  name corrected to "David Cruwys" → david-cruwys-a1f4q.json  (same ID, new slug)
   name = "Acme Corp"            → acme-corp-x9q2m.json
-  name = "Sunrise Group Home"   → sunrise-group-home-k3p7r.json
+  name = "St. Mary's Group Home" → st-marys-group-home-k3p7r.json
 ```
 
 **Why this matters**: If the name changes, the slug prefix in the filename changes but the 5-char suffix stays constant. The ID is how you find, update, and delete a record regardless of what the name is. This is the stable identity; the slug is the human label.
@@ -243,7 +243,7 @@ The file-based persistence layer also enables a local-first workflow:
 
 Domain-specific entity definitions for common application types. See the `domains/` folder:
 
-- [`domains/care-provider-operations.md`](../domains/care-provider-operations.md) — Care provider operations: Company, Site, User, Participant, Incident, Moment (6 entities)
+- [`domains/care-provider-operations.md`](../domains/care-provider-operations.md) — NDIS/disability care: Company, Site, User, Participant, Incident, Moment (6 entities)
 - [`domains/youtube-launch-optimizer.md`](../domains/youtube-launch-optimizer.md) — YouTube content production: Channel, Video, Script, ThumbnailVariant, LaunchTask (5 entities)
 
 Each domain DSL defines: entity names, namish fields, key domain fields, relationships, entity classification, and suggested nav mapping. Load one as-is, adapt it, or write your own — see [`references/domain-dsl.md`](./domain-dsl.md) for the format spec.
