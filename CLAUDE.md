@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**System context**: See [CONTEXT.md](CONTEXT.md) for purpose, core abstractions, key workflows, design decisions, non-obvious constraints, expert mental model, scope limits, and failure modes.
+
 ## What is AppyStack?
 
 AppyStack is a shared configuration package and architecture reference for the RVETS stack (React, Vite, Express, TypeScript, Socket.io). It provides reusable ESLint, TypeScript, Vitest, and Prettier configs consumed by production apps (FliGen, FliHub, FliDeck, Storyline App).

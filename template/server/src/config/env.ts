@@ -1,7 +1,8 @@
 import dotenv from 'dotenv';
+import path from 'path';
 import { z } from 'zod';
 
-dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), '..', '.env'), override: true });
 
 const envSchema = z.object({
   // TODO: Update defaults for your project
