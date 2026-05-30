@@ -14,7 +14,7 @@
  *   --yes          Skip all interactive confirmations (auto-accept)
  */
 import { intro, outro, text, select, confirm, cancel, isCancel, spinner, note } from '@clack/prompts';
-import { readFileSync, writeFileSync, cpSync, existsSync, rmSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, cpSync, existsSync, rmSync, readdirSync, statSync, renameSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { buildAudit, renderAudit } from './audit.js';
 import { fileURLToPath } from 'node:url';
@@ -111,7 +111,12 @@ function applyCustomizations(root, { name, scope, serverPort, clientPort, desc }
   let envExample = readFile(root, '.env.example');
   envExample = replaceAll(envExample, `PORT=${oldServerPort}`, `PORT=${serverPort}`);
   envExample = replaceAll(envExample, `CLIENT_URL=http://localhost:${oldClientPort}`, `CLIENT_URL=http://localhost:${clientPort}`);
+  envExample = replaceAll(envExample, `VITE_SOCKET_URL=http://localhost:${oldServerPort}`, `VITE_SOCKET_URL=http://localhost:${serverPort}`);
+  envExample = replaceAll(envExample, `VITE_APP_NAME=AppyStack`, `VITE_APP_NAME=${name}`);
   writeFile(root, '.env.example', envExample);
+
+  // .env — auto-create from .env.example so start.sh works on first run
+  writeFile(root, '.env', envExample);
 
   // server/src/config/env.ts
   let envTs = readFile(root, 'server/src/config/env.ts');
@@ -399,6 +404,17 @@ async function main() {
   s.start(mergeMode ? 'Merging template (existing files kept)...' : 'Copying template...');
   try {
     cpSync(TEMPLATE_DIR, targetDir, { recursive: true, filter: templateFilter, force: !mergeMode });
+    // npm strips `.gitignore` from published packages, so the template ships it
+    // as `gitignore` (no dot). Restore the dot after copy.
+    const shippedIgnore = resolve(targetDir, 'gitignore');
+    const dotIgnore = resolve(targetDir, '.gitignore');
+    if (existsSync(shippedIgnore)) {
+      if (mergeMode && existsSync(dotIgnore)) {
+        rmSync(shippedIgnore); // keep the project's existing .gitignore
+      } else {
+        renameSync(shippedIgnore, dotIgnore);
+      }
+    }
     s.stop(mergeMode ? 'Template merged' : 'Template copied');
   } catch (err) {
     s.stop('Failed to copy template');
