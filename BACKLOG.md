@@ -22,7 +22,7 @@ Tracked improvement ideas and deferred decisions for AppyStack. Not a sprint —
 
 - **RESOLVED — `VITE_SOCKET_URL` not replaced during scaffolding** — `applyCustomizations` in `create-appystack/bin/index.js` now `replaceAll`s the `VITE_SOCKET_URL` line (bin/index.js:114), so generated projects get the correct socket URL.
 
-- **`.env` not auto-created from `.env.example`** — `scripts/start.sh` fails immediately if `.env` doesn't exist. The CLI copies `.env.example` but never creates `.env`. Developer has no signal to do this. Fix options: (a) CLI creates `.env` from `.env.example` automatically after scaffold, or (b) `start.sh` auto-copies `.env.example` → `.env` on first run with a visible notice. Needs decision + test.
+- **RESOLVED (2026-07-12, create-appystack@0.4.17)** — **`.env` now auto-created from `.env.example`.** Chose option (b): `scripts/start.sh` copies `.env.example` → `.env` on first run with a visible notice (falls back to an error only if neither exists). `start.sh` is `auto`-tier, so consumers get it via `npx appystack-upgrade`.
 
 - **Git step false negative — `appystack.json` not written** — CLI reports "Git step skipped" even when `git commit` succeeds (confirmed: commit exists in log). Because `gitResult.ok` is falsely `false`, `appystack.json` is never written — breaking `npx appystack-upgrade` baseline tracking. Root cause of the false negative needs investigation (likely `execSync` exit code mismatch). Needs test: verify `appystack.json` is written after successful scaffold.
 

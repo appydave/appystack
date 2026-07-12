@@ -14,9 +14,14 @@ proc_on_port()   { lsof -i ":$1" 2>/dev/null | grep LISTEN | awk '{print $1" (pi
 # ── Validate .env ────────────────────────────────────────────────────────────
 
 if [[ ! -f "$ENV_FILE" ]]; then
-  echo "ERROR: No .env file found."
-  echo "  cp .env.example .env"
-  exit 1
+  if [[ -f ".env.example" ]]; then
+    echo "No .env found — creating one from .env.example ..."
+    cp .env.example "$ENV_FILE"
+    echo ""
+  else
+    echo "ERROR: No .env or .env.example file found."
+    exit 1
+  fi
 fi
 
 SERVER_PORT=$(env_val PORT)
