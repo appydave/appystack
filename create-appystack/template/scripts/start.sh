@@ -108,7 +108,10 @@ echo ""
 # nothing is. Detect that case and clean it, so start.sh is recoverable.
 
 if [[ -e .overmind.sock ]]; then
-  if overmind status >/dev/null 2>&1; then
+  # `overmind status` exits 0 as long as the daemon answers — even when every
+  # managed process has died. So check the STATUS column for an actually-running
+  # process, not just the exit code, or a zombie session looks "already running".
+  if overmind status 2>/dev/null | grep -qw running; then
     echo "Overmind is already running for this project."
     echo "  overmind connect server   — attach to logs"
     echo "  overmind stop             — stop all processes"
@@ -117,7 +120,10 @@ if [[ -e .overmind.sock ]]; then
     open "http://localhost:${CLIENT_PORT}"
     exit 0
   fi
-  echo "Removing stale .overmind.sock (no live Overmind found)..."
+  # Sock present but nothing running → dead/stale session. Shut the daemon down
+  # cleanly (so it doesn't linger as an orphan) and clear the socket, then start.
+  echo "Found a dead/stale Overmind session — cleaning it up..."
+  overmind quit >/dev/null 2>&1 || true
   rm -f .overmind.sock
   echo ""
 fi
