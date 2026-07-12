@@ -8,6 +8,7 @@ Scan this before touching the area it covers.
 | [dotenv `override` — test/runtime want opposite precedence](dotenv-override-clobbers-env-tests.md) | testing | high | resolved | 2 ⬆ |
 | [Config `peerDependencies` gate template upgrades](config-peerdeps-gate-template-upgrades.md) | tooling | medium | active | 2 ⬆ |
 | [Retrofit scaffold silent overwrite](retrofit-scaffold-overwrite-bug.md) | tooling | high | **active** | 1 |
+| [start.sh stale Overmind socket](start-sh-stale-overmind-socket.md) | infrastructure | high | resolved | 2 ⬆ |
 | [Port conflict defence](port-conflict-defence.md) | infrastructure | high | resolved | 1 (pattern candidate) |
 | [Express 5 — req.query is read-only](express5-req-query-readonly.md) | backend | medium | resolved | 1 |
 | [Husky in a nested template dir](husky-nested-template.md) | tooling | low | resolved | 1 |
