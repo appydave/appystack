@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **System context**: See [CONTEXT.md](CONTEXT.md) for purpose, core abstractions, key workflows, design decisions, non-obvious constraints, expert mental model, scope limits, and failure modes.
 
+**Knowledge (KDD)**: This repo keeps a learnings/patterns/decisions library at [`docs/kdd/`](docs/kdd/README.md) — **consult it before working** on env config, ports, the `create-appystack` upgrade tool, or dependency bumps; those areas have bitten before. A `.claude/rules/kdd-consult.md` gate surfaces the relevant entry automatically when you touch those files. Capture new learnings/decisions with `/lisa`.
+
 ## What is AppyStack?
 
 AppyStack is a shared configuration package and architecture reference for the RVETS stack (React, Vite, Express, TypeScript, Socket.io). It provides reusable ESLint, TypeScript, Vitest, and Prettier configs consumed by production apps (FliGen, FliHub, FliDeck, Storyline App).
