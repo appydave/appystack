@@ -17,7 +17,7 @@
 ![Express](https://img.shields.io/badge/Express-5-000000?style=flat-square&logo=express&logoColor=white)
 ![Socket.io](https://img.shields.io/badge/Socket.io-4.8-010101?style=flat-square&logo=socketdotio&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)
-![Node](https://img.shields.io/badge/Node-22+-339933?style=flat-square&logo=node.js&logoColor=white)
+![Node](https://img.shields.io/badge/Node-20+-339933?style=flat-square&logo=node.js&logoColor=white)
 
 **Production-ready full-stack monorepo — real-time, type-safe, quality tooling from day one.**
 
@@ -59,8 +59,8 @@ AppyStack is two things in one repository:
 
 ## Prerequisites
 
-- **Node.js** 22 or higher
-- **npm** 10 or higher (comes with Node 22)
+- **Node.js** 20 or higher (CI and the Dockerfile target Node 20; the `create-appystack` engines floor is 18)
+- **npm** 10 or higher (comes with Node 20)
 
 ---
 
@@ -158,7 +158,7 @@ Every project scaffolded by `create-appystack` includes a **recipe system** — 
 | **Layout** | `nav-shell`, `wizard-shell`, `appydave-palette` |
 | **Data** | `file-crud`, `entity-socket-crud`, `add-orm`, `add-sync` |
 | **Capabilities** | `add-auth`, `add-state`, `add-tanstack-query`, `api-endpoints`, `local-service`, `csv-bulk-import`, `add-elevenlabs-voice` |
-| **Process** | `domain-expert-uat`, `domain-dsl` (format spec) |
+| **Process** | `domain-expert-uat`, `readme` · `domain-dsl` (format spec) |
 
 Recipes are **composable** — combine `nav-shell` + `file-crud` + `entity-socket-crud` for a complete multi-entity CRUD app, add `api-endpoints` to make it externally accessible.
 

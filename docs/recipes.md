@@ -11,13 +11,45 @@ Recipes are:
 
 ## Available Recipes
 
-| Recipe | What it builds | Reference |
-|--------|----------------|-----------|
-| `nav-shell` | Left-sidebar navigation shell — collapsible sidebar, header, content area, context-aware menus | [nav-shell.md](../template/.claude/skills/recipe/references/nav-shell.md) |
-| `file-crud` | JSON file-based persistence for one or more entities — real-time Socket.io sync, chokidar watcher, no database required | [file-crud.md](../template/.claude/skills/recipe/references/file-crud.md) |
-| `api-endpoints` | REST API layer with OpenAPI/Swagger documentation — exposes entities as external-facing endpoints with auth and CORS | [api-endpoints.md](../template/.claude/skills/recipe/references/api-endpoints.md) |
-| `zod-schema` | Runtime schema validation for file-CRUD entities — Zod schemas as source of truth, integrity checker, client-side form validation | [See below](#zod-schema-validation) |
-| `appydave-palette` | AppyDave color semantics — the five rules that make any UI feel like it belongs to the AppyDave ecosystem. Load before Mochaccino or any design work. | [appydave-palette.md](../template/.claude/skills/recipe/references/appydave-palette.md) |
+16 recipes, grouped by what they do. Each links to its reference spec (the contract Claude scaffolds from). `domain-dsl` is a **format spec**, not a recipe — see the Domain DSLs section below.
+
+Reference specs live in `template/.claude/skills/recipe/references/`.
+
+### Layout — app shell and visual structure
+
+| Recipe | What it builds |
+|--------|----------------|
+| [`nav-shell`](../template/.claude/skills/recipe/references/nav-shell.md) | Left-sidebar navigation shell — collapsible sidebar, header, content area, context-aware menus |
+| [`wizard-shell`](../template/.claude/skills/recipe/references/wizard-shell.md) | Multi-step workflow execution shell — pipeline circles, developer panel, view modes |
+| [`appydave-palette`](../template/.claude/skills/recipe/references/appydave-palette.md) | AppyDave colour semantics — the five rules for a consistent visual identity. Load before Mochaccino or any design work |
+
+### Data — storage, access, and movement
+
+| Recipe | What it builds |
+|--------|----------------|
+| [`file-crud`](../template/.claude/skills/recipe/references/file-crud.md) | JSON file-based persistence — real-time Socket.io sync, chokidar watcher, no database required |
+| [`entity-socket-crud`](../template/.claude/skills/recipe/references/entity-socket-crud.md) | Generic `entity:{operation}` Socket.io CRUD — one hook for all entities |
+| [`add-orm`](../template/.claude/skills/recipe/references/add-orm.md) | Prisma or Drizzle ORM — advisory first, then targeted migration |
+| [`add-sync`](../template/.claude/skills/recipe/references/add-sync.md) | Cross-machine sync — pull-only, full push+pull, git data commit, or shared folder |
+
+### Capabilities — layer features onto an existing app
+
+| Recipe | What it builds |
+|--------|----------------|
+| [`add-auth`](../template/.claude/skills/recipe/references/add-auth.md) | JWT authentication + protected routes + Socket.io auth middleware |
+| [`add-state`](../template/.claude/skills/recipe/references/add-state.md) | Zustand store replacing multiple React contexts |
+| [`add-tanstack-query`](../template/.claude/skills/recipe/references/add-tanstack-query.md) | HTTP caching alongside Socket.io — combined cache invalidation |
+| [`api-endpoints`](../template/.claude/skills/recipe/references/api-endpoints.md) | REST API layer with OpenAPI/Swagger docs, API key auth, and CORS |
+| [`local-service`](../template/.claude/skills/recipe/references/local-service.md) | Procfile + Overmind persistent services, optional Platypus `.app` launcher |
+| [`csv-bulk-import`](../template/.claude/skills/recipe/references/csv-bulk-import.md) | CSV upload modal — column validation, partial success, company scoping |
+| [`add-elevenlabs-voice`](../template/.claude/skills/recipe/references/add-elevenlabs-voice.md) | ElevenLabs voice agent — streaming TTS/voice wiring into a scaffolded app |
+
+### Process — non-code artifacts for people
+
+| Recipe | What it builds |
+|--------|----------------|
+| [`domain-expert-uat`](../template/.claude/skills/recipe/references/domain-expert-uat.md) | Plain-English UAT plan generator for non-developer domain experts |
+| [`readme`](../template/.claude/skills/recipe/references/readme.md) | Auto-generated README.md from a codebase scan + 5 targeted questions |
 
 ---
 
@@ -25,10 +57,10 @@ Recipes are:
 
 | Combination | What you get |
 |------------|-------------|
-| `nav-shell` + `file-crud` | Complete CRUD app — sidebar nav + file persistence |
+| `nav-shell` + `file-crud` + `entity-socket-crud` | Complete multi-entity CRUD app — sidebar nav + file persistence + real-time sync |
 | `nav-shell` alone | Visual shell to fill with any data layer later |
-| `file-crud` + `api-endpoints` | Local file data + externally accessible API |
-| All three | Full-stack app with UI, persistence, and public API |
+| `file-crud` + `api-endpoints` | Local file data + an externally accessible API |
+| `wizard-shell` + `add-state` | Multi-step pipeline app with shared Zustand state |
 
 ---
 
@@ -57,7 +89,9 @@ Trigger it by asking Claude: *"What recipes are available?"*, *"I want to build 
 
 ## Zod Schema Validation
 
-**Extends**: [file-crud recipe](../template/.claude/skills/recipe/references/file-crud.md). Apply file-crud first (or have an existing file-based CRUD project), then layer this recipe on top.
+> Documented pattern, not a standalone recipe file — Zod validation is layered onto the `file-crud` recipe (there is no `zod-schema` reference spec).
+
+**Extends**: [file-crud recipe](../template/.claude/skills/recipe/references/file-crud.md). Apply file-crud first (or have an existing file-based CRUD project), then layer this pattern on top.
 
 The file-CRUD recipe stores records as JSON on disk and types them with TypeScript interfaces. Those interfaces provide compile-time safety only — the TypeScript compiler cannot inspect a JSON file at runtime. Any JSON file written externally (by a seed script, a manual edit, a git pull, or a publish pipeline) can arrive with missing fields, wrong types, or stale enum values, and the app will silently accept it.
 

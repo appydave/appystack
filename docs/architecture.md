@@ -266,8 +266,8 @@ How to think about this repo when working in it:
   "type": "module",
   "workspaces": ["client", "server", "shared"],
   "scripts": {
-    "dev": "concurrently -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
-    "build": "npm run build -w server && npm run build -w client",
+    "dev": "npm run build -w shared && concurrently --kill-others -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w shared && npm run build -w server && npm run build -w client",
     "start": "npm start -w server",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

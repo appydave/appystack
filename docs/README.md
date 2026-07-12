@@ -52,7 +52,7 @@ The [`kdd/`](./kdd/README.md) library records what we learned, patterns that eme
 
 ## Recipes (Claude Code Skill)
 
-Recipes scaffold specific app architectures on top of the RVETS template. Phrase-triggered (no slash command) inside any project created with `create-appystack` — ask naturally, e.g. *"what recipes are available?"* or *"scaffold a nav-shell app"*.
+Recipes scaffold specific app architectures on top of the RVETS template. Phrase-triggered (no slash command) inside any project created with `create-appystack` — ask naturally, e.g. *"what recipes are available?"* or *"scaffold a nav-shell app"*. Full catalog with reference links: [recipes.md](./recipes.md).
 
 ### Layout — app shell and visual structure
 
