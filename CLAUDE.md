@@ -14,7 +14,7 @@ AppyStack is a shared configuration package and architecture reference for the R
 
 This is NOT an application — it's a config package + documentation hub.
 
-- `create-appystack/` — The `create-appystack` npm package (published as v0.1.3 on npm)
+- `create-appystack/` — The `create-appystack` npm package (published as v0.4.14 on npm)
   - Also publishes `appystack-upgrade` bin — run `npx appystack-upgrade` from inside any consumer app to pull in the latest AppyStack template improvements (recipes, middleware, CI). See `docs/plans/upgrade-strategy.md`.
   - `bin/index.js` — CLI entry point (see usage below)
   - `scripts/sync-template.js` — Copies `../template/` → `./template/` (run before publish)
@@ -83,11 +83,11 @@ export default [...appyConfig];
 Two packages on npm under the `klueless-io` account:
 
 - **`@appydave/appystack-config`** — v1.0.3 — shared ESLint/TS/Vitest/Prettier configs
-- **`create-appystack`** — v0.1.3 — scaffolding CLI (`npx create-appystack@latest my-app`)
+- **`create-appystack`** — v0.4.14 — scaffolding CLI (`npx create-appystack@latest my-app`)
 
-**Token:** The `appydave-publish` granular token in `~/.npmrc` expires **31 May 2026**.
-Rotate at: npmjs.com → Account → Access Tokens → Generate New Token → Granular, Read+write, All packages, Bypass 2FA, 90-day expiry.
-Then run: `npm set //registry.npmjs.org/:_authToken=<new-token>`
+**Token:** The `appydave-publish` granular token in `~/.npmrc` was rotated **2026-07-12** with **Bypass 2FA OFF** (more secure — a leaked token can't publish without your authenticator). If set to the 90-day max it expires **~2026-10-10** — verify on npmjs.com. Because bypass is off, `npm publish` now prompts for a one-time code: run `npm publish --access public --otp=<6-digit-code>`.
+Rotate at: npmjs.com → Account → Access Tokens → Generate New Token → Granular, Read+write, All packages, **leave Bypass 2FA unchecked**, 90-day expiry.
+Then run: `npm set //registry.npmjs.org/:_authToken=<new-token>` and verify with `npm whoami`.
 
 Full publish workflow details in `docs/architecture.md` under "npm Publishing".
 
