@@ -25,8 +25,10 @@ raw2.txt
 raw-ralph.txt
 /*.png
 
-# Claude planning artifacts
-.claude/
+# Claude planning artifacts (ignore local settings, but track shareable rules)
+.claude/*
+!.claude/rules/
+!.claude/rules/**
 
 # Exception: template ships with skills for app recipe discovery
 !template/.claude/
