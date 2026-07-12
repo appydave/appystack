@@ -5,7 +5,7 @@ Scan this before touching the area it covers.
 
 | Learning | Category | Sev | Status | Recur |
 |----------|----------|-----|--------|-------|
-| [dotenv `override:true` clobbers env tests](dotenv-override-clobbers-env-tests.md) | testing | high | resolved | 1 |
+| [dotenv `override` — test/runtime want opposite precedence](dotenv-override-clobbers-env-tests.md) | testing | high | resolved | 2 ⬆ |
 | [Config `peerDependencies` gate template upgrades](config-peerdeps-gate-template-upgrades.md) | tooling | medium | active | 2 ⬆ |
 | [Retrofit scaffold silent overwrite](retrofit-scaffold-overwrite-bug.md) | tooling | high | **active** | 1 |
 | [Port conflict defence](port-conflict-defence.md) | infrastructure | high | resolved | 1 (pattern candidate) |
