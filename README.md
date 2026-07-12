@@ -129,11 +129,12 @@ appystack/
 │   ├── shared/               #   TypeScript interfaces only
 │   └── .claude/skills/recipe/         #   Claude recipes (see Recipes section)
 │       ├── SKILL.md                   #     Recipe index + flow instructions
-│       ├── references/                #     One file per recipe spec
-│       │   ├── nav-shell.md           #       Visual shell recipe
-│       │   ├── file-crud.md           #       JSON file persistence recipe
-│       │   ├── api-endpoints.md       #       REST API + OpenAPI/Swagger recipe
-│       │   └── domain-dsl.md          #       Format spec for domain DSLs
+│       ├── references/                #     16 recipe specs — layout, data, capabilities,
+│       │                              #       process (nav-shell, file-crud, entity-socket-crud,
+│       │                              #       api-endpoints, add-auth, add-orm, add-state,
+│       │                              #       add-sync, add-tanstack-query, wizard-shell,
+│       │                              #       csv-bulk-import, local-service, appydave-palette,
+│       │                              #       add-elevenlabs-voice, domain-expert-uat, domain-dsl)
 │       └── domains/                   #     Pre-built domain definitions
 │           ├── care-provider-operations.md
 │           └── youtube-launch-optimizer.md
@@ -150,15 +151,16 @@ appystack/
 
 ## Recipes
 
-Every project scaffolded by `create-appystack` includes a **recipe system** — a Claude Code skill bundled at `.claude/skills/recipe/` in your new project. Recipes are app architecture patterns that Claude scaffolds into your project: layout, data strategy, API exposure.
+Every project scaffolded by `create-appystack` includes a **recipe system** — a Claude Code skill bundled at `.claude/skills/recipe/` in your new project. Recipes are app architecture patterns that Claude scaffolds into your project: layout, data strategy, API exposure, and layered capabilities. The full catalog (16 recipes) lives in [docs/recipes.md](docs/recipes.md) and [docs/README.md](docs/README.md#recipes-claude-code-skill); a representative slice:
 
-| Recipe | What it builds |
-|--------|----------------|
-| `nav-shell` | Left-sidebar navigation shell — collapsible sidebar, header, content area, context-aware menus |
-| `file-crud` | JSON file-based persistence — real-time Socket.io sync, chokidar watcher, no database required |
-| `api-endpoints` | REST API layer with OpenAPI/Swagger docs, API key auth, and CORS |
+| Category | Recipes |
+|----------|---------|
+| **Layout** | `nav-shell`, `wizard-shell`, `appydave-palette` |
+| **Data** | `file-crud`, `entity-socket-crud`, `add-orm`, `add-sync` |
+| **Capabilities** | `add-auth`, `add-state`, `add-tanstack-query`, `api-endpoints`, `local-service`, `csv-bulk-import`, `add-elevenlabs-voice` |
+| **Process** | `domain-expert-uat`, `domain-dsl` (format spec) |
 
-Recipes are **composable** — combine `nav-shell` + `file-crud` for a complete CRUD app, add `api-endpoints` to make it externally accessible.
+Recipes are **composable** — combine `nav-shell` + `file-crud` + `entity-socket-crud` for a complete multi-entity CRUD app, add `api-endpoints` to make it externally accessible.
 
 **How to use:** Open your scaffolded project in Claude Code and ask naturally — no slash command needed. The recipe skill auto-triggers from phrases like:
 > *"What recipes are available?"* · *"I want to build a CRUD app"* · *"scaffold a nav-shell app"*

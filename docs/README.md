@@ -32,6 +32,17 @@ npx create-appystack@latest my-app --scope @myorg --port 5500 --description "My 
 | [Extending Configs](./extending-configs.md) | How to customise ESLint, TypeScript, Vitest, and Prettier configs |
 | [Deployment](./deployment.md) | Build, production configuration, and deploy workflows |
 | [Database](./database.md) | Where and how to integrate any database: env schema, shutdown hook, query structure, test patterns |
+| [Security Fleet Audit & Hardening](./security-fleet-audit-and-hardening.md) | Fleet-wide localhost-security audit (file:line findings) + the `@appydave/appystack-server` / `createSecureServer()` 4-rung hardening plan; embedding gate for KyberAgent companion extensions |
+
+## Knowledge (KDD)
+
+The [`kdd/`](./kdd/README.md) library records what we learned, patterns that emerged, and decisions we made — so we don't re-solve the same problems. **Consult it before working** on env config, ports, the upgrade tool, or dependency bumps.
+
+| Section | What it holds |
+|---|---|
+| [Learnings](./kdd/learnings/README.md) | Problem → root cause → fix, captured when it hurt (env/dotenv, port conflicts, config peer-deps, upgrade-tool overwrites, …) |
+| [Patterns](./kdd/patterns/README.md) | Promoted learnings (recurrence ≥ 3) — the established right-way |
+| [Decisions](./kdd/decisions/README.md) | ADRs — choices made, with alternatives and consequences |
 
 ## Ecosystem
 
@@ -41,7 +52,7 @@ npx create-appystack@latest my-app --scope @myorg --port 5500 --description "My 
 
 ## Recipes (Claude Code Skill)
 
-Recipes scaffold specific app architectures on top of the RVETS template. Available via `/recipe` in any project created with `create-appystack`.
+Recipes scaffold specific app architectures on top of the RVETS template. Phrase-triggered (no slash command) inside any project created with `create-appystack` — ask naturally, e.g. *"what recipes are available?"* or *"scaffold a nav-shell app"*.
 
 ### Layout — app shell and visual structure
 
@@ -70,6 +81,7 @@ Recipes scaffold specific app architectures on top of the RVETS template. Availa
 | `api-endpoints` | REST API layer with OpenAPI/Swagger, API key auth, CORS |
 | `local-service` | Procfile + Overmind persistent services, optional Platypus .app launcher |
 | `csv-bulk-import` | CSV upload modal — column validation, partial success, company scoping |
+| `add-elevenlabs-voice` | ElevenLabs voice agent — streaming TTS/voice wiring into a scaffolded app |
 
 ### Process — non-code artifacts for people
 

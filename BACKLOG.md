@@ -8,26 +8,7 @@ Tracked improvement ideas and deferred decisions for AppyStack. Not a sprint —
 
 ### Bugs — startup / environment loading (found 2026-03-17, repro: digital-stage-summit-2026)
 
-- **`dotenv.config()` silently fails — server starts on wrong port** — This is a critical startup bug that breaks every generated app. Two compounding causes: (1) When Overmind launches the server via `npm run dev -w server`, npm workspaces change `process.cwd()` to `server/`. `dotenv.config()` with no `path` argument never finds the root `.env`. (2) Even when the path is fixed, `dotenv` does NOT override existing `process.env` values by default. If a prior Overmind/tmux session left `PORT=5171` (or any stray value) in the environment, the new server process inherits it silently and `.env` has no effect. The client's `VITE_SOCKET_URL` points to 5071, server runs on 5171 — Socket.io never connects — UI stuck on "Loading..." forever, no error shown.
-  **Fix (already applied to digital-stage-summit-2026, must be backported to template):**
-  ```ts
-  // server/src/config/env.ts — two fixes in one line:
-  dotenv.config({ path: path.resolve(__dirname, '../../../.env'), override: true });
-  ```
-  Plus in `start.sh`, add `unset PORT` before `overmind start` to clear any stale shell value.
-  **Required test:** set `PORT=9999` in shell before starting, assert server runs on the port from `.env` not 9999.
-  **Fix (already applied to digital-stage-summit-2026, must be backported to template):**
-  ```ts
-  // server/src/config/env.ts
-  import { fileURLToPath } from 'node:url';
-  import { dirname, resolve } from 'node:path';
-  import path from 'node:path';
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-  dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-  // server/src/config/ is 3 levels below monorepo root
-  ```
-  **Required test:** scaffold with non-default ports (e.g. 5080/5081), start via `npm run dev -w server` from project root, assert `env.PORT === 5081` (not the schema default).
+- **RESOLVED — `dotenv.config()` wrong-port / test-clobber bug** — Fixed in the template via a *conditional* override (`override: !underTest`, resolving `.env` from the monorepo root). Canonical record: [`docs/kdd/learnings/dotenv-override-clobbers-env-tests.md`](docs/kdd/learnings/dotenv-override-clobbers-env-tests.md).
 
 - **`start.sh` does not self-recover — requires manual `overmind stop` + re-run** — `start.sh` only checks for processes on the port numbers listed in `.env`. If the server started on a different port (e.g. due to the dotenv bug above), `start.sh` sees nothing on the expected port, kills Vite, then tries to run `overmind start` on top of an already-running Overmind session. `.overmind.sock` still exists, Overmind errors, the client is dead, the old server is still on the wrong port. The user is stuck in a "kill it? y → fails again" loop. Running `overmind stop` manually produces `dial unix ./.overmind.sock: connect: no such file or directory` if the sock is already stale, adding to the confusion.
   **Fix (already applied to digital-stage-summit-2026, must be backported to template):** `start.sh` should always: (1) check for `.overmind.sock` and run `overmind stop` + `rm -f .overmind.sock` silently before doing anything else; (2) kill anything on both the server port AND the client port unconditionally (no prompts); (3) never ask the user to decide — just clean up and proceed. The interactive "Kill it? [y/N]" prompt is the source of confusion and should be removed entirely from the default flow.
@@ -39,7 +20,7 @@ Tracked improvement ideas and deferred decisions for AppyStack. Not a sprint —
 
 ### Bugs — create-appystack CLI (found 2026-03-17)
 
-- **`VITE_SOCKET_URL` not replaced during scaffolding** — `applyCustomizations` in `create-appystack/bin/index.js` replaces `PORT` and `CLIENT_URL` in `.env.example` but misses `VITE_SOCKET_URL=http://localhost:5501`. Every generated project has the wrong socket URL. Fix: add `replaceAll` for `VITE_SOCKET_URL` line. Needs test: scaffold with non-default ports, assert `.env.example` has correct `VITE_SOCKET_URL`.
+- **RESOLVED — `VITE_SOCKET_URL` not replaced during scaffolding** — `applyCustomizations` in `create-appystack/bin/index.js` now `replaceAll`s the `VITE_SOCKET_URL` line (bin/index.js:114), so generated projects get the correct socket URL.
 
 - **`.env` not auto-created from `.env.example`** — `scripts/start.sh` fails immediately if `.env` doesn't exist. The CLI copies `.env.example` but never creates `.env`. Developer has no signal to do this. Fix options: (a) CLI creates `.env` from `.env.example` automatically after scaffold, or (b) `start.sh` auto-copies `.env.example` → `.env` on first run with a visible notice. Needs decision + test.
 

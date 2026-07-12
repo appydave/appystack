@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**System context**: See [CONTEXT.md](CONTEXT.md) for purpose, core abstractions, key workflows, design decisions, non-obvious constraints, expert mental model, scope limits, and failure modes.
+**Architecture**: See [docs/architecture.md](docs/architecture.md) for the full stack reference, patterns, key design decisions (with alternatives weighed), and the maintainer mental model.
 
 **Knowledge (KDD)**: This repo keeps a learnings/patterns/decisions library at [`docs/kdd/`](docs/kdd/README.md) — **consult it before working** on env config, ports, the `create-appystack` upgrade tool, or dependency bumps; those areas have bitten before. A `.claude/rules/kdd-consult.md` gate surfaces the relevant entry automatically when you touch those files. Capture new learnings/decisions with `/lisa`.
 

@@ -1,7 +1,7 @@
 # AppyStack Architecture Guide
 
 **Version**: 1.0
-**Date**: 2026-02-14
+**Date**: 2026-07-12
 **Status**: Production-proven across 4 applications
 
 ---
@@ -58,8 +58,7 @@ AppyStack is a production-ready full-stack architecture for building real-time w
 - Structured logging with Pino and pino-http
 - Environment variable validation with Zod at startup
 - Production Docker build with multi-stage Dockerfile
-- CI/CD workflow (GitHub Actions) with lint, typecheck, build, unit, coverage, and E2E checks
-- Test coverage >80% on lines/statements
+- CI workflow (GitHub Actions) that installs, builds the shared package, then runs typecheck, lint, and tests
 - Shared ESLint, TypeScript, Vitest, and Prettier configs via @appydave/appystack-config
 
 ### What AppyStack Does NOT Include
@@ -124,7 +123,10 @@ project-root/
 │       │   ├── env.ts        # Zod environment validation
 │       │   └── logger.ts     # Pino logger
 │       ├── middleware/
-│       │   └── requestLogger.ts
+│       │   ├── requestLogger.ts
+│       │   ├── errorHandler.ts
+│       │   ├── rateLimiter.ts
+│       │   └── validate.ts
 │       ├── routes/
 │       ├── services/
 │       ├── utils/
@@ -163,37 +165,75 @@ Ports are allocated in 100s to avoid conflicts when running multiple projects:
 
 ---
 
+## Key Design Decisions
+
+The decisions that shaped AppyStack, with the alternatives weighed against each.
+
+### String replacement over a templating engine
+The CLI substitutes placeholder values (scope, ports, description) with `content.split(from).join(to)`. Zero dependencies, easy to audit, and the template stays a real, runnable project.
+- *Alternative:* Mustache / Handlebars / EJS. *Rejected:* adds a runtime dependency, forces every template file to be valid template syntax, and the handful of substitution points doesn't justify it. *Trade-off:* if placeholder strings change between versions, the upgrade code must keep pace.
+
+### Two CLI packages + one config package
+`create-appystack` (scaffold + upgrade logic), `appystack-upgrade` (thin wrapper for the clean `npx appystack-upgrade` command), and `@appydave/appystack-config` (shared configs).
+- *Alternative:* one bundled monorepo package. *Rejected:* config changes (lint/TS rules) are frequent while CLI changes are rare — coupling them forces needless version bumps. The three publish independently; publish only what changed.
+
+### File classification tiers in the upgrade tool
+Every template file is `auto` (safe overwrite) / `recipe` (skill file, diff-and-confirm) / `never` (developer-owned) / `owned` (project-specific), rather than prompting on everything or blindly overwriting.
+- *Alternative:* prompt on every changed file (`degit --force` style). *Rejected:* prohibitively noisy — developers stop reading and blanket-accept or blanket-skip. The tiers are what make `npx appystack-upgrade` safe to run on a live codebase.
+
+### Data directory at the monorepo root, not in `server/src/`
+Runtime-written files live at `<project-root>/data/`.
+- *Alternative:* `server/data/`. *Rejected:* nodemon watches `server/**`; writing data there triggers a server restart on every write → `EADDRINUSE` crashes.
+
+### Overmind for process management
+`scripts/start.sh` launches client + server as Overmind-managed processes (attach/detach, per-process restart, survives terminal close).
+- *Alternative:* the `concurrently` npm package. *Rejected for `start.sh`:* no attach/detach, no per-process restart, dies when the terminal closes, interleaved logs. (`concurrently` is still used for the plain `npm run dev` path.)
+
+### Skills bundled into the template
+Recipe, app-idea, and mochaccino ship inside the template at `.claude/skills/`, so every scaffolded app has them from commit zero.
+- *Alternative:* a separately installable skills package. *Rejected:* skills need project context (file structure, types, routes) to work — co-locating them with the code they read is the point.
+
+## Maintainer Mental Model
+
+How to think about this repo when working in it:
+
+- **This repo produces applications; it does not run as one.** There is no dev server to start here — the *template is the product*. The feedback loop for a template change is: edit root `template/` → `npm run sync` → scaffold a test app → verify. "Green in the template" is not "green when scaffolded" (the template ships `.env.example`, not `.env`) — see [`docs/kdd/learnings/dotenv-override-clobbers-env-tests.md`](kdd/learnings/dotenv-override-clobbers-env-tests.md).
+- **Recipes are intelligence, not code generation.** A recipe is a *specification* of how a class of app should be structured; the reference file in `.claude/skills/recipe/references/` is the contract. Claude reads it, understands the target project, and generates code that fits — treat the reference as the source of truth, not any one generated output.
+- **The upgrade tier system is the safety guarantee.** `auto/recipe/never/owned` is what makes `npx appystack-upgrade` safe on a production codebase: app code (`client/src/`, `server/src/`) is `never` touched, config/CI land silently as `auto`, skill files show a diff as `recipe`. Know a file's tier before running an upgrade.
+- **The three npm packages have independent lifecycles.** Config changes need a config publish; template changes need a `create-appystack` publish (auto-syncs the template); the upgrade wrapper rarely changes. Never publish all three for a one-package change.
+- **Port mismatches are a class of bug, not incidents.** Check the port registry (`~/dev/ad/brains/brand-dave/app-port-registry.md`) before assigning ports; treat a silent port mismatch as the first hypothesis when Socket.io hangs on "Loading…". See the dotenv-override and port-conflict learnings in [`docs/kdd/learnings/`](kdd/learnings/README.md).
+
 ## Technology Stack
 
 ### Core (Required)
 
 | Layer | Technology | Version | Rationale |
 |-------|-----------|---------|-----------|
-| **Frontend** | React | ^19.1.0 | Component model, ecosystem, React 19 features |
-| **Build** | Vite | ^6.0.6 | Fast HMR, ESM-native, excellent DX |
-| **Styling** | TailwindCSS | ^4.1.13 | Utility-first, v4 uses `@import` syntax |
-| **Backend** | Express | ^5.1.0 | Mature, middleware ecosystem, Express 5 async |
+| **Frontend** | React | ^19.2.7 | Component model, ecosystem, React 19 features |
+| **Build** | Vite | ^7.3.6 | Fast HMR, ESM-native, excellent DX |
+| **Styling** | TailwindCSS | ^4.3.2 | Utility-first, v4 uses `@import` syntax |
+| **Backend** | Express | ^5.0.1 | Mature, middleware ecosystem, Express 5 async |
 | **Real-time** | Socket.io | ^4.8.1 | WebSocket with fallbacks, room support |
-| **Language** | TypeScript | ^5.7.2 | Type safety across full stack |
+| **Language** | TypeScript | ^5.7.3 | Type safety across full stack |
 | **Runtime** | Node.js | >=20.0.0 | LTS, ESM support |
 
 ### Quality Tooling (Required)
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| **Vitest** | ^4.0.18 | Unit/integration testing (client + server) |
-| **Testing Library** | ^16.0.0 | React component testing |
-| **Supertest** | ^7.2.2 | HTTP endpoint testing |
-| **ESLint** | ^9.39.2 | Code linting (flat config) |
-| **Prettier** | ^3.8.1 | Code formatting |
-| **Zod** | ^4.2.1 | Environment validation, runtime schemas |
-| **Pino** | ^10.3.1 | Structured logging |
+| **Vitest** | ^4.1.10 | Unit/integration testing (client + server) |
+| **Testing Library** | ^16.3.0 | React component testing |
+| **Supertest** | ^7.0.0 | HTTP endpoint testing |
+| **ESLint** | ^9.39.5 | Code linting (flat config) |
+| **Prettier** | ^3.9.5 | Code formatting |
+| **Zod** | ^3.24.1 | Environment validation, runtime schemas |
+| **Pino** | ^9.6.0 | Structured logging |
 
 ### Security Middleware (Required for Production)
 
 | Library | Version | Purpose |
 |---------|---------|---------|
-| **Helmet** | ^8.0.0 | Security headers |
+| **Helmet** | ^8.3.0 | Security headers |
 | **Compression** | ^1.7.5 | Gzip response compression |
 | **CORS** | ^2.8.5 | Cross-origin request control |
 
@@ -209,9 +249,9 @@ Ports are allocated in 100s to avoid conflicts when running multiple projects:
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| **tsx** | ^4.19.2 | TypeScript execution (dev) |
-| **nodemon** | ^3.1.9 | Auto-restart server on changes |
-| **concurrently** | ^9.1.0 | Run client + server simultaneously |
+| **tsx** | ^4.23.0 | TypeScript execution (dev) |
+| **nodemon** | ^3.1.14 | Auto-restart server on changes |
+| **concurrently** | ^10.0.3 | Run client + server simultaneously |
 
 ---
 
@@ -303,21 +343,20 @@ export default defineConfig({
 }
 ```
 
-**Server** (`server/tsconfig.json`):
+**Server** (`server/tsconfig.json`) — extends the shared node config and adds path aliases:
 ```json
 {
+  "extends": "@appydave/appystack-config/typescript/node.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2023"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "skipLibCheck": true,
-    "strict": true,
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "declaration": true
+    "baseUrl": ".",
+    "paths": {
+      "@routes/*": ["src/routes/*"],
+      "@middleware/*": ["src/middleware/*"],
+      "@config/*": ["src/config/*"],
+      "@services/*": ["src/services/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
@@ -406,32 +445,38 @@ Every server uses Zod to validate environment variables at startup:
 
 ```typescript
 // server/src/config/env.ts
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
 import { z } from 'zod';
+
+// Precedence must flip between test and runtime:
+//  - Under test, values a test sets on process.env must win (override OFF).
+//  - At runtime, .env must win over any stale or injected PORT (override ON).
+const underTest = process.env.VITEST === 'true' || process.env.NODE_ENV === 'test';
+dotenv.config({ path: path.resolve(process.cwd(), '..', '.env'), override: !underTest });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.coerce.number().int().positive().default(5201),
-  CLIENT_URL: z.string().url().default('http://localhost:5200'),
+  PORT: z.coerce.number().default(5501),
+  CLIENT_URL: z.string().default('http://localhost:5500'),
 });
 
-const parsedEnv = envSchema.safeParse(process.env);
+const parsed = envSchema.safeParse(process.env);
 
-if (!parsedEnv.success) {
-  console.error('Invalid environment variables:');
-  console.error(JSON.stringify(parsedEnv.error.format(), null, 2));
-  throw new Error('Invalid environment variables');
+if (!parsed.success) {
+  console.error('Invalid environment variables:', parsed.error.flatten().fieldErrors);
+  process.exit(1);
 }
 
 export const env = {
-  ...parsedEnv.data,
-  isDevelopment: parsedEnv.data.NODE_ENV === 'development',
-  isProduction: parsedEnv.data.NODE_ENV === 'production',
-  isTest: parsedEnv.data.NODE_ENV === 'test',
+  ...parsed.data,
+  isDevelopment: parsed.data.NODE_ENV === 'development',
+  isProduction: parsed.data.NODE_ENV === 'production',
+  isTest: parsed.data.NODE_ENV === 'test',
 };
-
-export type Env = typeof env;
 ```
+
+> **Note**: See `docs/kdd/learnings/dotenv-override-clobbers-env-tests.md` for why `override` is conditional.
 
 **Benefits**: Catches config errors at startup (not in production), provides TypeScript autocomplete, self-documents required variables.
 
@@ -615,27 +660,33 @@ on:
   pull_request:
     branches: [main]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
-
 jobs:
-  test:
+  ci:
+    name: Lint, typecheck, test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [20.x]
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm run build
-      - run: npm test
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build shared
+        run: npm run build --workspace=shared
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
 ```
 
 ---
@@ -1005,52 +1056,48 @@ To make the repo discoverable:
 2. **GitHub Template** — In repo settings, check "Template repository" to enable "Use this template" button (applicable once a template app is added)
 3. **README badges** — Add npm version badge: `[![npm](https://img.shields.io/npm/v/@appydave/appystack-config)](https://www.npmjs.com/package/@appydave/appystack-config)`
 
-### Future: CLI Scaffolder (`create-appystack`)
+### CLI Scaffolder (`create-appystack`) — shipped
 
-The `create-*` pattern is the dominant discovery mechanism for boilerplates. Users would run:
+The `create-*` pattern is the dominant discovery mechanism for boilerplates. `create-appystack` is
+published on npm (v0.4.14). Users run:
 
 ```bash
-npm create appystack my-new-app
+npx create-appystack@latest my-new-app
 ```
 
-This requires publishing a separate `create-appystack` package that:
-1. Prompts for project name, port range, optional features
+The scaffolder:
+1. Prompts for project name, scope, port range, and description
 2. Copies template files with variable substitution
-3. Runs `npm install`
-4. Initializes git
+3. Sets up the client/server/shared workspaces
+4. Ships an `appystack-upgrade` bin so consumer apps can pull in later template improvements
 
-This is a separate effort from the config package. The config package should be published first, then the scaffolder can depend on it.
+It also depends on the published `@appydave/appystack-config` package for shared ESLint/TS/Vitest/Prettier configs.
 
 ---
 
 ## Roadmap
 
-### Implemented (Feb 2026)
+### Implemented
 
 - Core monorepo architecture (npm workspaces)
 - Full quality tooling (Vitest, ESLint 9, Prettier)
-- CI/CD (GitHub Actions)
+- CI (GitHub Actions)
 - Environment validation (Zod)
 - Structured logging (Pino)
-- Shared config package (local `file:` install)
+- Shared config package `@appydave/appystack-config` — published to npm (v1.0.3)
+- Consumer projects migrated from `file:` to npm install
+- `create-appystack` CLI scaffolder — published to npm (v0.4.14)
+- `appystack-upgrade` bin for pulling template improvements into consumer apps
+- MSW for API mocking in tests (msw ^2.15.0)
+- Request tracing with request IDs (`middleware/requestLogger` `genReqId`)
 
-### Next Up
-
-- Rename config package to `@appydave/appystack-config`
-- Publish to npm registry (public)
-- Migrate consumer projects from `file:` to npm install
-- Add GitHub topics and template repo settings
-
-### Planned (Q2-Q3 2026)
+### Planned
 
 - Feature-based frontend architecture (from bulletproof-react)
 - ServiceResponse pattern for consistent API responses
 - Advanced error handling system (AppError classes)
-- Request tracing with request IDs
-- MSW for comprehensive API mocking in tests
 - OpenAPI auto-generation from Zod schemas
 - Shared UI component library
-- `create-appystack` CLI scaffolder
 
 ---
 

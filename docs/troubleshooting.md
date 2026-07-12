@@ -365,17 +365,16 @@ By default, `dotenv` never overwrites a `process.env` value that is already set.
 
 `server/src/config/env.ts`:
 ```typescript
-import { fileURLToPath } from 'node:url';
-import { dirname } from 'node:path';
-import path from 'node:path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Fix 1: resolve .env from monorepo root, not process.cwd()
-// Fix 2: override: true ensures .env wins over any inherited shell/tmux PORT variable
-dotenv.config({ path: path.resolve(__dirname, '../../../.env'), override: true });
+// Fix 1: resolve .env from the monorepo root, not process.cwd() (which is server/ under workspaces)
+// Fix 2: override flips by context — ON at runtime so .env wins over any inherited shell/tmux
+//        PORT; OFF under test so a test can inject its own env values.
+const underTest = process.env.VITEST === 'true' || process.env.NODE_ENV === 'test';
+dotenv.config({ path: path.resolve(process.cwd(), '..', '.env'), override: !underTest });
 ```
+
+> The `override` flag is intentionally conditional — an unconditional `override: true` makes a
+> scaffold's `.env` clobber test env and turns 6/7 env tests red for consumers. The canonical
+> record of this is [`docs/kdd/learnings/dotenv-override-clobbers-env-tests.md`](kdd/learnings/dotenv-override-clobbers-env-tests.md).
 
 `scripts/start.sh` — before `overmind start`:
 ```bash

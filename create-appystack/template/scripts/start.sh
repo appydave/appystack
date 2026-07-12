@@ -41,7 +41,7 @@ echo ""
 
 if [[ -n "${PORT:-}" && "$PORT" != "$SERVER_PORT" ]]; then
   echo "WARNING: Shell has PORT=$PORT but .env says PORT=$SERVER_PORT"
-  echo "  env.ts uses override:true so .env wins — but check your shell config."
+  echo "  env.ts enables dotenv override at runtime so .env wins — but check your shell config."
   echo ""
 fi
 

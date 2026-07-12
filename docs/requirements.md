@@ -17,6 +17,8 @@
 | **Git** | 2.x | Latest | `git --version` |
 | **gitleaks** | Any | Latest | `brew install gitleaks` |
 
+> **Note**: 20.0.0 is the recommended floor. The `create-appystack` package's actual `engines` floor is `>=18`, so Node 18.x will run but 20.x LTS is recommended.
+
 ### Knowledge Prerequisites
 
 - TypeScript fundamentals
@@ -76,11 +78,11 @@
 Install at root level:
 
 ```bash
-npm install --save-dev eslint@^9.39.2 @eslint/js@^9.39.2 \
-  @typescript-eslint/eslint-plugin@^8.55.0 @typescript-eslint/parser@^8.55.0 \
+npm install --save-dev eslint@^9.39.5 @eslint/js@^9.39.5 \
+  @typescript-eslint/eslint-plugin@^8.63.0 @typescript-eslint/parser@^8.63.0 \
   eslint-config-prettier@^10.1.8 eslint-plugin-react@^7.37.5 \
-  eslint-plugin-react-hooks@^7.0.1 globals@^17.3.0 \
-  prettier@^3.8.1
+  eslint-plugin-react-hooks@^5.2.0 globals@^15.15.0 \
+  prettier@^3.9.5
 ```
 
 - [ ] Create `eslint.config.js` (flat config - NOT `.eslintrc.*`)
@@ -98,15 +100,15 @@ npm install --save-dev eslint@^9.39.2 @eslint/js@^9.39.2 \
 Install in client workspace:
 
 ```bash
-npm install --save-dev vitest@^4.0.18 @vitest/ui@^4.0.18 @vitest/coverage-v8@^4.0.18 \
+npm install --save-dev vitest@^4.1.10 @vitest/ui@^4.1.10 @vitest/coverage-v8@^4.1.10 \
   @testing-library/react@^16.3.2 @testing-library/jest-dom@^6.9.1 \
-  @testing-library/user-event@^14.6.1 jsdom@^28.0.0 -w client
+  @testing-library/user-event@^14.6.1 jsdom@^29.1.1 -w client
 ```
 
 Install in server workspace:
 
 ```bash
-npm install --save-dev vitest@^4.0.18 @vitest/ui@^4.0.18 @vitest/coverage-v8@^4.0.18 \
+npm install --save-dev vitest@^4.1.10 @vitest/ui@^4.1.10 @vitest/coverage-v8@^4.1.10 \
   supertest@^7.2.2 @types/supertest@^6.0.3 -w server
 ```
 
@@ -122,7 +124,7 @@ npm install --save-dev vitest@^4.0.18 @vitest/ui@^4.0.18 @vitest/coverage-v8@^4.
 #### 5c. Zod Environment Validation
 
 ```bash
-npm install zod@^4.2.1 -w server
+npm install zod@^3.24.1 -w server
 ```
 
 - [ ] Create `server/src/config/env.ts` with Zod schema
@@ -133,7 +135,7 @@ npm install zod@^4.2.1 -w server
 #### 5d. Pino Structured Logging
 
 ```bash
-npm install pino@^10.3.1 pino-pretty@^13.1.3 pino-http@^11.0.0 -w server
+npm install pino@^9.6.0 pino-pretty@^13.1.3 pino-http@^10.4.0 -w server
 ```
 
 - [ ] Create `server/src/config/logger.ts`
@@ -399,29 +401,29 @@ All AppyStack projects should use consistent dependency versions:
 
 | Package | Version | Notes |
 |---------|---------|-------|
-| react | ^19.1.0 | React 19 with new features |
-| react-dom | ^19.1.0 | Must match React |
-| vite | ^6.0.6 | Or ^7.x for newer projects |
-| express | ^5.1.0 | Express 5 with async support |
+| react | ^19.2.7 | React 19 with new features |
+| react-dom | ^19.2.7 | Must match React |
+| vite | ^7.3.6 | Or ^7.x for newer projects |
+| express | ^5.0.1 | Express 5 with async support |
 | socket.io | ^4.8.1 | Server-side |
 | socket.io-client | ^4.8.1 | Client-side |
-| typescript | ^5.7.2 | Across all workspaces |
+| typescript | ^5.7.3 | Across all workspaces |
 
 ### Quality Tooling
 
 | Package | Version | Notes |
 |---------|---------|-------|
-| vitest | ^4.0.18 | Testing framework |
+| vitest | ^4.1.10 | Testing framework |
 | @testing-library/react | ^16.3.2 | Component testing |
 | @testing-library/jest-dom | ^6.9.1 | DOM matchers |
 | supertest | ^7.2.2 | API testing |
-| eslint | ^9.39.2 | Flat config only |
-| @eslint/js | ^9.39.2 | Must match ESLint major |
-| prettier | ^3.8.1 | Code formatting |
-| zod | ^4.2.1 | Schema validation |
-| pino | ^10.3.1 | Structured logging |
+| eslint | ^9.39.5 | Flat config only |
+| @eslint/js | ^9.39.5 | Must match ESLint major |
+| prettier | ^3.9.5 | Code formatting |
+| zod | ^3.24.1 | Schema validation |
+| pino | ^9.6.0 | Structured logging |
 | pino-pretty | ^13.1.3 | Dev log formatting |
-| pino-http | ^11.0.0 | HTTP request logging |
+| pino-http | ^10.4.0 | HTTP request logging |
 
 ### Security & Middleware
 
@@ -430,7 +432,7 @@ All AppyStack projects should use consistent dependency versions:
 | helmet | ^8.0.0 |
 | compression | ^1.7.5 |
 | cors | ^2.8.5 |
-| dotenv | ^16.4.7 |
+| dotenv | ^17.4.2 |
 
 ---
 
