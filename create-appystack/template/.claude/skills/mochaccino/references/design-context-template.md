@@ -8,43 +8,50 @@ Mochaccino run, or whenever your design system is settled.
 
 ## Brand Colours
 
+Load the `brand-appydave` skill for the canonical AppyDave palette. The core tokens are:
+
 | Token | Value | Use |
 |-------|-------|-----|
-| `--color-primary` | `#______` | Primary brand colour, CTAs, active states |
-| `--color-primary-hover` | `#______` | Hover on primary elements |
-| `--color-background` | `#______` | Page background |
-| `--color-foreground` | `#______` | Primary text, headings |
-| `--color-muted-foreground` | `#______` | Secondary text, labels |
-| `--color-border` | `#______` | Borders, dividers |
-| `--color-card` | `#______` | Card/panel backgrounds |
-| `--color-success` | `#______` | Success states |
-| `--color-warning` | `#______` | Warnings |
-| `--color-destructive` | `#______` | Errors, destructive actions |
+| `--brand-brown` | `#342d2d` | Primary text, headings, structure |
+| `--brand-gold` | `#ccba9d` | Warm secondary, borders, subtle highlights |
+| `--brand-yellow` | `#ffde59` | Primary CTA, buttons, badges |
+| `--brand-amber` | `#c8841a` | Numbered sequences, one-off accents |
+| `--brand-muted` | `#7a6e5e` | Supporting body text, secondary labels |
+| `--brand-near-white` | `#faf5ec` | Primary page background |
+| `--brand-surface` | `#f0ebe4` | Secondary surface, section alternates |
+| `--brand-linen` | `#e8e0d4` | Tertiary surface, card backgrounds |
+| `--brand-border` | `#d4cdc4` | Dividers, table borders |
+| `--brand-chrome` | `#1a1515` | Dark chrome (not pure black) |
+| `--brand-dark-surface` | `#25201e` | Dark sections, contrast beats |
+| `--brand-blue` | `#2E91FC` | Cool accent — links, small elements only |
 
-_Add or remove rows to match your actual design system._
+For semantic colors (status, stage, severity), contrast pairings, and anti-patterns,
+see the full reference: `brand-dave/skills/brand-appydave/references/brand-style-guide.md`
 
----
+_Override rows below for app-specific deviations. Delete rows that match the brand defaults._
 
-## Dark Mode Colours (if supported)
-
-| Token | Value |
-|-------|-------|
-| `--color-background` | `#______` |
-| `--color-card` | `#______` |
-| `--color-foreground` | `#______` |
-| `--color-muted-foreground` | `#______` |
-| `--color-border` | `#______` |
-| `--color-primary` | `#______` |
+| Token | Value | Use |
+|-------|-------|-----|
+| `--color-primary` | `#c8841a` | App primary — amber for app chrome accents |
+| `--color-primary-hover` | `#b0730f` | Hover on primary elements |
+| `--color-background` | `#faf5ec` | Page background (brand near-white) |
+| `--color-foreground` | `#342d2d` | Primary text (brand brown) |
+| `--color-muted-foreground` | `#7a6e5e` | Secondary text (brand muted) |
+| `--color-border` | `#d4cdc4` | Borders (brand border) |
+| `--color-card` | `#f0ebe4` | Card backgrounds (brand surface) |
+| `--color-success` | `#22c55e` | Success states |
+| `--color-warning` | `#f59e0b` | Warnings |
+| `--color-destructive` | `#dc2626` | Errors, destructive actions |
 
 ---
 
 ## Visual Conventions
 
-- **Font**: [e.g. System sans-serif / Inter / custom]
+- **Font**: Bebas Neue (display), Oswald (headlines, uppercase), Roboto (body), Roboto Mono (code)
 - **Border radius**: [e.g. 4px inputs, 6px buttons, 8px cards]
-- **Shadows**: [e.g. light — `0 1px 3px rgba(0,0,0,0.08)` for cards]
-- **Tables**: [e.g. striped rows / hover highlight / navy headings]
-- **Badges / status chips**: [describe colour conventions for statuses]
+- **Shadows**: Light — `0 1px 3px rgba(0,0,0,0.08)` for cards
+- **Tables**: Warm header background, hover highlight, brand-border dividers
+- **Badges / status chips**: Yellow bg + brown text for CTA, amber text for sequences, semantic colors for status
 
 ---
 
@@ -59,21 +66,6 @@ _Add or remove rows to match your actual design system._
 
 ---
 
-## Entity Data Location
+## Notes
 
-Where does real data live in this project?
-
-- [ ] `data/[entity]/[id].json` — JSON file persistence (file-crud recipe)
-- [ ] `shared/src/types.ts` — TypeScript interfaces only (no file data)
-- [ ] Database — describe location of seed/fixture data: `__________`
-- [ ] Other: `__________`
-
----
-
-## Mockup Conventions (project-specific)
-
-_Override Mochaccino defaults here if needed._
-
-- Default viewport: [1280px desktop / 375px mobile / other]
-- Banner style: [default / custom colours]
-- Dark mode toggle: [include by default / only when relevant / never]
+_Add app-specific design decisions here._
