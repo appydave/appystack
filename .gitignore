@@ -36,3 +36,10 @@ raw-ralph.txt
 !create-appystack/template/.claude/
 !create-appystack/template/.claude/**
 .playwright-mcp/
+
+# Template build/test artifacts. The template ships its ignore file as `gitignore`
+# (renamed for npm-pack), which stopped it ignoring these paths in THIS repo — so
+# restore the intent at the root and stop run/test artifacts leaking as untracked.
+template/package-lock.json
+template/test-results/
+create-appystack/template/package-lock.json
