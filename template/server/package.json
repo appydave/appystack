@@ -15,6 +15,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@appydave/core": "^0.1.0",
     "@appystack-template/shared": "*",
     "compression": "^1.7.5",
     "cors": "^2.8.5",
