@@ -15,6 +15,10 @@ const envSchema = z.object({
   // TODO: Update defaults for your project
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(5501),
+  // Bind address. Defaults to loopback so a dev server is NOT exposed to the
+  // local network (café/hotel wifi) by accident. Set HOST=0.0.0.0 to serve all
+  // interfaces — e.g. to reach this machine's app from another over Tailscale.
+  HOST: z.string().default('127.0.0.1'),
   CLIENT_URL: z.string().default('http://localhost:5500'),
 });
 
@@ -27,7 +31,7 @@ if (!parsed.success) {
 
 /**
  * Validated server environment configuration loaded from .env via Zod.
- * Includes NODE_ENV, PORT, CLIENT_URL, and derived boolean flags (isDevelopment, isProduction, isTest).
+ * Includes NODE_ENV, PORT, HOST, CLIENT_URL, and derived boolean flags (isDevelopment, isProduction, isTest).
  */
 export const env = {
   ...parsed.data,

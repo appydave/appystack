@@ -115,8 +115,8 @@ function cleanupPort(port: number | string): void {
 // test files import this module. Tests use supertest with app directly.
 if (!env.isTest) {
   cleanupPort(env.PORT);
-  httpServer.listen(env.PORT, () => {
-    logger.info(`Server running on http://localhost:${env.PORT}`);
+  httpServer.listen(env.PORT, env.HOST, () => {
+    logger.info(`Server running on http://localhost:${env.PORT} (bound to ${env.HOST})`);
     logger.info(`Client URL: ${env.CLIENT_URL}`);
   });
 }
