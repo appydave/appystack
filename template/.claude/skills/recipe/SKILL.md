@@ -77,24 +77,16 @@ Recipes are:
 
 ## Domain DSLs
 
-Domain DSLs are structured markdown files that define every entity in a specific application domain — fields, types, namish fields, relationships, entity classification, and suggested nav mapping. They are the **input** to the `file-crud` recipe (and optionally `nav-shell`).
+A domain DSL defines an app's entities (fields, namish field, relationships, nav mapping) — the **input** to the `file-crud` recipe (and optionally `nav-shell`). Write one using the format spec in [`references/domain-dsl.md`](./references/domain-dsl.md).
 
-**Available domain DSLs:**
+**Worked-example domains now live in the `appychef` plugin** — one canonical home instead of a copy stamped into every scaffolded app. Install once (`/plugin install appychef@appydave`), then ask `appychef:recipe` for a domain to load or adapt:
 
 | Domain | Entities | Application type |
 |--------|----------|-----------------|
 | `care-provider-operations` | Company, Site, User, Participant, Incident, Moment | NDIS/disability care management |
 | `youtube-launch-optimizer` | Channel, Video, Script, ThumbnailVariant, LaunchTask | YouTube content production pipeline |
 
-**Domain files:**
-- `domains/care-provider-operations.md` — 6-entity residential care domain (NDIS context, Australian)
-- `domains/youtube-launch-optimizer.md` — 5-entity YouTube production domain
-- `references/domain-dsl.md` — format spec: how to write a new domain DSL from scratch
-
-**When to use a domain DSL:**
-- When building a `file-crud` app, load a domain DSL instead of collecting entity details manually
-- When the app's domain closely matches an existing DSL — use it as-is or adapt it
-- When the domain is new — use `references/domain-dsl.md` to write one first, then run the recipe
+**When building a `file-crud` app:** pull a domain from appychef if one fits (use it as-is or adapt it), or write your own from the format spec — instead of collecting entity details manually.
 
 ---
 

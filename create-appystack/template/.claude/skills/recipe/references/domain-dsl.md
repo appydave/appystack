@@ -2,9 +2,7 @@
 
 A domain DSL is a structured markdown file that fully defines the entities in a specific application domain. It is the primary input to the `file-crud` recipe (and optionally `nav-shell`). Instead of answering entity questions interactively, you write the domain once and load it.
 
-**Location**: `template/.claude/skills/recipe/domains/{domain-name}.md`
-
-**Examples**: `domains/care-provider-operations.md`, `domains/youtube-launch-optimizer.md`
+**Worked examples**: the `appychef` plugin (`appychef:recipe`) ships `care-provider-operations` and `youtube-launch-optimizer` — load one to see the format in full.
 
 ---
 

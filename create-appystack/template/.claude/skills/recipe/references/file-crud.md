@@ -241,10 +241,12 @@ The file-based persistence layer also enables a local-first workflow:
 
 ## Domain DSL Examples
 
-Domain-specific entity definitions for common application types. See the `domains/` folder:
+Ready-made domain definitions now live in the **appychef** plugin (`appychef:recipe`) — one
+canonical home instead of a copy stamped into every app. Install `appychef@appydave`, then ask
+appychef for a domain:
 
-- [`domains/care-provider-operations.md`](../domains/care-provider-operations.md) — NDIS/disability care: Company, Site, User, Participant, Incident, Moment (6 entities)
-- [`domains/youtube-launch-optimizer.md`](../domains/youtube-launch-optimizer.md) — YouTube content production: Channel, Video, Script, ThumbnailVariant, LaunchTask (5 entities)
+- `care-provider-operations` — NDIS/disability care: Company, Site, User, Participant, Incident, Moment (6 entities)
+- `youtube-launch-optimizer` — YouTube content production: Channel, Video, Script, ThumbnailVariant, LaunchTask (5 entities)
 
 Each domain DSL defines: entity names, namish fields, key domain fields, relationships, entity classification, and suggested nav mapping. Load one as-is, adapt it, or write your own — see [`references/domain-dsl.md`](./domain-dsl.md) for the format spec.
 
