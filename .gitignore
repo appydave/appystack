@@ -43,3 +43,6 @@ raw-ralph.txt
 template/package-lock.json
 template/test-results/
 create-appystack/template/package-lock.json
+
+# rotated by the log-rotate job — never tracked
+scripts/.log-rotate.out.log

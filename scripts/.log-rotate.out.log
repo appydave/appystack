@@ -1,3 +1,0 @@
-rotate-launchd-logs :: threshold 25 MB, keep 1
-rotate-launchd-logs :: real freed this pass (df delta): 0 MB
-  note: with KEEP=1, growth is now capped at ~50 MB per log.
