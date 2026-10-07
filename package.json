@@ -1,0 +1,10 @@
+{
+  "name": "appystack-repo",
+  "private": true,
+  "description": "Repo-root test runner for the AppyStack packages (create-appystack + template). Not a workspace root.",
+  "scripts": {
+    "test": "npm run test:create-appystack && npm run test:template",
+    "test:create-appystack": "cd create-appystack && (test -d node_modules || npm ci --no-audit --no-fund) && npm test",
+    "test:template": "cd template && (test -d node_modules || npm install --no-audit --no-fund) && npm run build -w shared && npm test"
+  }
+}
