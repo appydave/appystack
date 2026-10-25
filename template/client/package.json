@@ -34,8 +34,10 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
     "@vitest/coverage-v8": "^4.1.10",
+    "express": "^5.0.1",
     "jsdom": "^29.1.1",
     "msw": "^2.15.0",
+    "socket.io": "^4.8.1",
     "tailwindcss": "^4.3.2",
     "vite": "^7.3.6",
     "vitest": "^4.1.10"

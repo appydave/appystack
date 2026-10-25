@@ -130,6 +130,12 @@ function applyCustomizations(root, { name, scope, serverPort, clientPort, desc }
   viteConfig = replaceAll(viteConfig, `target: 'http://localhost:${oldServerPort}'`, `target: 'http://localhost:${serverPort}'`);
   writeFile(root, 'client/vite.config.ts', viteConfig);
 
+  // playwright.config.ts — the e2e webServer and baseURL
+  let playwrightConfig = readFile(root, 'playwright.config.ts');
+  playwrightConfig = replaceAll(playwrightConfig, `const CLIENT_PORT = ${oldClientPort};`, `const CLIENT_PORT = ${clientPort};`);
+  playwrightConfig = replaceAll(playwrightConfig, `const SERVER_PORT = ${oldServerPort};`, `const SERVER_PORT = ${serverPort};`);
+  writeFile(root, 'playwright.config.ts', playwrightConfig);
+
   // client/index.html
   let indexHtml = readFile(root, 'client/index.html');
   indexHtml = replaceAll(indexHtml, `<title>${oldTitle}</title>`, `<title>${name}</title>`);

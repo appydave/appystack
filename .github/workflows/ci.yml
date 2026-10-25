@@ -8,7 +8,7 @@ on:
 
 jobs:
   ci:
-    name: Lint, typecheck, test
+    name: Format, typecheck, lint, test, coverage
     runs-on: ubuntu-latest
 
     steps:
@@ -16,7 +16,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -25,6 +25,10 @@ jobs:
 
       - name: Build shared
         run: npm run build --workspace=shared
+        working-directory: template
+
+      - name: Format
+        run: npm run format:check
         working-directory: template
 
       - name: Typecheck
@@ -38,3 +42,48 @@ jobs:
       - name: Test
         run: npm test
         working-directory: template
+
+      - name: create-appystack tests
+        run: npm ci && npm test
+        working-directory: create-appystack
+
+      - name: Coverage thresholds (server, client)
+        run: npm run test:coverage
+        working-directory: template
+
+  e2e:
+    name: Browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: template
+
+      - name: Build shared
+        run: npm run build --workspace=shared
+        working-directory: template
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+        working-directory: template
+
+      - name: Playwright (starts its own server and client)
+        run: npm run test:e2e
+        working-directory: template
+
+      - name: Keep the failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: template/test-results/
+          if-no-files-found: ignore
