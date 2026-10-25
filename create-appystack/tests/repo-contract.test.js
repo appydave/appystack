@@ -77,11 +77,16 @@ describe('Feature: pitfalls the notes say must stay', () => {
     expect(readJson('template/package.json').scripts.dev).toContain('--kill-others');
 
     const index = read('template/server/src/index.ts');
-    const cleanup = index.search(/^\s*cleanupPort\(env\.PORT\);/m);
+    const onError = index.search(/^\s*httpServer\.on\('error', onListenError\(env\.PORT\)\);/m);
     const listen = index.search(/^\s*httpServer\.listen\(env\.PORT/m);
-    expect(cleanup).toBeGreaterThan(-1);
+    expect(onError).toBeGreaterThan(-1);
     expect(listen).toBeGreaterThan(-1);
-    expect(cleanup).toBeLessThan(listen);
+    expect(onError).toBeLessThan(listen);
+  });
+
+  it('Scenario: given the server source, when it starts, then it never kills the process holding its port', () => {
+    const server = ['index.ts', 'listenError.ts'].map((f) => read(`template/server/src/${f}`)).join('\n');
+    expect(server).not.toMatch(/cleanupPort|kill -9|lsof -ti/);
   });
 
   it('Scenario: given start.sh with a stale .overmind.sock, when it checks liveness, then it greps for running and quits the daemon before removing the socket', () => {

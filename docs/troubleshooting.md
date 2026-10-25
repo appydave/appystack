@@ -54,7 +54,7 @@ No action required. Confirm TypeScript works: `npm run typecheck`
 **What the template now does automatically**
 
 1. **`strictPort: true`** in `client/vite.config.ts` — Vite fails immediately with a clear error instead of silently bumping to the next port
-2. **`cleanupPort()`** in `server/src/index.ts` — the Express server kills any process holding its port before binding
+2. **`onListenError()`** in `server/src/listenError.ts` — if the server's port is taken it prints who to look for (`lsof -i :PORT`) and exits 1; it never kills the holder
 3. **`--kill-others`** in the root `dev` script — all children (Vite, nodemon) die when any one exits, including on Ctrl+C
 
 **Symptoms if still occurring**
@@ -66,7 +66,7 @@ Error: Port 5500 is already in use
 
 **Cause**
 
-A previous dev session left orphaned processes. The `cleanupPort()` ran but something held on (e.g. the port is used by a completely different app).
+A previous dev session left orphaned processes, or the port is used by a completely different app. The server refuses to start rather than kill it.
 
 **Fix — Kill manually**
 

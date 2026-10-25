@@ -11,7 +11,7 @@ Read the matching learning FIRST; it will save you from re-introducing a known b
 | If you're touching… | Read first |
 |---|---|
 | `server/src/config/env.ts`, `.env*` | [`learnings/dotenv-override-clobbers-env-tests.md`](../../docs/kdd/learnings/dotenv-override-clobbers-env-tests.md) — `dotenv override:true` makes a scaffold's `.env` clobber test env → 6/7 env tests red for consumers (green in the template, so easy to miss) |
-| `vite.config.ts`, `server/src/index.ts`, ports | [`learnings/port-conflict-defence.md`](../../docs/kdd/learnings/port-conflict-defence.md) — `strictPort` + `--kill-others` + `cleanupPort()`; never rely on Vite's silent port bump |
+| `vite.config.ts`, `server/src/index.ts`, ports | [`learnings/port-conflict-defence.md`](../../docs/kdd/learnings/port-conflict-defence.md) — `strictPort` + `--kill-others` + fail-fast `onListenError` (never kill the holder); never rely on Vite's silent port bump |
 | any `package.json` dep bump | [`learnings/config-peerdeps-gate-template-upgrades.md`](../../docs/kdd/learnings/config-peerdeps-gate-template-upgrades.md) — a template dep past `config/`'s peer range fails ERESOLVE / breaks consumer installs. Also [`decisions/adr-001-hold-eslint-10.md`](../../docs/kdd/decisions/adr-001-hold-eslint-10.md) |
 | `config/**` (the published config) | peer ranges are the fleet-wide upgrade ceiling — bumping them is a coordinated republish. See the config-peerdeps learning above |
 | `create-appystack/` upgrade tool, `classify.js`, `appystack.json` | [`learnings/retrofit-scaffold-overwrite-bug.md`](../../docs/kdd/learnings/retrofit-scaffold-overwrite-bug.md) — retrofit scaffolds silently overwrite scaffold-time values; test against a *retrofit* app, not just fresh |

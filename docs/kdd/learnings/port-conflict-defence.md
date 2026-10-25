@@ -47,7 +47,7 @@ server: { port: 5500, strictPort: true, proxy: { /* ... */ } }
 "dev": "concurrently --kill-others -n server,client ..."
 ```
 
-**3. `cleanupPort()`** in `server/src/index.ts` — server kills any orphan squatting on its port before binding:
+**3. (superseded 2026-10-25, see below)** `cleanupPort()` in `server/src/index.ts` killed any orphan squatting on its port before binding:
 ```typescript
 import { execSync } from 'node:child_process';
 function cleanupPort(port: number | string): void {
@@ -63,6 +63,15 @@ function cleanupPort(port: number | string): void {
 }
 cleanupPort(env.PORT); // before server.listen()
 ```
+
+### Update 2026-10-25: part 3 is now fail-fast, not kill
+
+The Spaghetti gate G00p found `cleanupPort()` was a blocker: `kill -9` on every PID holding `PORT`, at
+every non-test start, production included. It can kill an earlier instance mid-write or an unrelated
+app. Part 3 is now `httpServer.on('error', onListenError(env.PORT))` (`server/src/listenError.ts`):
+on `EADDRINUSE` it prints `Port N is already in use. Find the process with: lsof -i :N …` and exits 1,
+so `--kill-others` stops the client too. The intent (a loud failure, never two shifted instances) is
+unchanged; only "kill the holder" is gone.
 
 ## Prevention
 

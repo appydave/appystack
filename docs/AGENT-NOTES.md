@@ -45,8 +45,10 @@ Only what the code cannot tell you. Each entry has its full story in `docs/kdd/l
 - **Express 5 `req.query` is getter-only.** Validation middleware must `Object.assign(req.query, …)`;
   `req.query = …` throws at runtime. (express5-req-query-readonly)
 - **Port-conflict defence is three parts; keep all of them:** `strictPort: true` in the client Vite
-  config, `--kill-others` in the root `dev` script, and `cleanupPort()` before `listen` in the server.
-  Without them, an orphaned Vite moves to the server's port and the server dies with `EADDRINUSE`.
+  config, `--kill-others` in the root `dev` script, and the server's fail-fast `onListenError` handler
+  registered before `listen`. Without them, an orphaned Vite moves to the server's port and the server
+  dies with a bare `EADDRINUSE`. The server must never kill the port's holder: the old `cleanupPort()`
+  ran `kill -9` on it at every start and was removed in 2026-10 (gate G00p).
   (port-conflict-defence)
 - **`overmind status` exits 0 even when every process is dead.** The liveness check in
   `scripts/start.sh` must grep the status for `running`, and must `overmind quit` a dead daemon rather
