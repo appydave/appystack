@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "paths": {
+      "@client/*": ["./client/src/*"],
+      "@server/*": ["./server/src/*"],
+      "@shared/*": ["./shared/src/*"],
+      "@root/*": ["./*"]
+    }
+  },
+  "include": ["scripts", "e2e", "playwright.config.ts"]
+}

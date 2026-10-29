@@ -1,0 +1,21 @@
+{
+  "path": ["."],
+  "mode": "weak",
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.git/**",
+    "**/.claude/**",
+    "**/create-appystack/template/**",
+    "**/package-lock.json",
+    "**/playwright-report/**",
+    "**/test-results/**",
+    "**/coverage/**",
+    "**/.quality-results/**",
+    "**/*.css",
+    "**/*.md"
+  ],
+  "reporters": ["console", "json"],
+  "output": ".quality-results/jscpd",
+  "failOnEmpty": true
+}

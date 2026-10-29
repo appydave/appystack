@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/knip/schema.json",
+  "includeEntryExports": true,
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.ts", "lint/**/*.{js,mjs}", "e2e/**/*.test.ts", "playwright.config.ts"],
+      "project": ["scripts/**", "lint/**", "e2e/**", "*.{js,ts,mjs}!"],
+      "playwright": false
+    },
+    "client": {
+      "entry": ["src/main.tsx!"],
+      "project": ["src/**/*.{ts,tsx}!", "!src/**/*.test.{ts,tsx}!", "!src/**/test/**!"]
+    },
+    "server": {
+      "entry": ["src/index.ts!"],
+      "project": ["src/**/*.ts!", "!src/**/*.test.{ts,tsx}!", "!src/**/test/**!"]
+    },
+    "shared": {
+      "entry": ["src/index.ts!"],
+      "project": ["src/**/*.ts!", "!src/**/*.test.{ts,tsx}!", "!src/**/test/**!"]
+    }
+  }
+}
