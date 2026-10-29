@@ -11,12 +11,12 @@ This file only records what is in this repo.
 
 - **Landed on `main`:** `27ad3bd` (G00p, fail-fast `onListenError`, no more `kill -9`) and `7c43d6a`
   (G00a/G00b/G01: CI runs format, coverage and e2e; tests hit the real modules). Don't redo them.
-- **Step 3 (tooling) is not committed.** If any of it shows up as untracked files under `template/`
-  (`lint/`, `oxlint.config.ts`, `stylelint.config.mjs`, `.jscpd.json`, `knip.json`,
-  `.dependency-cruiser*.cjs`, `tsconfig.json`, plus new devDeps in `template/package.json`), it is that
-  WIP, not finished work.
-- **Before committing any of it:** `oxlint-plugin-anti-slop` builds itself with pnpm on install, and the
-  lockfile resolves it as `git+ssh://`. Add a pnpm install before `npm ci` in both
+- **Step 3 (tooling) is parked on branch `spaghetti/step3-wip`** (`49b9032`): `template/lint/`,
+  the oxlint, stylelint, jscpd, knip and dependency-cruiser configs, the root `tsconfig.json`, and new
+  devDeps. It is not green and not merged. Hooks, npm scripts, test-trust and the ESLint wiring are
+  still to do.
+- **Before merging it:** `oxlint-plugin-anti-slop` builds itself with pnpm on install, and a local
+  lockfile resolved it as `git+ssh://`. Add a pnpm install before `npm ci` in both
   `.github/workflows/ci.yml` and `template/.github/workflows/ci.yml`, or CI goes red.
 - **The M2's run worktree** (`.claude/worktrees/spaghetti`, branch `spaghetti/base`) is at `86ed309`,
   which is from before both commits above. Rebase or recreate it on `main` first.
