@@ -26,20 +26,20 @@
   },
   "devDependencies": {
     "@appydave/appystack-config": "^1.0.3",
-    "@clack/prompts": "^1.7.0",
+    "@clack/prompts": "^1.8.1",
     "@eslint/js": "^9.39.5",
-    "@playwright/test": "^1.61.1",
-    "@typescript-eslint/eslint-plugin": "^8.63.0",
-    "@typescript-eslint/parser": "^8.63.0",
-    "concurrently": "^10.0.3",
+    "@playwright/test": "^1.64.1",
+    "@typescript-eslint/eslint-plugin": "^8.72.1",
+    "@typescript-eslint/parser": "^8.72.1",
+    "concurrently": "^10.0.6",
     "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^15.15.0",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.8",
-    "prettier": "^3.9.5",
-    "typescript": "^5.7.3"
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3"
   },
   "lint-staged": {
     "*.{ts,tsx,js,json,css,md}": "prettier --write",

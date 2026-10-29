@@ -6,6 +6,7 @@ import { io as ioc } from 'socket.io-client';
 import type { Socket as ClientSocket } from 'socket.io-client';
 import type { ServerToClientEvents, ClientToServerEvents } from '@appystack-template/shared';
 import { SOCKET_EVENTS } from '@appystack-template/shared';
+import { registerSocketHandlers } from './socket.js';
 
 // waitFor utility for async assertions
 function waitFor<T>(fn: () => T | Promise<T>, timeoutMs = 3000): Promise<T> {
@@ -39,14 +40,7 @@ describe('Socket.io event handlers', () => {
         cors: { origin: '*' },
       });
 
-      io.on('connection', (socket) => {
-        socket.on(SOCKET_EVENTS.CLIENT_PING, () => {
-          socket.emit(SOCKET_EVENTS.SERVER_PONG, {
-            message: 'pong',
-            timestamp: new Date().toISOString(),
-          });
-        });
-      });
+      registerSocketHandlers(io);
 
       httpServer.listen(0, () => {
         serverPort = (httpServer.address() as AddressInfo).port;
