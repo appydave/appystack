@@ -124,6 +124,12 @@ function applyCustomizations(root, { name, scope, serverPort, clientPort, desc }
   envTs = replaceAll(envTs, `CLIENT_URL: z.string().default('http://localhost:${oldClientPort}')`, `CLIENT_URL: z.string().default('http://localhost:${clientPort}')`);
   writeFile(root, 'server/src/config/env.ts', envTs);
 
+  // server/src/config/env.test.ts asserts those defaults, so it follows them
+  let envTest = readFile(root, 'server/src/config/env.test.ts');
+  envTest = replaceAll(envTest, `expect(env.PORT).toBe(${oldServerPort})`, `expect(env.PORT).toBe(${serverPort})`);
+  envTest = replaceAll(envTest, `expect(env.CLIENT_URL).toBe('http://localhost:${oldClientPort}')`, `expect(env.CLIENT_URL).toBe('http://localhost:${clientPort}')`);
+  writeFile(root, 'server/src/config/env.test.ts', envTest);
+
   // client/vite.config.ts
   let viteConfig = readFile(root, 'client/vite.config.ts');
   viteConfig = replaceAll(viteConfig, `port: ${oldClientPort}`, `port: ${clientPort}`);
