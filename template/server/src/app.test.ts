@@ -8,17 +8,20 @@ import { app, httpServer } from './index.js';
 describe('Express app (via index.ts export)', () => {
   it('GET /health returns 200', async () => {
     const res = await request(app).get('/health');
+
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
   });
 
   it('GET /api/info returns 200', async () => {
     const res = await request(app).get('/api/info');
+
     expect(res.status).toBe(200);
   });
 
   it('GET /unknown-route returns 404', async () => {
     const res = await request(app).get('/unknown-route-that-does-not-exist');
+
     expect(res.status).toBe(404);
     expect(res.body.status).toBe('error');
     expect(res.body.error).toBe('Not found');
@@ -34,6 +37,7 @@ describe('Socket.io via httpServer export', () => {
     if (!httpServer.listening) {
       await new Promise<void>((resolve) => httpServer.listen(0, resolve));
     }
+
     port = (httpServer.address() as AddressInfo).port;
   });
 

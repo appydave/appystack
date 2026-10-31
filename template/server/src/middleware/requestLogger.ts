@@ -46,8 +46,12 @@ export interface RequestLoggerOptions {
 }
 
 export function isHighFrequency(url: string | undefined): boolean {
-  if (!url) return false;
+  if (!url) {
+    return false;
+  }
+
   const path = url.split('?')[0];
+
   return HIGH_FREQUENCY_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
 }
 
@@ -60,11 +64,24 @@ export function createRequestLogger(options: RequestLoggerOptions = {}) {
     genReqId: () => crypto.randomUUID(),
     customLogLevel: (req, res, err) => {
       const status = res.statusCode;
-      if (err || status >= 500) return 'error';
-      if (status >= 400) return 'warn';
+
+      if (err || status >= 500) {
+        return 'error';
+      }
+
+      if (status >= 400) {
+        return 'warn';
+      }
+
       // Successful polls only — a failing poll still reaches warn/error above.
-      if (isHighFrequency(req.url)) return 'silent';
-      if (isPoll?.(req)) return 'silent';
+      if (isHighFrequency(req.url)) {
+        return 'silent';
+      }
+
+      if (isPoll?.(req)) {
+        return 'silent';
+      }
+
       return 'info';
     },
     customSuccessMessage: (req, res, responseTime) =>

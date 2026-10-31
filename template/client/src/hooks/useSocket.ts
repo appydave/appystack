@@ -14,6 +14,7 @@ export function useSocket() {
 
   useEffect(() => {
     const socket = getEntitySocket();
+
     socketRef.current = socket;
 
     const onConnect = () => setConnected(true);
@@ -23,7 +24,9 @@ export function useSocket() {
     socket.on('disconnect', onDisconnect);
 
     // Sync with current connection state immediately
-    if (socket.connected) setConnected(true);
+    if (socket.connected) {
+      setConnected(true);
+    }
 
     return () => {
       socket.off('connect', onConnect);
