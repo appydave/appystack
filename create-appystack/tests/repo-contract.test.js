@@ -102,3 +102,23 @@ describe('Feature: pitfalls the notes say must stay', () => {
     expect(fs.existsSync(path.join(repoRoot, 'template/.gitignore'))).toBe(false);
   });
 });
+
+describe('Feature: this repo fails its own build on a duplicated-code finding', () => {
+  // template/.github/workflows/ci.yml ships to scaffolds; this is the repo's own workflow.
+  const steps = read('.github/workflows/ci.yml').split('      - name: ');
+  const stepNamed = (name) => steps.findIndex((s) => s.startsWith(`${name}\n`));
+
+  it('Scenario: given the root workflow, when it runs, then Duplicates runs npm run dup in template/ right after Lint', () => {
+    const lint = stepNamed('Lint');
+    const dup = stepNamed('Duplicates');
+
+    expect(lint).toBeGreaterThan(-1);
+    expect(dup).toBe(lint + 1);
+    expect(steps[dup]).toContain('run: npm run dup\n');
+    expect(steps[dup]).toContain('working-directory: template');
+  });
+
+  it('Scenario: given the template, when npm run dup is called there, then the script exists to be run', () => {
+    expect(readJson('template/package.json').scripts.dup).toMatch(/jscpd --config/);
+  });
+});
