@@ -45,7 +45,17 @@ describe('useSocket', () => {
     const { result } = renderHook(() => useSocket());
     const connectHandler = mockSocket.on.mock.calls.find((c) => c[0] === 'connect')?.[1];
 
+    mockSocket.connected = true;
     act(() => connectHandler?.());
     expect(result.current.connected).toBe(true);
+  });
+
+  it('does not re-register listeners when the component re-renders', () => {
+    const { rerender } = renderHook(() => useSocket());
+
+    rerender();
+    rerender();
+    expect(mockSocket.on).toHaveBeenCalledTimes(2);
+    expect(mockSocket.off).not.toHaveBeenCalled();
   });
 });

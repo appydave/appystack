@@ -13,8 +13,9 @@ export function validate(schema: { body?: z.ZodType; query?: z.ZodType; params?:
         Object.assign(req.query, schema.query.parse(req.query));
       }
 
+      // Same in-place merge as query: parse() returns unknown, req.params is a typed record
       if (schema.params) {
-        req.params = schema.params.parse(req.params) as Request['params'];
+        Object.assign(req.params, schema.params.parse(req.params));
       }
 
       next();

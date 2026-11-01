@@ -126,6 +126,35 @@ describe('validate middleware — params', () => {
   });
 });
 
+describe('validate middleware — params are merged, not replaced', () => {
+  function buildMergeApp() {
+    const app = express();
+
+    app.get(
+      '/pages/:page/:slug',
+      validate({ params: z.object({ page: z.coerce.number().int().min(1) }) }),
+      (req, res) => {
+        res.json({ page: req.params.page, slug: req.params.slug });
+      }
+    );
+
+    return withErrorHandler(app);
+  }
+
+  it('coerces a param to the type the schema declares', async () => {
+    const res = await request(buildMergeApp()).get('/pages/3/intro');
+
+    expect(res.status).toBe(200);
+    expect(res.body.page).toBe(3);
+  });
+
+  it('keeps a route param the schema strips', async () => {
+    const res = await request(buildMergeApp()).get('/pages/3/intro');
+
+    expect(res.body.slug).toBe('intro');
+  });
+});
+
 // Multi-schema validation: body + query validated together in a single middleware call
 const multiBodySchema = z.object({ name: z.string().min(1) });
 const multiQuerySchema = z.object({ page: z.string().regex(/^\d+$/, 'must be digits only') });

@@ -15,8 +15,8 @@
     "test": "npm run test -w server -w client",
     "test:coverage": "npm run test:coverage -w server -w client",
     "test:e2e": "playwright test",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "grep -rqE '(eslint|oxlint)-disable' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.cjs' --include='*.mts' --include='*.cts' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build --exclude-dir=coverage --exclude-dir=playwright-report --exclude-dir=test-results --exclude-dir=.claude . ; [ $? -eq 1 ] && oxlint --deny-warnings && eslint .",
+    "lint:fix": "oxlint --fix && eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "npm run typecheck -w shared -w server -w client",
@@ -34,17 +34,22 @@
     "@typescript-eslint/parser": "^8.72.1",
     "concurrently": "^10.0.6",
     "eslint": "^9.39.5",
+    "eslint-plugin-oxlint": "1.90.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^15.15.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
+    "oxlint": "1.90.0",
     "prettier": "^3.9.10",
     "typescript": "^5.9.3"
   },
   "lint-staged": {
     "*.{ts,tsx,js,json,css,md}": "prettier --write",
-    "*.{ts,tsx,js}": "eslint --fix"
+    "*.{ts,tsx,js}": [
+      "oxlint --deny-warnings",
+      "eslint --fix"
+    ]
   },
   "author": "David Cruwys",
   "license": "MIT"
