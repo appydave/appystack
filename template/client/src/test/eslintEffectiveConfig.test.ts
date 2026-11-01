@@ -1,68 +1,48 @@
 // @vitest-environment node
-import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
+import { treeFiles } from '@/test/treeFiles';
 
 // vitest runs with the client workspace as cwd; eslint.config.js sits one level up, at the template root.
 const root = resolve(process.cwd(), '..');
-const eslint = new ESLint({ cwd: root });
 const ERROR_SEVERITY = 2;
-const SEVERITIES: Record<string, number> = { off: 0, warn: 1, error: ERROR_SEVERITY };
 const LINTABLE = /\.(ts|tsx|js|jsx|mjs|cjs|mts|cts)$/;
-const isTest = (file: string): boolean => /\.test\.|(^|\/)test\//.test(file);
 
-// The gate rules are every rule named by a `quality/*` block of eslint.config.js, so a new gate joins
-// this pin by itself. The declared value is the last block of the rule that is not an exemption.
+// The reviewed gate blocks are every `quality/*` block of eslint.config.js (exemptions included), so a
+// new gate joins this pin by itself. What each file gets from those blocks alone is the expectation,
+// computed by ESLint, so rule defaults are added the same way on both sides and options compare exactly.
 const loaded: { default: { name?: string; rules?: Record<string, unknown> }[] } = await import(
   pathToFileURL(resolve(root, 'eslint.config.js')).href
 );
-const gateBlocks = loaded.default.filter(
-  (block) => block.name?.startsWith('quality/') && !block.name.endsWith('-exempt')
-);
-const declared = new Map<string, unknown>();
+const gateBlocks = loaded.default.filter((block) => block.name?.startsWith('quality/'));
+const gateRules = [...new Set(gateBlocks.flatMap((block) => Object.keys(block.rules ?? {})))];
+const reviewed = new ESLint({ cwd: root, overrideConfigFile: true, overrideConfig: gateBlocks });
+const actual = new ESLint({ cwd: root });
+const files = treeFiles(root).filter((file) => LINTABLE.test(file));
 
-for (const block of gateBlocks) {
-  for (const [rule, value] of Object.entries(block.rules ?? {})) {
-    declared.set(rule, value);
-  }
-}
+describe('the effective ESLint config of every lintable file in the tree', () => {
+  it('reads the gate rules and the file list (non-vacuous), every gate rule at error in production code', async () => {
+    const config = await reviewed.calculateConfigForFile(resolve(root, 'server/src/index.ts'));
+    const notError = gateRules.filter((rule) => {
+      const value: unknown = config?.rules?.[rule];
 
-// Where a gate rule is off by design, by name or by kind. The key is the rule; the test is the path.
-const EXEMPT: [string, (file: string) => boolean][] = [
-  ['no-magic-numbers', isTest],
-  ['sonarjs/cognitive-complexity', isTest],
-  ['sonarjs/expression-complexity', isTest],
-  ['no-magic-numbers', (file) => file === 'server/src/config/env.ts'],
-  ['exports/no-reexport', (file) => file === 'shared/src/index.ts'],
-];
-// The two vitest configs keep the rule but with the size selectors only (they import ../vitest.shared).
-const SELECTORS_ONLY = ['client/vitest.config.ts', 'server/vitest.config.ts'];
+      return !Array.isArray(value) || value[0] !== ERROR_SEVERITY;
+    });
 
-const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
-  .split('\n')
-  .filter((file) => LINTABLE.test(file));
-
-function severityOf(value: unknown): number {
-  const level = Array.isArray(value) ? value[0] : value;
-
-  // A rule a file's blocks never mention is off.
-  return typeof level === 'string' ? (SEVERITIES[level] ?? -1) : Number(level ?? 0);
-}
-
-describe('the effective ESLint config of every tracked lintable file', () => {
-  it('reads the gate rules and the file list (non-vacuous)', () => {
-    expect(declared.size).toBeGreaterThanOrEqual(15);
-    expect(tracked.length).toBeGreaterThan(50);
+    expect(gateRules.length).toBeGreaterThanOrEqual(15);
+    expect(files.length).toBeGreaterThan(50);
+    expect(notError).toEqual([]);
   });
 
   // calculateConfigForFile returns undefined for a file the config ignores.
-  it('ignores no tracked lintable file, and ignores inline disable comments in all of them', async () => {
+  it('ignores no lintable file, and ignores inline disable comments in all of them', async () => {
     const bad: string[] = [];
 
-    for (const file of tracked) {
-      const config = await eslint.calculateConfigForFile(resolve(root, file));
+    for (const file of files) {
+      const config = await actual.calculateConfigForFile(resolve(root, file));
 
       if (config?.linterOptions?.noInlineConfig !== true) {
         bad.push(file);
@@ -72,21 +52,16 @@ describe('the effective ESLint config of every tracked lintable file', () => {
     expect(bad).toEqual([]);
   });
 
-  it('keeps every gate rule at error with its declared options, except where an exemption says off', async () => {
+  it('gives every file exactly the gate rules, severities and options the reviewed blocks give it', async () => {
     const wrong: string[] = [];
 
-    for (const file of tracked) {
-      const rules = (await eslint.calculateConfigForFile(resolve(root, file)))?.rules ?? {};
+    for (const file of files) {
+      const path = resolve(root, file);
+      const rules = (await actual.calculateConfigForFile(path))?.rules ?? {};
+      const want = (await reviewed.calculateConfigForFile(path))?.rules ?? {};
 
-      for (const [rule, expected] of declared) {
-        const actual: unknown = rules[rule];
-        const exempt = EXEMPT.some(([name, applies]) => name === rule && applies(file));
-        const selectorsOnly = rule === 'no-restricted-syntax' && SELECTORS_ONLY.includes(file);
-        const ok = exempt
-          ? severityOf(actual) === 0
-          : severityOf(actual) === ERROR_SEVERITY && (selectorsOnly || matches(actual, expected));
-
-        if (!ok) {
+      for (const rule of gateRules) {
+        if (!isDeepStrictEqual(rules[rule], want[rule])) {
           wrong.push(`${file}: ${rule}`);
         }
       }
@@ -95,19 +70,3 @@ describe('the effective ESLint config of every tracked lintable file', () => {
     expect(wrong).toEqual([]);
   });
 });
-
-// Compare options only (the severity is checked apart). The effective value may add the rule's
-// defaults, so the declared options must be a prefix and subset of it.
-function matches(actual: unknown, expected: unknown): boolean {
-  const options = (value: unknown): unknown[] => (Array.isArray(value) ? value.slice(1) : []);
-
-  const want = options(expected);
-
-  try {
-    expect(options(actual).slice(0, want.length)).toMatchObject(want);
-
-    return true;
-  } catch {
-    return false;
-  }
-}
