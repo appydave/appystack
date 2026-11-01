@@ -6,11 +6,15 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(process.cwd(), '..');
 const eslint = new ESLint({ cwd: root });
 const RULE = 'no-magic-numbers';
+const ERROR_SEVERITY = 2;
 
 async function magicCount(source: string, file = 'server/src/probe.ts'): Promise<number> {
   const [result] = await eslint.lintText(source, { filePath: resolve(root, file) });
 
-  return (result?.messages ?? []).filter((message) => message.ruleId === RULE).length;
+  // severity 2 is 'error': a gate that only warns does not fail the build.
+  return (result?.messages ?? []).filter(
+    (message) => message.ruleId === RULE && message.severity === ERROR_SEVERITY
+  ).length;
 }
 
 const BAD = 'export const f = (n: number) => n * 7919;\n';
@@ -20,9 +24,12 @@ describe('G05 magic-number gate, run through the real eslint.config.js', () => {
     expect(await magicCount(BAD)).toBe(1);
   });
 
-  it.each(['probe.js', 'probe.mjs', 'probe.tsx'])('also checks %s files', async (name) => {
-    expect(await magicCount(BAD, `client/src/${name}`)).toBe(1);
-  });
+  it.each(['probe.js', 'probe.mjs', 'probe.cjs', 'probe.tsx'])(
+    'also checks %s files',
+    async (name) => {
+      expect(await magicCount(BAD, `client/src/${name}`)).toBe(1);
+    }
+  );
 
   it('allows -1, 0, 1 and 2 and rejects 3', async () => {
     expect(await magicCount('export const f = (n: number) => n * -1 + 0 + 1 + 2;\n')).toBe(0);
@@ -43,6 +50,9 @@ describe('G05 magic-number gate, run through the real eslint.config.js', () => {
 
     expect(await magicCount(source, 'server/src/config/env.ts')).toBe(0);
     expect(await magicCount(source, 'server/src/config/other.ts')).toBe(1);
+    expect(await magicCount(source, 'server/src/env.ts')).toBe(1);
+    expect(await magicCount(source, 'server/src/index.ts')).toBe(1);
+    expect(await magicCount(source, 'client/src/config/env.ts')).toBe(1);
   });
 
   // Recorded holes: detectObjects false and ignoreDefaultValues true mean the gate does not catch these.
