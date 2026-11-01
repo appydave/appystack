@@ -188,6 +188,30 @@ describe('appendServerAliasTodo', () => {
     expect(existsSync(join(consumer, 'UPGRADE_TODO.md'))).toBe(false);
   });
 
+  it('only asks for what is missing in each file', () => {
+    write('server/vitest.config.ts', oldVitest); // no tsconfig at all: no paths row
+    appendServerAliasTodo(consumer);
+    const todo = readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8');
+    expect(todo).not.toContain('server/tsconfig.json');
+    expect(todo).toContain('server/vitest.config.ts');
+    removeScratch(consumer);
+    consumer = mkdtempSync(join(tmpdir(), 'alias-todo-'));
+    write('server/tsconfig.json', oldTsconfig); // no vitest config at all: no alias row
+    appendServerAliasTodo(consumer);
+    expect(readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8')).not.toContain('vitest.config');
+  });
+
+  it('reads the vitest aliases by exact name, in either quote style', () => {
+    write('server/tsconfig.json', '{ "paths": { "@config/*": [], "@helpers/*": [], "@testing/*": [] } }');
+    write('server/vitest.config.ts', 'import { env } from "@config/env.js";\nalias: { "@helpers": 2, "@test": 3 }');
+    expect(appendServerAliasTodo(consumer)).toBe(true); // an import of @config/ is not the alias
+    const todo = readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8');
+    expect(todo).toContain('Add to compilerOptions.paths: `"@test/*": ["src/test/*"]` |'); // @testing/* is not @test/*
+    expect(todo).toContain("`'@config': path.resolve");
+    expect(todo).not.toContain("`'@helpers': path.resolve");
+    expect(todo).not.toContain("`'@test': path.resolve");
+  });
+
   it('does not repeat a row when run twice', () => {
     write('server/tsconfig.json', oldTsconfig);
     write('server/vitest.config.ts', oldVitest);

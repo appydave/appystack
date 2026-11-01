@@ -18,7 +18,7 @@ export function appendServerAliasTodo(consumerDir) {
     .filter(([name]) => tsconfig !== null && !tsconfig.includes(`"${name}/*"`))
     .map(([name, dir]) => `\`"${name}/*": ["${dir}/*"]\``);
   const aliasLines = Object.entries(ALIASES)
-    .filter(([name]) => vitest !== null && !vitest.includes(`'${name}'`))
+    .filter(([name]) => vitest !== null && !new RegExp(`['"]${name}['"]`).test(vitest))
     .map(([name, dir]) => `\`'${name}': path.resolve(__dirname, '${dir}')\``);
   if (pathLines.length > 0) {
     appendUpgradeTodo(consumerDir, 'server/tsconfig.json', `Add to compilerOptions.paths: ${pathLines.join(', ')}`);
