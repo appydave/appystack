@@ -193,7 +193,12 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
       /Cannot find (module|package)|ERR_MODULE_NOT_FOUND|ConfigError|Invalid config|not found/i;
     const report = {};
     for (const [name, args, count] of [
-      ['oxlint', ['oxlint', '--deny-warnings'], /^\S+:\d+:\d+: (?:error|warning) /gm],
+      // --format default pins the output: under CI=true oxlint would switch to GitHub annotations
+      [
+        'oxlint',
+        ['oxlint', '--deny-warnings', '--format', 'default'],
+        /Found (\d+) warnings? and (\d+) errors?/,
+      ],
       ['eslint', ['eslint', '.'], /(\d+) problems?/],
     ]) {
       const r = run('npx', ['--no-install', ...args], app, 170_000);
@@ -202,7 +207,7 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
       const m = out.match(count);
       // exit 0, or findings only: a linter that failed to load exits non-zero with no count
       expect(r.status === 0 || m !== null, `${name}: ${out.slice(-1500)}`).toBe(true);
-      report[name] = r.status === 0 ? 0 : name === 'oxlint' ? out.match(count).length : Number(m[1]);
+      report[name] = r.status === 0 ? 0 : m.slice(1).reduce((sum, n) => sum + Number(n), 0);
     }
     console.log(`0.4.18 app after upgrade: ${JSON.stringify(report)}`);
   });
