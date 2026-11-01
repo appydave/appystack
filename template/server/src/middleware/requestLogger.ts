@@ -2,9 +2,9 @@ import pinoHttp, { type Options } from 'pino-http';
 import crypto from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import type { Logger } from 'pino';
-import { logger as appLogger } from '../config/logger.js';
-import { env } from '../config/env.js';
-import { HTTP_STATUS } from '../helpers/httpStatus.js';
+import { logger as appLogger } from '@config/logger.js';
+import { env } from '@config/env.js';
+import { HTTP_STATUS } from '@helpers/httpStatus.js';
 
 /**
  * Endpoints that are polled continuously — health checks, status widgets, MCP

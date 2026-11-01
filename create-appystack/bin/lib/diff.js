@@ -49,7 +49,7 @@ export function applyUpdate(consumerDir, templateDir, relativePath) {
 // Creates the file with header if it doesn't exist.
 // ---------------------------------------------------------------------------
 
-export function appendUpgradeTodo(consumerDir, relativePath) {
+export function appendUpgradeTodo(consumerDir, relativePath, action = 'Review AppyStack changes and merge manually') {
   const todoPath = join(consumerDir, 'UPGRADE_TODO.md');
 
   if (!existsSync(todoPath)) {
@@ -66,8 +66,9 @@ export function appendUpgradeTodo(consumerDir, relativePath) {
     writeFileSync(todoPath, header, 'utf-8');
   }
 
-  const row = `| \`${relativePath}\` | Review AppyStack changes and merge manually |\n`;
+  const row = `| \`${relativePath}\` | ${action} |\n`;
   const existing = readFileSync(todoPath, 'utf-8');
+  if (existing.includes(row)) return;
   writeFileSync(todoPath, existing + row, 'utf-8');
 }
 

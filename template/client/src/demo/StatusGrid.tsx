@@ -1,6 +1,6 @@
 import type { ServerInfo } from '@appystack-template/shared';
-import { useServerStatus } from '../hooks/useServerStatus.js';
-import { useSocket } from '../hooks/useSocket.js';
+import { useServerStatus } from '@hooks/useServerStatus.js';
+import { useSocket } from '@hooks/useSocket.js';
 
 function StatusDot({ ok }: { ok: boolean }) {
   return (

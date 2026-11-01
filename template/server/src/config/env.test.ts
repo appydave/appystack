@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mockProcessExit } from '../test/looseFn.js';
+import { mockProcessExit } from '@test/looseFn.js';
 
 describe('env config', () => {
   const originalEnv = process.env;

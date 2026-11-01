@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { SOCKET_EVENTS } from '@appystack-template/shared';
-import { useSocket } from '../hooks/useSocket.js';
+import { useSocket } from '@hooks/useSocket.js';
 import { cn } from '@/lib/utils.js';
 
 interface PongResponse {

@@ -7,8 +7,8 @@ const state = vi.hoisted(() => ({
   connected: false,
 }));
 
-vi.mock('../hooks/useServerStatus.js', () => ({ useServerStatus: () => state.status }));
-vi.mock('../hooks/useSocket.js', () => ({ useSocket: () => ({ connected: state.connected }) }));
+vi.mock('@hooks/useServerStatus.js', () => ({ useServerStatus: () => state.status }));
+vi.mock('@hooks/useSocket.js', () => ({ useSocket: () => ({ connected: state.connected }) }));
 
 const info = { environment: 'staging', port: 5501, nodeVersion: 'v22.1.0', uptime: 12.7 };
 
