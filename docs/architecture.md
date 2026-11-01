@@ -681,8 +681,17 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Format
+        run: npm run format:check
+
       - name: Lint
         run: npm run lint
+
+      - name: Duplicates
+        run: npm run dup
+
+      - name: Dead code
+        run: npm run deadcode
 
       - name: Test
         run: npm test

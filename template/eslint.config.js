@@ -19,7 +19,7 @@ const EXPRESSION_MAX = 3;
 const PARENT = String.raw`/^(\.\/+)*\.\.(\/|$)/`;
 const MOCKS = 'mock|doMock|unmock|doUnmock|importActual|importMock|requireActual|requireMock';
 const PARENT_IMPORT_MESSAGE =
-  "No '../' imports: use an alias. Client: @/ @hooks @components @pages @utils @contexts @config. Server: @config/ @helpers/ @routes/ @middleware/ @services/ @test/.";
+  "No '../' imports: use an alias. Client: @/ @hooks @components @pages @utils @config. Server: @config/ @helpers/ @routes/ @middleware/ @services/ @test/.";
 // no-restricted-syntax has one options array per file: G04's member-count selectors (lint/size.js)
 // and G10's must be listed together, or the later block silently replaces the earlier.
 const sizeSelectors = sizeRules['no-restricted-syntax'].slice(1);

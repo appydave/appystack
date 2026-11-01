@@ -2,6 +2,7 @@
 // eslint.config.js builds file URLs, which jsdom's URL cannot do.
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { parse } from '@typescript-eslint/parser';
 import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
 
@@ -73,6 +74,20 @@ describe('G10 root-imports gate, run through the real eslint.config.js', () => {
     expect(await parentImports(`// ${directive}\n${FORMS['static import']}`)).toBe(1);
   });
 
+  // The TSImportType selector reads `argument.literal`, which typescript-estree deprecates in favour of
+  // `source`. When the parser drops `argument`, this goes red and says why, before the selector goes quiet.
+  it('still finds the specifier of typeof import() on the field the selector reads', () => {
+    const statement = parse("export type T = typeof import('../a.js');").body[0];
+    const query = statement.type === 'ExportNamedDeclaration' ? statement.declaration : null;
+    const node = query?.type === 'TSTypeAliasDeclaration' ? query.typeAnnotation : null;
+    const importType = node?.type === 'TSTypeQuery' ? node.exprName : null;
+
+    expect(importType?.type).toBe('TSImportType');
+    expect(Reflect.get(Reflect.get(importType ?? {}, 'argument') ?? {}, 'literal')).toMatchObject({
+      value: '../a.js',
+    });
+  });
+
   // Both blocks are pinned whole, by literal: dropping a folder, a file type or a selector, or widening
   // the exemption, is red. G04's three size selectors are taken from lint/size.js (one options array per file).
   it('is exactly the two reviewed config blocks', async () => {
@@ -84,7 +99,7 @@ describe('G10 root-imports gate, run through the real eslint.config.js', () => {
     const matches = (node: string, path: string) =>
       `${node}:matches([${path}.value=${re}], [${path}.quasis.0.value.cooked=${re}])`;
     const message =
-      "No '../' imports: use an alias. Client: @/ @hooks @components @pages @utils @contexts @config. Server: @config/ @helpers/ @routes/ @middleware/ @services/ @test/.";
+      "No '../' imports: use an alias. Client: @/ @hooks @components @pages @utils @config. Server: @config/ @helpers/ @routes/ @middleware/ @services/ @test/.";
     const mocks = 'mock|doMock|unmock|doUnmock|importActual|importMock|requireActual|requireMock';
     const selectors = [
       matches('ImportDeclaration', 'source'),
