@@ -1,4 +1,6 @@
-import { resolve } from 'node:path';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
 
@@ -232,8 +234,35 @@ describe('G04 size gate, run through the real eslint.config.js', () => {
       'client/src/probe.test.d.ts',
       'client/src/test.test/a.ts',
       'client/src/atest/a.ts',
+      'client/src/Probe.TEST.ts',
+      'client/src/probe.test.ts.ts',
     ])('does not exempt %s', async (file) => {
       expect(await exempt(file)).toBe(false);
+    });
+
+    // The folder rule looks at the path from the lint root, not the whole path: a checkout that
+    // happens to live under a folder named `test` must not turn the exemption on for every file.
+    it('judges the path from the lint root, not from the filesystem root', async () => {
+      const base = mkdtempSync(join(tmpdir(), 'size-root-'));
+
+      try {
+        const checkout = join(base, 'test', 'app');
+
+        mkdirSync(join(checkout, 'client', 'src'), { recursive: true });
+
+        const nested = new ESLint({
+          cwd: checkout,
+          overrideConfigFile: resolve(root, 'eslint.config.js'),
+        });
+        const [result] = await nested.lintText(longDescribe, {
+          filePath: join(checkout, 'client', 'src', 'probe.ts'),
+        });
+        const ids = (result?.messages ?? []).map((message) => message.ruleId);
+
+        expect(ids).toContain(FUNCTION_RULE);
+      } finally {
+        rmSync(base, { recursive: true, force: true });
+      }
     });
   });
 });
