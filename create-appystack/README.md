@@ -72,7 +72,7 @@ New apps now also enforce complexity limits, duplicate code, no `../` imports, d
   npm run build -w shared
   ```
 
-  On a 0.4.18 app this gave a clean `npm run typecheck`, and the server booted. The zod 3 to 4 bump broke none of that app's own code; check yours.
+  On a 0.4.18 app the server then booted and the zod 3 to 4 bump broke none of that app's own code; check yours. `npm run typecheck` still fails there (`errorHandler.test.ts`, TS2459 on `AppError`) until you apply the `AppError` import row in `UPGRADE_TODO.md`, after which it passes.
 
 ## Stack
 
