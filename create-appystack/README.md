@@ -63,7 +63,16 @@ New apps now also enforce complexity limits, duplicate code, no `../` imports, d
 - **Server aliases.** `npx appystack-upgrade` adds the `@config`, `@helpers` and `@test` aliases to `server/tsconfig.json` and `server/vitest.config.ts`, and carries the 0.5.x `lint` script across. Anything it cannot patch is listed in `UPGRADE_TODO.md`.
 - **`--port` now rewrites `.vscode/launch.json`** as well as the app's config.
 - **`--yes` and non-interactive runs** either create the app or exit with an error naming the missing flag. `--yes` defaults: scope `@myorg`, ports `5500` / `5501`, no GitHub repo; the app name has no default.
-- **A 0.4.x app still needs `@appydave/core` and `@testing-library/dom` added by hand** after the upgrade. If `npm install` fails with `ERESOLVE`, run `npm install --legacy-peer-deps` once.
+- **A 0.4.x app needs three packages added after the upgrade**, and `npx appystack-upgrade` lists the steps in `UPGRADE_TODO.md` when they are missing. The upgraded server code imports `@appydave/core`, which needs zod 4, and the client tests need `@testing-library/dom`. A plain install fails `ERESOLVE` on a 0.4.x lockfile, so use `--legacy-peer-deps` once:
+
+  ```bash
+  npm install -w server @appydave/core@^0.2.0 zod@^4 --legacy-peer-deps
+  npm install -w client -D @testing-library/dom --legacy-peer-deps
+  npm install            # plain installs work from here
+  npm run build -w shared
+  ```
+
+  On a 0.4.18 app this gave a clean `npm run typecheck`, and the server booted. The zod 3 to 4 bump broke none of that app's own code; check yours.
 
 ## Stack
 

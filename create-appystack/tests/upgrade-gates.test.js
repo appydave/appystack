@@ -18,6 +18,7 @@ import { classifyFile } from '../bin/lib/classify.js';
 import { mergeGatePackage, GATE_SCRIPTS, GATE_DEV_DEPS } from '../bin/lib/gate-package.js';
 import { mergeServerAliases } from '../bin/lib/alias-merge.js';
 import { appendAppErrorTodo } from '../bin/lib/reexport-todo.js';
+import { appendRuntimeDepsTodo } from '../bin/lib/runtime-deps-todo.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '../..');
@@ -441,6 +442,50 @@ describe('appendAppErrorTodo', () => {
   });
 });
 
+// A 0.4.x app lacks @appydave/core, zod 4 and @testing-library/dom, which the upgraded code needs. The tool
+// does not add them; it writes the proven install steps as one row per package.json.
+describe('appendRuntimeDepsTodo', () => {
+  let consumer;
+  beforeEach(() => {
+    consumer = mkdtempSync(join(tmpdir(), 'runtime-deps-todo-'));
+  });
+  afterEach(() => removeScratch(consumer));
+
+  const todo = () => readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8');
+
+  it('writes a server row and a client row naming the install commands for a 0.4.x app', () => {
+    writeJson(consumer, 'server/package.json', { dependencies: { zod: '^3.24.1' } });
+    writeJson(consumer, 'client/package.json', { devDependencies: { vitest: '^3.0.0' } });
+    expect(appendRuntimeDepsTodo(consumer)).toBe(true);
+    expect(todo()).toContain('| `server/package.json` |');
+    expect(todo()).toContain('npm install -w server @appydave/core@^0.2.0 zod@^4 --legacy-peer-deps');
+    expect(todo()).toContain('| `client/package.json` |');
+    expect(todo()).toContain('npm install -w client -D @testing-library/dom --legacy-peer-deps');
+  });
+
+  it('writes a server row when core is present but zod is still below 4', () => {
+    writeJson(consumer, 'server/package.json', { dependencies: { '@appydave/core': '^0.2.0', zod: '~3.25.0' } });
+    expect(appendRuntimeDepsTodo(consumer)).toBe(true);
+    expect(todo()).toContain('| `server/package.json` |');
+  });
+
+  it('writes nothing when the packages are present and zod is 4', () => {
+    writeJson(consumer, 'server/package.json', { dependencies: { '@appydave/core': '^0.2.0', zod: '^4.6.7' } });
+    writeJson(consumer, 'client/package.json', { devDependencies: { '@testing-library/dom': '^10.4.2' } });
+    expect(appendRuntimeDepsTodo(consumer)).toBe(false);
+    expect(existsSync(join(consumer, 'UPGRADE_TODO.md'))).toBe(false);
+  });
+
+  it('writes nothing without server or client package.json, and does not repeat rows when run twice', () => {
+    expect(appendRuntimeDepsTodo(consumer)).toBe(false);
+    writeJson(consumer, 'server/package.json', { dependencies: {} });
+    appendRuntimeDepsTodo(consumer);
+    const once = todo();
+    appendRuntimeDepsTodo(consumer);
+    expect(todo()).toBe(once);
+  });
+});
+
 // The proof: a real 0.4.18 template, upgraded by this branch, installs and runs both linters.
 // Not established: that this equals real CLI scaffold output, or cold-cache install time in CI.
 const run = (cmd, args, cwd, timeout = 150_000) =>
@@ -515,6 +560,10 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
     expect(todoText).not.toContain('server/vitest.config.ts');
     // errorHandler.ts no longer re-exports AppError, and the 0.4.18 test imports it from there.
     expect(todoText).toContain('| `server/src/middleware/errorHandler.test.ts` |');
+    // the 0.4.18 app has no @appydave/core, zod 4 or @testing-library/dom: the tool says how to add them
+    expect(todoText).toContain('| `server/package.json` |');
+    expect(todoText).toContain('npm install -w server @appydave/core@^0.2.0 zod@^4 --legacy-peer-deps');
+    expect(todoText).toContain('| `client/package.json` |');
 
     // A plain `npm install` on the stale 0.4.18 lockfile fails ERESOLVE (oxlint's optional vite-plus peer pulls vitest 5);
     // once --legacy-peer-deps has regenerated the lockfile, plain installs work. upgrade.js tells the user this.
