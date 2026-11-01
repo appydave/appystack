@@ -20,6 +20,8 @@ const root = resolve(process.cwd(), '..');
 const read = (file: string): string => readFileSync(resolve(root, file), 'utf8');
 const manifest: { scripts: { deadcode: string }; devDependencies: Record<string, string> } =
   JSON.parse(read('package.json'));
+// Each case runs knip and dependency-cruiser for real: ~1-6 s alone, over the 5 s default when other suites share the CPU.
+const RUN_FOR_REAL_TIMEOUT_MS = 60_000;
 const CONFIG = '.dependency-cruiser.cjs';
 const WORKSPACES = ['client', 'server', 'shared'];
 const TYPES = ['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs', 'mts', 'cts'];
@@ -275,7 +277,7 @@ const cycleAt = (where: string): Record<string, string> => ({
   [`${where}/b.ts`]: `import { a } from './a.js';\nexport const b = a;\n`,
 });
 
-describe('the deadcode script, run for real', () => {
+describe('the deadcode script, run for real', { timeout: RUN_FOR_REAL_TIMEOUT_MS }, () => {
   it('passes a clean tree', () => {
     expect(runScript(sources())).toBe(0);
   });
