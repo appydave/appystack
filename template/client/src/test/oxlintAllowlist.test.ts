@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { treeFiles } from '@/test/treeFiles';
 
 // The Oxlint config is JSON with // comments: drop whole-line comments, then parse.
 // vitest runs with the client workspace as cwd; the config sits one level up, at the template root.
@@ -29,5 +30,15 @@ describe('Oxlint config', () => {
         },
       ],
     });
+  });
+
+  // Oxlint discovers a nested .oxlintrc.json on its own and applies it below its folder, which would
+  // switch these rules off there without touching the file pinned above. Tracked or not, there is one.
+  it('is the only .oxlintrc.json in the tree', () => {
+    const found = treeFiles(resolve(process.cwd(), '..')).filter((file) =>
+      file.endsWith('.oxlintrc.json')
+    );
+
+    expect(found).toEqual(['.oxlintrc.json']);
   });
 });
