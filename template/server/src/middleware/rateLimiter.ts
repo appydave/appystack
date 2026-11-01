@@ -10,4 +10,6 @@ export function createLimiter({ windowMs, limit }: LimiterOptions) {
   return rateLimit({ windowMs, limit, standardHeaders: 'draft-8', legacyHeaders: false });
 }
 
-export const apiLimiter = createLimiter({ windowMs: 15 * 60 * 1000, limit: 100 });
+const WINDOW_MS = 15 * 60 * 1000;
+
+export const apiLimiter = createLimiter({ windowMs: WINDOW_MS, limit: 100 });

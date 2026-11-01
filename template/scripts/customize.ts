@@ -45,10 +45,12 @@ async function ask(options: TextOptions): Promise<string> {
   return answer.trim();
 }
 
+const MAX_PORT = 65535;
+
 function validatePort(value: string | undefined): string | undefined {
   const port = Number(value);
 
-  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  if (!Number.isInteger(port) || port < 1 || port > MAX_PORT) {
     return 'Enter a valid port number (1–65535)';
   }
 

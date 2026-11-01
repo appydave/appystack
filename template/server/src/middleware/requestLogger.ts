@@ -4,6 +4,7 @@ import type { IncomingMessage } from 'node:http';
 import type { Logger } from 'pino';
 import { logger as appLogger } from '../config/logger.js';
 import { env } from '../config/env.js';
+import { HTTP_STATUS } from '../helpers/httpStatus.js';
 
 /**
  * Endpoints that are polled continuously — health checks, status widgets, MCP
@@ -65,11 +66,11 @@ export function createRequestLogger(options: RequestLoggerOptions = {}) {
     customLogLevel: (req, res, err) => {
       const status = res.statusCode;
 
-      if (err || status >= 500) {
+      if (err || status >= HTTP_STATUS.INTERNAL_SERVER_ERROR) {
         return 'error';
       }
 
-      if (status >= 400) {
+      if (status >= HTTP_STATUS.BAD_REQUEST) {
         return 'warn';
       }
 
