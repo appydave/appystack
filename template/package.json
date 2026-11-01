@@ -15,7 +15,7 @@
     "test": "npm run test -w server -w client",
     "test:coverage": "npm run test:coverage -w server -w client",
     "test:e2e": "playwright test",
-    "lint": "! git grep -nE --untracked '(eslint|oxlint)-disable' -- client server shared scripts && oxlint --deny-warnings && eslint .",
+    "lint": "grep -rqE '(eslint|oxlint)-disable' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.cjs' --include='*.mts' --include='*.cts' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build --exclude-dir=coverage --exclude-dir=playwright-report --exclude-dir=test-results --exclude-dir=.claude . ; [ $? -eq 1 ] && oxlint --deny-warnings && eslint .",
     "lint:fix": "oxlint --fix && eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

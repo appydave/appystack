@@ -5,7 +5,7 @@ import { spacingRules } from './lint/spacing.js';
 
 export default [
   ...appyConfig,
-  // Inline eslint-disable comments are ignored: a gate the code can switch off is not a gate.
+  // Inline disable comments are ignored: a gate the code can switch off is not a gate.
   { name: 'quality/no-inline-config', linterOptions: { noInlineConfig: true } },
   {
     name: 'quality/spacing',
