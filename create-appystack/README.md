@@ -63,7 +63,7 @@ New apps now also enforce complexity limits, duplicate code, no `../` imports, d
 - **Server aliases.** `npx appystack-upgrade` adds the `@config`, `@helpers` and `@test` aliases to `server/tsconfig.json` and `server/vitest.config.ts`, and carries the 0.5.x `lint` script across. Anything it cannot patch is listed in `UPGRADE_TODO.md`.
 - **`--port` now rewrites `.vscode/launch.json`** as well as the app's config.
 - **`--yes` and non-interactive runs** either create the app or exit with an error naming the missing flag. `--yes` defaults: scope `@myorg`, ports `5500` / `5501`, no GitHub repo; the app name has no default.
-- **A 0.4.x app needs three packages added after the upgrade**, and `npx appystack-upgrade` lists the steps in `UPGRADE_TODO.md` when they are missing. The upgraded server code imports `@appydave/core`, which needs zod 4, and the client tests need `@testing-library/dom`. A plain install fails `ERESOLVE` on a 0.4.x lockfile, so use `--legacy-peer-deps` once:
+- **A 0.4.x app needs three packages added after the upgrade**, and `npx appystack-upgrade` lists the steps in `UPGRADE_TODO.md` when they are missing. The upgraded server code imports `@appydave/core`, which needs zod 4, and the client tests need `@testing-library/dom`. A plain install fails `ERESOLVE` on a 0.4.x lockfile, not because of zod but because the new gate tools pull vitest 5 against the vitest 4 in your lockfile, so use `--legacy-peer-deps` once:
 
   ```bash
   npm install -w server @appydave/core@^0.2.0 zod@^4 --legacy-peer-deps
@@ -73,6 +73,8 @@ New apps now also enforce complexity limits, duplicate code, no `../` imports, d
   ```
 
   On a 0.4.18 app the server then booted and the zod 3 to 4 bump broke none of that app's own code; check yours. `npm run typecheck` still fails there (`errorHandler.test.ts`, TS2459 on `AppError`) until you apply the `AppError` import row in `UPGRADE_TODO.md`, after which it passes.
+
+- **Three more things on a 0.4.x app, each listed in `UPGRADE_TODO.md`.** `npm run format:check` fails on about 34 files that a 0.4.x scaffold left unformatted (scaffold docs, skills and a few sources): run `npm run format` once, in its own commit. A server `env.test.ts` that still expects ports 5501 / 5500 on an app with other ports fails before and after the upgrade; the row names the lines to change. The upgrade now replaces `client/src/hooks/useSocket.test.ts` together with `useSocket.ts` when you have not edited it (an edited copy is shown to you as usual).
 
 ## Stack
 

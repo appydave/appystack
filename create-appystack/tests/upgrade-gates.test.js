@@ -19,6 +19,7 @@ import { mergeGatePackage, GATE_SCRIPTS, GATE_DEV_DEPS } from '../bin/lib/gate-p
 import { mergeServerAliases } from '../bin/lib/alias-merge.js';
 import { appendAppErrorTodo } from '../bin/lib/reexport-todo.js';
 import { appendRuntimeDepsTodo } from '../bin/lib/runtime-deps-todo.js';
+import { appendEnvTestTodo } from '../bin/lib/app-tests-todo.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '../..');
@@ -464,6 +465,48 @@ describe('appendAppErrorTodo', () => {
   });
 });
 
+// A 0.4.x scaffold with custom ports shipped an env.test.ts still expecting 5501 / 5500: app-owned, so a row.
+describe('appendEnvTestTodo', () => {
+  let consumer;
+  beforeEach(() => {
+    consumer = mkdtempSync(join(tmpdir(), 'env-test-todo-'));
+  });
+  afterEach(() => removeScratch(consumer));
+
+  const envTs = (port, clientPort) =>
+    `PORT: z.coerce.number().default(${port}),\nCLIENT_URL: z.string().default('http://localhost:${clientPort}'),\n`;
+  const envTest = (port, clientPort) =>
+    `expect(env.PORT).toBe(${port});\nexpect(env.CLIENT_URL).toBe('http://localhost:${clientPort}');\n`;
+  const write = (env, test) => {
+    mkdirSync(join(consumer, 'server/src/config'), { recursive: true });
+    writeFileSync(join(consumer, 'server/src/config/env.ts'), env);
+    writeFileSync(join(consumer, 'server/src/config/env.test.ts'), test);
+  };
+  const todo = () => readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8');
+
+  it('names both lines to change when env.ts holds custom ports and the test still expects the defaults', () => {
+    write(envTs(5681, 5680), envTest(5501, 5500));
+    expect(appendEnvTestTodo(consumer)).toBe(true);
+    expect(todo()).toContain('| `server/src/config/env.test.ts` |');
+    expect(todo()).toContain('`expect(env.PORT).toBe(5501)` to `toBe(5681)`');
+    expect(todo()).toContain('to `http://localhost:5680`');
+  });
+
+  it('writes nothing for default ports, an already-fixed test, or missing files, and does not repeat a row', () => {
+    expect(appendEnvTestTodo(consumer)).toBe(false);
+    write(envTs(5501, 5500), envTest(5501, 5500));
+    expect(appendEnvTestTodo(consumer)).toBe(false);
+    write(envTs(5681, 5680), envTest(5681, 5680));
+    expect(appendEnvTestTodo(consumer)).toBe(false);
+    expect(existsSync(join(consumer, 'UPGRADE_TODO.md'))).toBe(false);
+    write(envTs(5681, 5680), envTest(5501, 5500));
+    appendEnvTestTodo(consumer);
+    const once = todo();
+    appendEnvTestTodo(consumer);
+    expect(todo()).toBe(once);
+  });
+});
+
 // A 0.4.x app lacks @appydave/core, zod 4 and @testing-library/dom, which the upgraded code needs. The tool
 // does not add them; it writes the proven install steps as one row per package.json.
 describe('appendRuntimeDepsTodo', () => {
@@ -481,6 +524,7 @@ describe('appendRuntimeDepsTodo', () => {
     expect(appendRuntimeDepsTodo(consumer)).toBe(true);
     expect(todo()).toContain('| `server/package.json` |');
     expect(todo()).toContain('npm install -w server @appydave/core@^0.2.0 zod@^4 --legacy-peer-deps');
+    expect(todo()).toContain('is not zod'); // the ERESOLVE comes from the vitest peer, not the zod bump
     expect(todo()).toContain('| `client/package.json` |');
     expect(todo()).toContain('npm install -w client -D @testing-library/dom --legacy-peer-deps');
   });
@@ -587,6 +631,12 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
     expect(todoText).toContain('| `server/package.json` |');
     expect(todoText).toContain('npm install -w server @appydave/core@^0.2.0 zod@^4 --legacy-peer-deps');
     expect(todoText).toContain('| `client/package.json` |');
+    // the app's old useSocket.test.ts is replaced together with useSocket.ts (the new hook reads socket.connected)
+    expect(readFileSync(join(app, 'client/src/hooks/useSocket.test.ts'), 'utf-8')).toBe(
+      readFileSync(join(TEMPLATE, 'client/src/hooks/useSocket.test.ts'), 'utf-8'),
+    );
+    // the lint gates arrived: the format row says how to clear format:check
+    expect(todoText).toContain('| `npm run format` |');
 
     // A plain `npm install` on the stale 0.4.18 lockfile fails ERESOLVE (oxlint's optional vite-plus peer pulls vitest 5);
     // once --legacy-peer-deps has regenerated the lockfile, plain installs work. upgrade.js tells the user this.
