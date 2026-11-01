@@ -61,9 +61,9 @@ function skipPrompt(cli, flag, fallback) {
   return undefined;
 }
 
-function needTerminal(flag) {
+function needTerminal(flag, hint = `Pass ${flag}, or --yes to accept the defaults.`) {
   if (process.stdin.isTTY) return;
-  console.error(`Error: no terminal to ask for ${flag}. Pass ${flag}, or --yes to accept the defaults.`);
+  console.error(`Error: no terminal to ask for ${flag}. ${hint}`);
   process.exit(1);
 }
 
@@ -242,7 +242,7 @@ async function main() {
     }
     projectName = cli.name.trim();
   } else {
-    needTerminal('the project name');
+    needTerminal('the project name', 'Pass it as the first argument (--yes cannot default it).');
     const result = await text({
       message: 'Project name',
       placeholder: 'my-app',
