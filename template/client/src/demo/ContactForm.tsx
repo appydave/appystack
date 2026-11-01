@@ -1,4 +1,5 @@
 import { useForm } from 'react-hook-form';
+import type { FieldError, UseFormRegisterReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { cn } from '@/lib/utils.js';
@@ -10,6 +11,65 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+
+interface FormFieldProps {
+  id: string;
+  label: string;
+  error: FieldError | undefined;
+  registration: UseFormRegisterReturn;
+  control: 'input' | 'textarea';
+  type?: string;
+  placeholder: string;
+}
+
+const INPUT_CLASSES = 'w-full px-3 py-2 rounded text-sm bg-background text-foreground border';
+const TEXTAREA_CLASSES =
+  'w-full px-3 py-2 rounded text-sm resize-none bg-background text-foreground border';
+
+function FormField({
+  id,
+  label,
+  error,
+  registration,
+  control,
+  type = 'text',
+  placeholder,
+}: FormFieldProps) {
+  const className = cn(
+    control === 'textarea' ? TEXTAREA_CLASSES : INPUT_CLASSES,
+    error ? 'border-destructive' : 'border-border'
+  );
+
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium mb-1 text-muted-foreground">
+        {label}
+      </label>
+      {control === 'textarea' ? (
+        <textarea
+          id={id}
+          rows={4}
+          placeholder={placeholder}
+          {...registration}
+          className={className}
+        />
+      ) : (
+        <input
+          id={id}
+          type={type}
+          placeholder={placeholder}
+          {...registration}
+          className={className}
+        />
+      )}
+      {error && (
+        <span role="alert" className="text-red-400 text-xs mt-1 block">
+          {error.message}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function ContactForm() {
   const {
@@ -26,68 +86,33 @@ export default function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4 max-w-md">
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium mb-1 text-muted-foreground">
-          Name
-        </label>
-        <input
-          id="name"
-          type="text"
-          placeholder="Your name"
-          {...register('name')}
-          className={cn(
-            'w-full px-3 py-2 rounded text-sm bg-background text-foreground border',
-            errors.name ? 'border-destructive' : 'border-border'
-          )}
-        />
-        {errors.name && (
-          <span role="alert" className="text-red-400 text-xs mt-1 block">
-            {errors.name.message}
-          </span>
-        )}
-      </div>
+      <FormField
+        id="name"
+        label="Name"
+        control="input"
+        placeholder="Your name"
+        error={errors.name}
+        registration={register('name')}
+      />
 
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-1 text-muted-foreground">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          placeholder="you@example.com"
-          {...register('email')}
-          className={cn(
-            'w-full px-3 py-2 rounded text-sm bg-background text-foreground border',
-            errors.email ? 'border-destructive' : 'border-border'
-          )}
-        />
-        {errors.email && (
-          <span role="alert" className="text-red-400 text-xs mt-1 block">
-            {errors.email.message}
-          </span>
-        )}
-      </div>
+      <FormField
+        id="email"
+        label="Email"
+        control="input"
+        type="email"
+        placeholder="you@example.com"
+        error={errors.email}
+        registration={register('email')}
+      />
 
-      <div>
-        <label htmlFor="message" className="block text-sm font-medium mb-1 text-muted-foreground">
-          Message
-        </label>
-        <textarea
-          id="message"
-          rows={4}
-          placeholder="Your message..."
-          {...register('message')}
-          className={cn(
-            'w-full px-3 py-2 rounded text-sm resize-none bg-background text-foreground border',
-            errors.message ? 'border-destructive' : 'border-border'
-          )}
-        />
-        {errors.message && (
-          <span role="alert" className="text-red-400 text-xs mt-1 block">
-            {errors.message.message}
-          </span>
-        )}
-      </div>
+      <FormField
+        id="message"
+        label="Message"
+        control="textarea"
+        placeholder="Your message..."
+        error={errors.message}
+        registration={register('message')}
+      />
 
       <button
         type="submit"
