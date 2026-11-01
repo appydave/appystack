@@ -114,11 +114,11 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  const name = (projectName as string).trim();
-  const scope = (packageScope as string).trim();
-  const serverPort = (serverPortInput as string).trim();
-  const clientPort = (clientPortInput as string).trim();
-  const desc = (description as string).trim();
+  const name = projectName.trim();
+  const scope = packageScope.trim();
+  const serverPort = serverPortInput.trim();
+  const clientPort = clientPortInput.trim();
+  const desc = description.trim();
 
   const oldScope = '@appystack-template';
   const oldRootName = '@appydave/appystack-template';

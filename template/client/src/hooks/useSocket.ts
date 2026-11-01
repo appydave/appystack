@@ -1,38 +1,26 @@
-import { useEffect, useRef, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { getEntitySocket } from '../lib/entitySocket.js';
-import type { AppSocket } from '../lib/entitySocket.js';
 
 /**
  * Socket.io connection hook — returns the shared entity socket singleton and its connected state.
  * Uses the same connection as useEntity so the app maintains a single WebSocket.
  * Never creates a new socket — always observes the singleton from entitySocket.ts.
- * @returns socket ref and connected boolean
+ * @returns the socket and a connected boolean
  */
 export function useSocket() {
-  const socketRef = useRef<AppSocket | null>(null);
-  const [connected, setConnected] = useState(false);
+  const socket = getEntitySocket();
+  const connected = useSyncExternalStore(
+    (notify) => {
+      socket.on('connect', notify);
+      socket.on('disconnect', notify);
 
-  useEffect(() => {
-    const socket = getEntitySocket();
+      return () => {
+        socket.off('connect', notify);
+        socket.off('disconnect', notify);
+      };
+    },
+    () => socket.connected
+  );
 
-    socketRef.current = socket;
-
-    const onConnect = () => setConnected(true);
-    const onDisconnect = () => setConnected(false);
-
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
-
-    // Sync with current connection state immediately
-    if (socket.connected) {
-      setConnected(true);
-    }
-
-    return () => {
-      socket.off('connect', onConnect);
-      socket.off('disconnect', onDisconnect);
-    };
-  }, []);
-
-  return { socket: socketRef.current, connected };
+  return { socket, connected };
 }
