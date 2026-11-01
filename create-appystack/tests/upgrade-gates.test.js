@@ -61,6 +61,7 @@ describe('mergeGatePackage', () => {
     devDependencies: {
       '@stylistic/eslint-plugin': '^5.10.0',
       'eslint-plugin-oxlint': '1.90.0',
+      'eslint-plugin-sonarjs': '4.2.2',
       oxlint: '1.90.0',
       vitest: '^4',
     },

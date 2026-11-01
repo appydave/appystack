@@ -8,6 +8,24 @@ interface PongResponse {
   timestamp: string;
 }
 
+function buttonClass(connected: boolean) {
+  return cn(
+    'px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+    connected
+      ? 'bg-primary text-primary-foreground'
+      : 'bg-card border border-border text-muted-foreground'
+  );
+}
+
+function PongPanel({ pong }: { pong: PongResponse }) {
+  return (
+    <div className="mt-3 p-3 rounded text-sm bg-background border border-primary">
+      <p className="text-primary">server:pong received — {pong.message}</p>
+      <p className="mt-1 text-primary/70">{new Date(pong.timestamp).toLocaleTimeString()}</p>
+    </div>
+  );
+}
+
 export default function SocketDemo() {
   const { socket, connected } = useSocket();
   const [lastPong, setLastPong] = useState<PongResponse | null>(null);
@@ -43,24 +61,12 @@ export default function SocketDemo() {
         <button
           onClick={sendPing}
           disabled={!connected || waiting}
-          className={cn(
-            'px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-            connected
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-card border border-border text-muted-foreground'
-          )}
+          className={buttonClass(connected)}
         >
           {waiting ? 'Waiting for pong...' : 'Send Ping'}
         </button>
 
-        {lastPong && (
-          <div className="mt-3 p-3 rounded text-sm bg-background border border-primary">
-            <p className="text-primary">server:pong received — {lastPong.message}</p>
-            <p className="mt-1 text-primary/70">
-              {new Date(lastPong.timestamp).toLocaleTimeString()}
-            </p>
-          </div>
-        )}
+        {lastPong && <PongPanel pong={lastPong} />}
       </div>
     </div>
   );
