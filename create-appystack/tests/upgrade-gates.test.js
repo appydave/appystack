@@ -146,6 +146,13 @@ describe('mergeGatePackage', () => {
     expect(readJson(consumer, 'package.json').scripts.deadcode).toBe(templatePkg.scripts.deadcode);
   });
 
+  it('replaces the P4 dead-code script (root cruise skipping build/dist at any depth) with the anchored one', () => {
+    writeJson(consumer, 'package.json', { scripts: { deadcode: "grep -rqE '@(public|internal|beta|alias)' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.cjs' --include='*.mts' --include='*.cts' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=coverage . ; [ $? -eq 1 ] && knip && (cd client && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src) && (cd server && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src) && (cd shared && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src) && depcruise -c .dependency-cruiser.cjs -x '^(client|server|shared)/|(^|/)(node_modules|dist|build|coverage|playwright-report|test-results)/' ." } });
+    const changed = mergeGatePackage(consumer, template);
+    expect(changed).toContain('scripts.deadcode');
+    expect(readJson(consumer, 'package.json').scripts.deadcode).toBe(templatePkg.scripts.deadcode);
+  });
+
   it('leaves a customized script or pinned dependency and writes an UPGRADE_TODO row', () => {
     writeJson(consumer, 'package.json', {
       scripts: { lint: 'my-lint', 'lint:fix': 'eslint . --fix', dup: 'my-dup' },

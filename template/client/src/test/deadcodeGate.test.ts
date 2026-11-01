@@ -35,9 +35,10 @@ const include = TYPES.map((type) => `--include='*.${type}'`).join(' ');
 const exclude = SKIP_DIRS.map((dir) => `--exclude-dir=${dir}`).join(' ');
 const guard = ['gre', 'p'].join('') + ` -rqE '@(${TAGS.join('|')})'`;
 // The workspaces are cruised on their own with their tsconfig; this root cruise takes everything else
-// (scripts/, e2e/, root files) and skips the workspaces and build output.
+// (scripts/, e2e/, root files) and skips the workspaces and the top-level build output only:
+// anchored, so source folders such as scripts/build/ are still cruised. node_modules is skipped at any depth.
 const ROOT_SKIP =
-  '^(client|server|shared)/|(^|/)(node_modules|dist|build|coverage|playwright-report|test-results)/';
+  '^(client|server|shared|dist|build|coverage|playwright-report|test-results)/|(^|/)node_modules/';
 const ROOT_CRUISE = `depcruise -c .dependency-cruiser.cjs -x '${ROOT_SKIP}' .`;
 const script = (flag = CRUISE_FLAG, rootCruise = ROOT_CRUISE): string =>
   `${guard} ${include} ${exclude} . ; [ $? -eq 1 ] && knip && ${[...WORKSPACES.map((w) => cruise(w, flag)), rootCruise].join(' && ')}`;
@@ -258,6 +259,19 @@ const rootCycle = (dir: 'scripts' | 'e2e'): Record<string, string> => ({
   [`${dir}/b.ts`]: `import { a } from './a.js';\nexport const b = a;\n`,
 });
 
+// A two-file cycle under <where>, which a package script runs so Knip counts both files as used.
+const cycleAt = (where: string): Record<string, string> => ({
+  'package.json': JSON.stringify({
+    name: 't',
+    private: true,
+    workspaces: WORKSPACES,
+    scripts: { deadcode: script(), tool: `tsx ${where}/a.ts` },
+    devDependencies: { knip: '*', 'dependency-cruiser': '*', tsx: '*' },
+  }),
+  [`${where}/a.ts`]: `import { b } from './b.js';\nexport const a = b;\n`,
+  [`${where}/b.ts`]: `import { a } from './a.js';\nexport const b = a;\n`,
+});
+
 describe('the deadcode script, run for real', () => {
   it('passes a clean tree', () => {
     expect(runScript(sources())).toBe(0);
@@ -290,6 +304,20 @@ describe('the deadcode script, run for real', () => {
     'would miss that %s/ cycle without the root cruise (the root cruise is what sees it)',
     (dir) => {
       expect(runScript(sources(rootCycle(dir)), script(CRUISE_FLAG, 'true'))).toBe(0);
+    }
+  );
+
+  it.each(['scripts/build', 'e2e/dist', 'scripts/coverage'])(
+    'fails on an import cycle in %s/, a source folder that only shares a build output name',
+    (where) => {
+      expect(runScript(sources(cycleAt(where)))).toBe(1);
+    }
+  );
+
+  it.each(['build', 'dist', 'coverage'])(
+    'skips a cycle in the top-level %s/ build output',
+    (where) => {
+      expect(runScript(sources(cycleAt(where)))).toBe(0);
     }
   );
 
