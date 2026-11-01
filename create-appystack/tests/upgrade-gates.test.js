@@ -134,6 +134,18 @@ describe('mergeGatePackage', () => {
     expect(readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8')).toContain('npm run deadcode');
   });
 
+  it('replaces the first dead-code gate script (workspace src only) with the one that also cruises scripts/, e2e/ and root files', () => {
+    writeJson(consumer, 'package.json', {
+      scripts: {
+        deadcode:
+          "grep -rqE '@(public|internal|beta|alias)' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.cjs' --include='*.mts' --include='*.cts' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=coverage . ; [ $? -eq 1 ] && knip && (cd client && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src) && (cd server && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src) && (cd shared && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src)",
+      },
+    });
+    const changed = mergeGatePackage(consumer, template);
+    expect(changed).toContain('scripts.deadcode');
+    expect(readJson(consumer, 'package.json').scripts.deadcode).toBe(templatePkg.scripts.deadcode);
+  });
+
   it('leaves a customized script or pinned dependency and writes an UPGRADE_TODO row', () => {
     writeJson(consumer, 'package.json', {
       scripts: { lint: 'my-lint', 'lint:fix': 'eslint . --fix', dup: 'my-dup' },

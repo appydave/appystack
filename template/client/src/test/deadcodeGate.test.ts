@@ -34,8 +34,13 @@ const cruise = (workspace: string, flag = CRUISE_FLAG): string =>
 const include = TYPES.map((type) => `--include='*.${type}'`).join(' ');
 const exclude = SKIP_DIRS.map((dir) => `--exclude-dir=${dir}`).join(' ');
 const guard = ['gre', 'p'].join('') + ` -rqE '@(${TAGS.join('|')})'`;
-const script = (flag = CRUISE_FLAG): string =>
-  `${guard} ${include} ${exclude} . ; [ $? -eq 1 ] && knip && ${WORKSPACES.map((w) => cruise(w, flag)).join(' && ')}`;
+// The workspaces are cruised on their own with their tsconfig; this root cruise takes everything else
+// (scripts/, e2e/, root files) and skips the workspaces and build output.
+const ROOT_SKIP =
+  '^(client|server|shared)/|(^|/)(node_modules|dist|build|coverage|playwright-report|test-results)/';
+const ROOT_CRUISE = `depcruise -c .dependency-cruiser.cjs -x '${ROOT_SKIP}' .`;
+const script = (flag = CRUISE_FLAG, rootCruise = ROOT_CRUISE): string =>
+  `${guard} ${include} ${exclude} . ; [ $? -eq 1 ] && knip && ${[...WORKSPACES.map((w) => cruise(w, flag)), rootCruise].join(' && ')}`;
 
 // Knip reads a config from its own list of names (read from the installed package, so a new Knip
 // cannot add a name this pin misses), or a "knip" key in package.json. One with ignore: ['**'] hides everything.
@@ -67,7 +72,7 @@ const knipConfigs = (dir: string): string[] => {
 };
 
 describe('the deadcode gate configuration', () => {
-  it('`npm run deadcode` is exactly: tag guard, knip, then dependency-cruiser in each workspace with --ts-config', () => {
+  it('`npm run deadcode` is exactly: tag guard, knip, then dependency-cruiser in each workspace with --ts-config, then over the root (scripts, e2e, root files)', () => {
     expect(
       manifest.scripts.deadcode,
       'The deadcode script changed. Restore it, or update script() in this test in the same PR.'
@@ -237,6 +242,22 @@ export const main = [used, a];
 `,
 };
 
+// scripts/ and e2e/ sit outside every workspace; both are package scripts here so Knip sees every file as used.
+const rootCycle = (dir: 'scripts' | 'e2e'): Record<string, string> => ({
+  'package.json': JSON.stringify({
+    name: 't',
+    private: true,
+    workspaces: WORKSPACES,
+    scripts: { deadcode: script(), tool: 'tsx scripts/a.ts', e2e: 'tsx e2e/a.ts' },
+    devDependencies: { knip: '*', 'dependency-cruiser': '*', tsx: '*' },
+  }),
+  'scripts/a.ts': `import { b } from './b.js';\nexport const a = b;\n`,
+  'scripts/b.ts': `export const b = 1;\n`,
+  'e2e/a.ts': `import { b } from './b.js';\nexport const a = b;\n`,
+  'e2e/b.ts': `export const b = 1;\n`,
+  [`${dir}/b.ts`]: `import { a } from './a.js';\nexport const b = a;\n`,
+});
+
 describe('the deadcode script, run for real', () => {
   it('passes a clean tree', () => {
     expect(runScript(sources())).toBe(0);
@@ -257,6 +278,20 @@ describe('the deadcode script, run for real', () => {
   it('would miss that alias cycle without --ts-config (the flag is what makes the gate see it)', () => {
     expect(runScript(sources(cycle), script(''))).toBe(0);
   });
+
+  it.each(['scripts', 'e2e'] as const)(
+    'fails on an import cycle in %s/, outside every workspace',
+    (dir) => {
+      expect(runScript(sources(rootCycle(dir)))).toBe(1);
+    }
+  );
+
+  it.each(['scripts', 'e2e'] as const)(
+    'would miss that %s/ cycle without the root cruise (the root cruise is what sees it)',
+    (dir) => {
+      expect(runScript(sources(rootCycle(dir)), script(CRUISE_FLAG, 'true'))).toBe(0);
+    }
+  );
 
   it.each(TAGS)('refuses the %s tag, which would hide an unused export from knip', (name) => {
     const tagged = `/** ${tag(name)} */\nexport const used = 1;\n`;
