@@ -20,7 +20,10 @@ const PRIOR_SCRIPT_VALUES = {
   lint: ['eslint .'],
   'lint:fix': ['eslint . --fix'],
   dup: [], // new with the duplicates gate: no earlier template value to recognise
-  deadcode: [], // new with the dead-code and cycles gate
+  deadcode: [
+    // the first dead-code gate: Knip plus a cycle check of each workspace's src only
+    "grep -rqE '@(public|internal|beta|alias)' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.cjs' --include='*.mts' --include='*.cts' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=coverage . ; [ $? -eq 1 ] && knip && (cd client && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src) && (cd server && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src) && (cd shared && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src)",
+  ],
 };
 
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf-8'));
