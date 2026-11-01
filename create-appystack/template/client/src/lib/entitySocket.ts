@@ -10,7 +10,7 @@ let _socket: AppSocket | null = null;
  * Resolve the socket URL from env var or window.location.
  * Set VITE_SOCKET_URL to bypass Vite WebSocket proxy upgrade issues.
  */
-export function getSocketUrl(): string {
+function getSocketUrl(): string {
   return import.meta.env.VITE_SOCKET_URL ?? window.location.origin;
 }
 

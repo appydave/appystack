@@ -1,5 +1,6 @@
-import { useServerStatus } from '../hooks/useServerStatus.js';
-import { useSocket } from '../hooks/useSocket.js';
+import type { ServerInfo } from '@appystack-template/shared';
+import { useServerStatus } from '@hooks/useServerStatus.js';
+import { useSocket } from '@hooks/useSocket.js';
 
 function StatusDot({ ok }: { ok: boolean }) {
   return (
@@ -27,6 +28,24 @@ function StatusCard({
   );
 }
 
+function InfoCard({
+  title,
+  info,
+  error,
+  children,
+}: {
+  title: string;
+  info: ServerInfo | null;
+  error: string | null;
+  children: (info: ServerInfo) => React.ReactNode;
+}) {
+  return (
+    <StatusCard title={title} ok={!!info}>
+      {info ? children(info) : <p className="text-red-400">{error || 'No data'}</p>}
+    </StatusCard>
+  );
+}
+
 export default function StatusGrid() {
   const { health, info, loading, error } = useServerStatus();
   const { connected } = useSocket();
@@ -51,27 +70,23 @@ export default function StatusGrid() {
         <p>Status: {connected ? 'connected' : 'disconnected'}</p>
       </StatusCard>
 
-      <StatusCard title="Environment" ok={!!info}>
-        {info ? (
+      <InfoCard title="Environment" info={info} error={error}>
+        {(i) => (
           <>
-            <p>Mode: {info.environment}</p>
-            <p>Port: {info.port}</p>
+            <p>Mode: {i.environment}</p>
+            <p>Port: {i.port}</p>
           </>
-        ) : (
-          <p className="text-red-400">{error || 'No data'}</p>
         )}
-      </StatusCard>
+      </InfoCard>
 
-      <StatusCard title="Runtime" ok={!!info}>
-        {info ? (
+      <InfoCard title="Runtime" info={info} error={error}>
+        {(i) => (
           <>
-            <p>Node: {info.nodeVersion}</p>
-            <p>Uptime: {Math.floor(info.uptime)}s</p>
+            <p>Node: {i.nodeVersion}</p>
+            <p>Uptime: {Math.floor(i.uptime)}s</p>
           </>
-        ) : (
-          <p className="text-red-400">{error || 'No data'}</p>
         )}
-      </StatusCard>
+      </InfoCard>
     </div>
   );
 }

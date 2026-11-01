@@ -4,11 +4,11 @@ Complete reference for building on the RVETS stack (React + Vite + Express + Typ
 
 ## Guides
 
-| Guide                                 | What's in it                                     |
-| ------------------------------------- | ------------------------------------------------ |
-| [Getting Started](getting-started.md) | First steps after scaffolding                    |
-| [Testing Guide](testing-guide.md)     | Vitest patterns, MSW, hook testing, socket mocks |
-| [Troubleshooting](troubleshooting.md) | Common problems and fixes                        |
+| Guide                                 | What's in it                                |
+| ------------------------------------- | ------------------------------------------- |
+| [Getting Started](getting-started.md) | First steps after scaffolding               |
+| [Testing Guide](testing-guide.md)     | Vitest patterns, hook testing, socket mocks |
+| [Troubleshooting](troubleshooting.md) | Common problems and fixes                   |
 
 ## Reference
 

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { HealthResponse } from '@appystack-template/shared';
-import { apiSuccess } from '../helpers/response.js';
+import { apiSuccess } from '@helpers/response.js';
 
 const router = Router();
 

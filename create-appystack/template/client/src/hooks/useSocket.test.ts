@@ -9,7 +9,7 @@ const mockSocket = {
   emit: vi.fn(),
 };
 
-vi.mock('../lib/entitySocket.js', () => ({
+vi.mock('@/lib/entitySocket.js', () => ({
   getEntitySocket: () => mockSocket,
 }));
 

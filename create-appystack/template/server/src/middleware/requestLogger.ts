@@ -1,10 +1,10 @@
-import pinoHttp from 'pino-http';
+import pinoHttp, { type Options } from 'pino-http';
 import crypto from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import type { Logger } from 'pino';
-import { logger as appLogger } from '../config/logger.js';
-import { env } from '../config/env.js';
-import { HTTP_STATUS } from '../helpers/httpStatus.js';
+import { logger as appLogger } from '@config/logger.js';
+import { env } from '@config/env.js';
+import { HTTP_STATUS } from '@helpers/httpStatus.js';
 
 /**
  * Endpoints that are polled continuously — health checks, status widgets, MCP
@@ -17,7 +17,7 @@ import { HTTP_STATUS } from '../helpers/httpStatus.js';
  * (~21 MB/day), where a single status endpoint was ~50% of all lines; and on
  * FliStudio 2026-10-19 — 950 MB in 16 days. Add your app's own polled routes here.
  */
-export const HIGH_FREQUENCY_PATHS = [
+const HIGH_FREQUENCY_PATHS = [
   '/health',
   '/healthz',
   '/api/health',
@@ -25,6 +25,8 @@ export const HIGH_FREQUENCY_PATHS = [
   '/api/ingest/status',
   '/mcp',
 ];
+
+type PollRequest = IncomingMessage & { body?: unknown };
 
 export interface RequestLoggerOptions {
   /**
@@ -41,12 +43,12 @@ export interface RequestLoggerOptions {
    * so a JSON body is already parsed. Only consulted for successful responses —
    * a failing poll always logs.
    */
-  isPoll?: (req: IncomingMessage & { body?: unknown }) => boolean;
+  isPoll?: (req: PollRequest) => boolean;
   /** Base logger. Defaults to the app logger; tests pass one with a capture stream. */
   logger?: Logger;
 }
 
-export function isHighFrequency(url: string | undefined): boolean {
+function isHighFrequency(url: string | undefined): boolean {
   if (!url) {
     return false;
   }
@@ -54,6 +56,44 @@ export function isHighFrequency(url: string | undefined): boolean {
   const path = url.split('?')[0];
 
   return HIGH_FREQUENCY_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
+}
+
+function isQuiet(req: PollRequest, isPoll: RequestLoggerOptions['isPoll']): boolean {
+  return isHighFrequency(req.url) || Boolean(isPoll?.(req));
+}
+
+/**
+ * One-line mode: everything worth reading is already in the message. Drop the
+ * responseTime/err properties (errorHandler logs the real error with its stack).
+ *
+ * pino-http's DEFAULT serializers emit every request and response header on
+ * every line — including the full Content-Security-Policy string, roughly
+ * 600 bytes per entry. Keep only the fields anyone actually reads.
+ *
+ * In one-line mode the serializers return `undefined`, which pino omits entirely — this
+ * removes the `req` binding pino-http attaches to its child logger. These
+ * serializers are scoped to that child, so non-request logs elsewhere in the
+ * app keep their objects.
+ */
+function outputShape(
+  oneLine: boolean
+): Pick<Options, 'customSuccessObject' | 'customErrorObject' | 'serializers'> {
+  if (oneLine) {
+    return {
+      customSuccessObject: () => ({}),
+      customErrorObject: () => ({}),
+      serializers: { req: () => undefined, res: () => undefined },
+    };
+  }
+
+  return {
+    customSuccessObject: undefined,
+    customErrorObject: undefined,
+    serializers: {
+      req: (req) => ({ id: req.id, method: req.method, url: req.url }),
+      res: (res) => ({ statusCode: res.statusCode }),
+    },
+  };
 }
 
 export function createRequestLogger(options: RequestLoggerOptions = {}) {
@@ -75,11 +115,7 @@ export function createRequestLogger(options: RequestLoggerOptions = {}) {
       }
 
       // Successful polls only — a failing poll still reaches warn/error above.
-      if (isHighFrequency(req.url)) {
-        return 'silent';
-      }
-
-      if (isPoll?.(req)) {
+      if (isQuiet(req, isPoll)) {
         return 'silent';
       }
 
@@ -93,26 +129,7 @@ export function createRequestLogger(options: RequestLoggerOptions = {}) {
       `${req.method} ${req.url} ${res.statusCode}` +
       (responseTime === undefined ? '' : ` ${responseTime}ms`) +
       ` — ${err.message}`,
-    // One-line mode: everything worth reading is already in the message. Drop the
-    // responseTime/err properties (errorHandler logs the real error with its stack).
-    customSuccessObject: oneLine ? () => ({}) : undefined,
-    customErrorObject: oneLine ? () => ({}) : undefined,
-    /**
-     * pino-http's DEFAULT serializers emit every request and response header on
-     * every line — including the full Content-Security-Policy string, roughly
-     * 600 bytes per entry. Keep only the fields anyone actually reads.
-     *
-     * In one-line mode they return `undefined`, which pino omits entirely — this
-     * removes the `req` binding pino-http attaches to its child logger. These
-     * serializers are scoped to that child, so non-request logs elsewhere in the
-     * app keep their objects.
-     */
-    serializers: oneLine
-      ? { req: () => undefined, res: () => undefined }
-      : {
-          req: (req) => ({ id: req.id, method: req.method, url: req.url }),
-          res: (res) => ({ statusCode: res.statusCode }),
-        },
+    ...outputShape(oneLine),
   });
 }
 

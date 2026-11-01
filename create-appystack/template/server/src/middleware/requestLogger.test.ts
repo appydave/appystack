@@ -4,8 +4,8 @@ import request from 'supertest';
 import pino from 'pino';
 import { prettyFactory } from 'pino-pretty';
 import { requestLogger, createRequestLogger } from './requestLogger.js';
-import { logger } from '../config/logger.js';
-import { looseFn } from '../test/looseFn.js';
+import { logger } from '@config/logger.js';
+import { looseFn } from '@test/looseFn.js';
 
 function buildApp() {
   const app = express();
