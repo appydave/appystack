@@ -86,7 +86,7 @@ Create `server/src/routes/messages.ts`. The route file creates a Router, registe
 import { Router } from 'express';
 import { z } from 'zod';
 import { validate } from '../middleware/validate.js';
-import { AppError } from '../middleware/errorHandler.js';
+import { AppError } from '@helpers/AppError.js';
 import { apiSuccess } from '../helpers/response.js';
 import type { ApiResponse, Message } from '@appystack-template/shared';
 

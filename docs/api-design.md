@@ -108,7 +108,7 @@ res.json(response);
 
 ## Error Responses
 
-`server/src/middleware/errorHandler.ts` exports `AppError` and the global `errorHandler`.
+`server/src/helpers/AppError.ts` exports `AppError`; `server/src/middleware/errorHandler.ts` exports the global `errorHandler`. Import `AppError` from `@helpers/AppError.js`: `errorHandler.ts` does not re-export it.
 
 ```typescript
 export class AppError extends Error {
@@ -122,7 +122,7 @@ export class AppError extends Error {
 Throw `AppError` in any route and call `next(err)` to forward it to the handler:
 
 ```typescript
-import { AppError } from '../middleware/errorHandler.js';
+import { AppError } from '@helpers/AppError.js';
 
 router.get('/api/items/:id', async (req, res, next) => {
   try {
@@ -161,7 +161,7 @@ export interface User { id: string; name: string; email: string; }
 import { Router } from 'express';
 import { z } from 'zod';
 import { validate } from '../middleware/validate.js';
-import { AppError } from '../middleware/errorHandler.js';
+import { AppError } from '@helpers/AppError.js';
 import type { ApiResponse, User } from '@appystack-template/shared';
 
 const router = Router();

@@ -121,7 +121,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import { validate } from '../middleware/validate.js';
-import { AppError } from '../middleware/errorHandler.js';
+import { AppError } from '@helpers/AppError.js';
 import { apiSuccess } from '../helpers/response.js';
 import { env } from '../config/env.js';
 import type { ApiResponse } from '@appystack-template/shared';
@@ -231,7 +231,7 @@ Create `template/server/src/middleware/auth.ts`. This middleware reads the `Auth
 // template/server/src/middleware/auth.ts
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { AppError } from './errorHandler.js';
+import { AppError } from '@helpers/AppError.js';
 import { env } from '../config/env.js';
 import type { JwtPayload } from '../routes/auth.js';
 
@@ -937,7 +937,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ## Cross-references
 
 - `template/server/src/config/env.ts` — Zod env schema (add `JWT_SECRET` here)
-- `template/server/src/middleware/errorHandler.ts` — `AppError` class used in `requireAuth`
+- `template/server/src/helpers/AppError.ts` — `AppError` class used in `requireAuth`
 - `template/server/src/middleware/validate.ts` — request body validation used in auth routes
 - `template/server/src/routes/health.ts` — route pattern reference
 - `template/server/src/routes/info.ts` — `apiSuccess` helper usage

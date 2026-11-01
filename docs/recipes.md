@@ -131,11 +131,10 @@ Verify `shared/package.json` now lists `zod` in `dependencies` (not `devDependen
 shared/src/
 ├── schemas/
 │   ├── entity.ts          ← base schemas (id, timestamps)
-│   ├── company.ts         ← entity-specific schema
-│   └── index.ts           ← barrel export
+│   └── company.ts         ← entity-specific schema
 ├── types/
 │   └── entity.ts          ← keep existing interfaces during migration (see §8)
-└── index.ts               ← re-exports schemas alongside types
+└── index.ts               ← package entry: lists each schema file next to the types
 ```
 
 ---
@@ -187,19 +186,14 @@ export const CompanyFormSchema = CompanySchema.omit({
 export type CompanyFormData = z.infer<typeof CompanyFormSchema>
 ```
 
-```typescript
-// shared/src/schemas/index.ts
-
-export * from './entity.js'
-export * from './company.js'
-// export * from './site.js'   ← add as you go
-```
+No `schemas/index.ts`: a barrel hides which file a schema comes from, and the template's lint rejects re-exports everywhere except the package entry, `shared/src/index.ts`. List each schema file there, and import from the real file inside the package.
 
 ```typescript
-// shared/src/index.ts — add alongside existing type exports
+// shared/src/index.ts — the package entry (exempt from the no-re-export rule); add alongside the existing exports
 
-export * from './schemas/index.js'
-// existing: export * from './types/index.js'
+export * from './schemas/entity.js'
+export * from './schemas/company.js'
+// export * from './schemas/site.js'   ← add as you go
 ```
 
 ---

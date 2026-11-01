@@ -11,6 +11,7 @@ import * as diffModule from './lib/diff.js';
 import { handleRecipeFile } from './lib/recipe.js';
 import { mergeGatePackage } from './lib/gate-package.js';
 import { appendServerAliasTodo } from './lib/alias-todo.js';
+import { appendAppErrorTodo } from './lib/reexport-todo.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -175,6 +176,10 @@ async function main() {
 
   if (appendServerAliasTodo(cwd)) {
     prompts.note('The server needs path aliases the template now uses. See UPGRADE_TODO.md for the exact lines.', 'Server aliases');
+  }
+
+  if (appendAppErrorTodo(cwd)) {
+    prompts.note('errorHandler.ts no longer re-exports AppError. See UPGRADE_TODO.md for the files to change.', 'AppError import');
   }
 
   // -------------------------------------------------------------------------

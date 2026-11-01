@@ -12,6 +12,7 @@ export const CLASSIFICATION = {
     'eslint.config.js',
     'lint/spacing.js', // gate rule imported by eslint.config.js — template-owned
     'lint/size.js', // gate rule imported by eslint.config.js — template-owned
+    'lint/exports.js', // gate rule imported by eslint.config.js — template-owned
     '.oxlintrc.json', // Oxlint gate config; a customized copy is overwritten (stricter gate, accepted)
     '.jscpd.json', // duplicates gate, prod profile (run by the dup script)
     '.jscpd.tests.json', // duplicates gate, tests profile
