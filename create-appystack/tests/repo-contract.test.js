@@ -109,11 +109,12 @@ describe('Feature: this repo fails its own build on a duplicated-code finding', 
   });
 });
 
-describe('Feature: the root CI workflow is pinned step by step', () => {
+describe('Feature: both CI workflows are pinned step by step', () => {
   // One entry per step (the first also holds the file head, the last of the first job also holds the
   // second job's header): every line, trimmed, joined with ' ; '. Dropping, adding, changing or
   // reordering any line, such as 'continue-on-error: true' or 'if: false', changes the list.
-  const STEPS = [
+  // The template pin lives here, not in template/, so it never ships to a scaffolded app.
+  const ROOT_STEPS = [
     'name: CI ; on: ; push: ; branches: [main] ; pull_request: ; branches: [main] ; jobs: ; ci: ; name: Format, typecheck, lint, test, coverage ; runs-on: ubuntu-latest ; steps:',
     'uses: actions/checkout@v4',
     'uses: actions/setup-node@v4 ; with: ; node-version: 24',
@@ -135,9 +136,32 @@ describe('Feature: the root CI workflow is pinned step by step', () => {
     'name: Playwright (starts its own server and client) ; run: npm run test:e2e ; working-directory: template',
     'name: Keep the failure traces ; if: failure() ; uses: actions/upload-artifact@v4 ; with: ; name: playwright-test-results ; path: template/test-results/ ; if-no-files-found: ignore',
   ];
+  const TEMPLATE_STEPS = [
+    'name: CI ; on: ; push: ; branches: [main] ; pull_request: ; branches: [main] ; jobs: ; ci: ; name: Format, typecheck, lint, test, coverage ; runs-on: ubuntu-latest ; steps:',
+    'uses: actions/checkout@v4',
+    'uses: actions/setup-node@v4 ; with: ; node-version: 24 ; cache: npm',
+    'name: Install dependencies ; run: npm install',
+    'name: Build shared ; run: npm run build --workspace=shared',
+    'name: Format ; run: npm run format:check',
+    'name: Typecheck ; run: npm run typecheck',
+    'name: Lint ; run: npm run lint',
+    'name: Duplicates ; run: npm run dup',
+    'name: Dead code and import cycles ; run: npm run deadcode',
+    'name: Test ; run: npm test',
+    'name: Coverage thresholds (server, client) ; run: npm run test:coverage ; e2e: ; name: Browser tests ; runs-on: ubuntu-latest ; timeout-minutes: 20 ; steps:',
+    'uses: actions/checkout@v4',
+    'uses: actions/setup-node@v4 ; with: ; node-version: 24 ; cache: npm',
+    'name: Install dependencies ; run: npm install',
+    'name: Build shared ; run: npm run build --workspace=shared',
+    'name: Install the browser ; run: npx playwright install --with-deps chromium',
+    'name: Playwright (starts its own server and client) ; run: npm run test:e2e',
+    'name: Keep the failure traces ; if: failure() ; uses: actions/upload-artifact@v4 ; with: ; name: playwright-test-results ; path: test-results/ ; if-no-files-found: ignore',
+  ];
+  const stepsOf = (file) => {
+    if (!fs.existsSync(path.join(repoRoot, file)))
+      throw new Error(`${file} is missing: restore the workflow, or remove its pin from this test.`);
 
-  it('Scenario: given .github/workflows/ci.yml, when it is read, then it is exactly the reviewed workflow', () => {
-    const actual = read('.github/workflows/ci.yml')
+    return read(file)
       .split('\n      - ')
       .map((part) =>
         part
@@ -146,10 +170,15 @@ describe('Feature: the root CI workflow is pinned step by step', () => {
           .filter(Boolean)
           .join(' ; '),
       );
+  };
 
+  it.each([
+    ['.github/workflows/ci.yml', ROOT_STEPS],
+    ['template/.github/workflows/ci.yml', TEMPLATE_STEPS],
+  ])('Scenario: given %s, when it is read, then it is exactly the reviewed workflow', (file, steps) => {
     expect(
-      actual,
-      'The root ci.yml no longer matches this pin. A CI step may not be altered without editing STEPS in this test in the same change.',
-    ).toEqual(STEPS);
+      stepsOf(file),
+      `${file} no longer matches this pin. A CI step may not be altered without editing the expected steps in this test in the same change: if the edit is deliberate, update them to match; if not, restore the step.`,
+    ).toEqual(steps);
   });
 });
