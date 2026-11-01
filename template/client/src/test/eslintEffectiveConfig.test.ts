@@ -2,7 +2,7 @@
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
-import { ESLint } from 'eslint';
+import { ESLint, type Linter } from 'eslint';
 import { describe, expect, it } from 'vitest';
 import { treeFiles } from '@/test/treeFiles';
 
@@ -14,7 +14,7 @@ const LINTABLE = /\.(ts|tsx|js|jsx|mjs|cjs|mts|cts)$/;
 // The reviewed gate blocks are every `quality/*` block of eslint.config.js (exemptions included), so a
 // new gate joins this pin by itself. What each file gets from those blocks alone is the expectation,
 // computed by ESLint, so rule defaults are added the same way on both sides and options compare exactly.
-const loaded: { default: { name?: string; rules?: Record<string, unknown> }[] } = await import(
+const loaded: { default: Linter.Config[] } = await import(
   pathToFileURL(resolve(root, 'eslint.config.js')).href
 );
 const gateBlocks = loaded.default.filter((block) => block.name?.startsWith('quality/'));
