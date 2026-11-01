@@ -81,7 +81,10 @@ describe('the deadcode gate configuration', () => {
   });
 
   it('the guard skips only folders the root gitignore lists (the ones Knip ignores)', () => {
-    const ignored = read('gitignore').split('\n');
+    // The template ships the file undotted; scaffolding renames it to .gitignore.
+    const ignored = read(
+      existsSync(resolve(root, '.gitignore')) ? '.gitignore' : 'gitignore'
+    ).split('\n');
 
     for (const dir of SKIP_DIRS) {
       expect(ignored, dir).toContain(dir);
