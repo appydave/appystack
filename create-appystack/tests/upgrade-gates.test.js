@@ -17,6 +17,7 @@ import { spawnSync } from 'node:child_process';
 import { classifyFile } from '../bin/lib/classify.js';
 import { mergeGatePackage, GATE_SCRIPTS, GATE_DEV_DEPS } from '../bin/lib/gate-package.js';
 import { appendServerAliasTodo } from '../bin/lib/alias-todo.js';
+import { appendAppErrorTodo } from '../bin/lib/reexport-todo.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '../..');
@@ -233,6 +234,55 @@ describe('appendServerAliasTodo', () => {
   });
 });
 
+// G16: errorHandler.ts (auto-tier) no longer re-exports AppError, so an app's own files that import it
+// from there stop compiling: one row per file, naming the new import.
+describe('appendAppErrorTodo', () => {
+  let consumer;
+  beforeEach(() => {
+    consumer = mkdtempSync(join(tmpdir(), 'apperror-todo-'));
+  });
+  afterEach(() => removeScratch(consumer));
+
+  const write = (rel, text) => {
+    mkdirSync(dirname(join(consumer, rel)), { recursive: true });
+    writeFileSync(join(consumer, rel), text);
+  };
+  const todo = () => readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8');
+
+  it('writes one row per file that imports AppError from errorHandler, naming the new import', () => {
+    write('server/src/routes/a.ts', "import { AppError } from '../middleware/errorHandler.js';\n");
+    write('server/src/routes/b.ts', "import type { AppError, Other } from '../middleware/errorHandler';\n");
+    write('server/src/middleware/auth.ts', "import {\n  errorHandler,\n  AppError,\n} from './errorHandler.js';\n");
+    expect(appendAppErrorTodo(consumer)).toBe(true);
+    for (const file of ['routes/a.ts', 'routes/b.ts', 'middleware/auth.ts']) {
+      expect(todo()).toContain(`| \`server/src/${file}\` |`);
+    }
+    expect(todo()).toContain("import { AppError } from '@helpers/AppError.js';");
+    expect(todo()).toContain('no longer re-exports');
+  });
+
+  it('writes nothing for files that do not need it', () => {
+    write('server/src/middleware/errorHandler.ts', "export { AppError };\nimport { AppError } from './errorHandler.js';\n");
+    write('server/src/routes/ok1.ts', "import { AppError } from '@helpers/AppError.js';\n");
+    write('server/src/routes/ok2.ts', "import { errorHandler } from '../middleware/errorHandler.js';\n");
+    write('server/src/routes/ok3.ts', "import { AppError } from '../middleware/errorHandlerExtra.js';\n");
+    write('server/src/routes/ok4.ts', "import { MyAppError } from '../middleware/errorHandler.js';\n");
+    write('server/src/node_modules/dep/x.ts', "import { AppError } from './errorHandler.js';\n");
+    write('server/src/notes.md', "import { AppError } from './errorHandler.js';\n");
+    expect(appendAppErrorTodo(consumer)).toBe(false);
+    expect(existsSync(join(consumer, 'UPGRADE_TODO.md'))).toBe(false);
+  });
+
+  it('writes nothing without a server, and does not repeat a row when run twice', () => {
+    expect(appendAppErrorTodo(consumer)).toBe(false);
+    write('server/src/routes/a.ts', "import { AppError } from '../middleware/errorHandler.js';\n");
+    appendAppErrorTodo(consumer);
+    const once = todo();
+    appendAppErrorTodo(consumer);
+    expect(todo()).toBe(once);
+  });
+});
+
 // The proof: a real 0.4.18 template, upgraded by this branch, installs and runs both linters.
 // Not established: that this equals real CLI scaffold output, or cold-cache install time in CI.
 const run = (cmd, args, cwd, timeout = 150_000) =>
@@ -292,6 +342,8 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
     const todoText = readFileSync(join(app, 'UPGRADE_TODO.md'), 'utf-8');
     expect(todoText).toContain('server/tsconfig.json');
     expect(todoText).toContain('server/vitest.config.ts');
+    // errorHandler.ts no longer re-exports AppError, and the 0.4.18 test imports it from there.
+    expect(todoText).toContain('| `server/src/middleware/errorHandler.test.ts` |');
 
     // A plain `npm install` on the stale 0.4.18 lockfile fails ERESOLVE (oxlint's optional vite-plus peer pulls vitest 5);
     // once --legacy-peer-deps has regenerated the lockfile, plain installs work. upgrade.js tells the user this.
