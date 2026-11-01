@@ -9,6 +9,7 @@ import { classifyFile } from './lib/classify.js';
 import { handleAutoFile } from './lib/diff.js';
 import * as diffModule from './lib/diff.js';
 import { handleRecipeFile } from './lib/recipe.js';
+import { mergeGatePackage } from './lib/gate-package.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -164,6 +165,11 @@ async function main() {
       results.push(result);
       continue;
     }
+  }
+
+  const merged = mergeGatePackage(cwd, templateDir);
+  if (merged.length > 0) {
+    prompts.note(`${merged.join('\n')}\n\nRun npm install --legacy-peer-deps once (the lockfile is not touched; a stale one fails plain npm install).`, 'package.json gate entries merged');
   }
 
   // -------------------------------------------------------------------------
