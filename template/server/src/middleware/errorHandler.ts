@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
-import { logger } from '../config/logger.js';
-import { AppError } from '../helpers/AppError.js';
-import { HTTP_STATUS } from '../helpers/httpStatus.js';
+import { logger } from '@config/logger.js';
+import { AppError } from '@helpers/AppError.js';
+import { HTTP_STATUS } from '@helpers/httpStatus.js';
 
 // Re-export so consumers can import AppError from either location.
 export { AppError };

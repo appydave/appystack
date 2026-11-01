@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { ServerInfo } from '@appystack-template/shared';
-import { env } from '../config/env.js';
-import { apiSuccess } from '../helpers/response.js';
+import { env } from '@config/env.js';
+import { apiSuccess } from '@helpers/response.js';
 
 const router = Router();
 

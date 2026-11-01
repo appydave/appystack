@@ -1,5 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react';
-import { getEntitySocket } from '../lib/entitySocket.js';
+import { getEntitySocket } from '@/lib/entitySocket.js';
 
 /**
  * Socket.io connection hook — returns the shared entity socket singleton and its connected state.
