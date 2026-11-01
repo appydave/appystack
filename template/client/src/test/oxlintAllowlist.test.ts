@@ -10,17 +10,19 @@ const config: unknown = JSON.parse(readFileSync(configPath, 'utf8').replace(/^\s
 describe('Oxlint config', () => {
   // The whole file is pinned, not just rules/overrides: widening ignorePatterns or dropping a
   // plugin silently switches the gate off for files or rules. Any change must edit this test too.
-  it('is exactly the reviewed config: three type-lie rules at error, one allowlisted file, nothing ignored but build output', () => {
+  it('is exactly the reviewed config: cyclomatic complexity 6 and three type-lie rules at error, tests exempt from complexity, one allowlisted file, nothing ignored but build output', () => {
     expect(config).toEqual({
       $schema: './node_modules/oxlint/configuration_schema.json',
       plugins: ['typescript', 'react'],
       ignorePatterns: ['**/dist/**', '**/build/**', '**/coverage/**', '**/node_modules/**'],
       rules: {
+        complexity: ['error', { max: 6 }],
         'typescript/no-explicit-any': 'error',
         'typescript/no-non-null-assertion': 'error',
         'typescript/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
       },
       overrides: [
+        { files: ['**/*.test.*', '**/test/**'], rules: { complexity: 'off' } },
         {
           files: ['client/src/utils/api.ts'],
           rules: { 'typescript/consistent-type-assertions': 'off' },
