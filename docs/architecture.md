@@ -108,7 +108,6 @@ project-root/
 │       ├── components/
 │       ├── pages/
 │       ├── hooks/
-│       ├── contexts/
 │       ├── utils/
 │       ├── styles/
 │       └── test/
@@ -1088,7 +1087,6 @@ It also depends on the published `@appydave/appystack-config` package for shared
 - Consumer projects migrated from `file:` to npm install
 - `create-appystack` CLI scaffolder — published to npm (v0.4.14)
 - `appystack-upgrade` bin for pulling template improvements into consumer apps
-- MSW for API mocking in tests (msw ^2.15.0)
 - Request tracing with request IDs (`middleware/requestLogger` `genReqId`)
 
 ### Planned

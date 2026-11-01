@@ -2,7 +2,15 @@
 // Runs the real `deadcode` script (knip, dependency-cruiser) in temp trees: needs child_process and fs.
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -28,6 +36,24 @@ const exclude = SKIP_DIRS.map((dir) => `--exclude-dir=${dir}`).join(' ');
 const guard = ['gre', 'p'].join('') + ` -rqE '@(${TAGS.join('|')})'`;
 const script = (flag = CRUISE_FLAG): string =>
   `${guard} ${include} ${exclude} . ; [ $? -eq 1 ] && knip && ${WORKSPACES.map((w) => cruise(w, flag)).join(' && ')}`;
+
+// Knip reads a config from any of these names, or a "knip" key in package.json. One with ignore: ['**'] hides everything.
+const KNIP_NAMES = ['json', 'jsonc', 'ts', 'js', 'mjs', 'cjs', 'mts', 'cts'].flatMap((ext) => [
+  `knip.${ext}`,
+  `.knip.${ext}`,
+  `.config/knip.${ext}`,
+]);
+const knipConfigs = (dir: string): string[] => {
+  const found = ['.', ...WORKSPACES].flatMap((where) => {
+    const named = KNIP_NAMES.filter((name) => existsSync(join(dir, where, name)));
+    const pkg = join(dir, where, 'package.json');
+    const keyed = existsSync(pkg) && 'knip' in JSON.parse(readFileSync(pkg, 'utf8'));
+
+    return [...named, ...(keyed ? ['package.json'] : [])].map((file) => join(where, file));
+  });
+
+  return found.map((file) => file.replace(/^\.\//, ''));
+};
 
 describe('the deadcode gate configuration', () => {
   it('`npm run deadcode` is exactly: tag guard, knip, then dependency-cruiser in each workspace with --ts-config', () => {
@@ -59,6 +85,53 @@ describe('the deadcode gate configuration', () => {
       options: { doNotFollow: { path: 'node_modules' }, tsPreCompilationDeps: true },
     });
   });
+
+  it('has no Knip config anywhere (the gate runs on Knip defaults only)', () => {
+    expect(
+      knipConfigs(root),
+      'Delete the Knip config. A config can ignore files and hide findings; the gate takes no config.'
+    ).toEqual([]);
+  });
+
+  it.each([
+    ['knip.json', '.', 'knip.json'],
+    ['knip.jsonc', '.', 'knip.jsonc'],
+    ['knip.ts', '.', 'knip.ts'],
+    ['.knip.json', '.', '.knip.json'],
+    ['.config/knip.mjs', '.', '.config/knip.mjs'],
+    ['a workspace knip.json', 'server', 'knip.json'],
+    ['a workspace .config/knip.ts', 'client', '.config/knip.ts'],
+  ])('the Knip config check sees %s', (_label, where, file) => {
+    const dir = mkdtempSync(join(tmpdir(), 'knip-config-'));
+
+    try {
+      mkdirSync(dirname(join(dir, where, file)), { recursive: true });
+      writeFileSync(join(dir, where, file), '{}');
+
+      expect(knipConfigs(dir)).toEqual([join(where === '.' ? '' : where, file)]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it.each(['.', 'client'])(
+    'the Knip config check sees a "knip" key in %s/package.json',
+    (where) => {
+      const dir = mkdtempSync(join(tmpdir(), 'knip-key-'));
+
+      try {
+        mkdirSync(join(dir, where), { recursive: true });
+        writeFileSync(
+          join(dir, where, 'package.json'),
+          JSON.stringify({ knip: { ignore: ['**'] } })
+        );
+
+        expect(knipConfigs(dir)).toEqual([join(where === '.' ? '' : where, 'package.json')]);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }
+  );
 
   it('CI runs `npm run deadcode` as a "Dead code and import cycles" step after Duplicates', () => {
     const ci = read('.github/workflows/ci.yml');
