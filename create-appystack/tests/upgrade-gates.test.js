@@ -346,7 +346,7 @@ export default defineConfig({
     mergeServerAliases(consumer);
     const text = read(TSCONFIG);
     expect(text).toContain(commented);
-    const live = text.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
+    const live = text.replace(commented, '');
     expect(Object.keys(JSON.parse(live).compilerOptions.paths)).toEqual(['@helpers/*', '@test/*', '@routes/*', '@config/*']);
   });
 
@@ -510,6 +510,7 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
     // the alias block must be live code, not text inside the customised config's commented-out `resolve:` line
     const liveVitest = readFileSync(join(app, 'server/vitest.config.ts'), 'utf-8').replace(/\/\/[^\n]*/g, '');
     expect(liveVitest).toContain("'@helpers': path.resolve(");
+    expect(liveVitest).toMatch(/^\s*resolve: \{$/m); // a real block, not entries spilled out of the comment
     expect(todoText).not.toContain('server/tsconfig.json');
     expect(todoText).not.toContain('server/vitest.config.ts');
     // errorHandler.ts no longer re-exports AppError, and the 0.4.18 test imports it from there.
