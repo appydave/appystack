@@ -1,8 +1,15 @@
-dist
-build
+# Generated output: anchored to the template root and to each workspace root
+# (client/, server/, shared/), so a source folder named build/dist/coverage
+# deeper down (e.g. server/src/build/) is still checked.
+/dist
+/build
+/coverage
+/*/dist
+/*/build
+/*/coverage
+/test-results
+/playwright-report
+# Anywhere
 node_modules
-coverage
 package-lock.json
-test-results
-playwright-report
 .claude

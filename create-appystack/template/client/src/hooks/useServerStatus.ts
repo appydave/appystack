@@ -8,6 +8,8 @@ interface ServerStatus {
   error: string | null;
 }
 
+const STATUS_TIMEOUT_MS = 10000;
+
 /**
  * Fetches server health (/health) and metadata (/api/info) on mount.
  * @returns health status, server info, loading flag, and error string
@@ -22,7 +24,7 @@ export function useServerStatus() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]);
+    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(STATUS_TIMEOUT_MS)]);
 
     async function fetchStatus() {
       try {
@@ -48,6 +50,7 @@ export function useServerStatus() {
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
+
         setStatus((prev) => ({
           ...prev,
           loading: false,

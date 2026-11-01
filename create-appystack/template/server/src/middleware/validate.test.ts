@@ -9,6 +9,7 @@ function withErrorHandler(app: ReturnType<typeof express>) {
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     res.status(500).json({ status: 'error', error: err.message });
   });
+
   return app;
 }
 
@@ -17,18 +18,22 @@ const paramsSchema = z.object({ id: z.string().uuid() });
 
 function buildBodyApp() {
   const app = express();
+
   app.use(express.json());
   app.post('/items', validate({ body: nameSchema }), (req, res) => {
     res.json({ received: req.body });
   });
+
   return withErrorHandler(app);
 }
 
 function buildParamsApp() {
   const app = express();
+
   app.get('/items/:id', validate({ params: paramsSchema }), (req, res) => {
     res.json({ id: req.params.id });
   });
+
   return withErrorHandler(app);
 }
 
@@ -40,9 +45,11 @@ function buildParamsApp() {
 function buildQueryValidationApp() {
   const querySchema = z.object({ page: z.string().regex(/^\d+$/, 'must be digits only') });
   const app = express();
+
   app.get('/items', validate({ query: querySchema }), (_req, res) => {
     res.json({ ok: true });
   });
+
   return withErrorHandler(app);
 }
 
@@ -119,16 +126,47 @@ describe('validate middleware — params', () => {
   });
 });
 
+describe('validate middleware — params are merged, not replaced', () => {
+  function buildMergeApp() {
+    const app = express();
+
+    app.get(
+      '/pages/:page/:slug',
+      validate({ params: z.object({ page: z.coerce.number().int().min(1) }) }),
+      (req, res) => {
+        res.json({ page: req.params.page, slug: req.params.slug });
+      }
+    );
+
+    return withErrorHandler(app);
+  }
+
+  it('coerces a param to the type the schema declares', async () => {
+    const res = await request(buildMergeApp()).get('/pages/3/intro');
+
+    expect(res.status).toBe(200);
+    expect(res.body.page).toBe(3);
+  });
+
+  it('keeps a route param the schema strips', async () => {
+    const res = await request(buildMergeApp()).get('/pages/3/intro');
+
+    expect(res.body.slug).toBe('intro');
+  });
+});
+
 // Multi-schema validation: body + query validated together in a single middleware call
 const multiBodySchema = z.object({ name: z.string().min(1) });
 const multiQuerySchema = z.object({ page: z.string().regex(/^\d+$/, 'must be digits only') });
 
 function buildMultiSchemaApp() {
   const app = express();
+
   app.use(express.json());
   app.post('/multi', validate({ body: multiBodySchema, query: multiQuerySchema }), (req, res) => {
     res.json({ name: req.body.name, page: req.query['page'] });
   });
+
   return withErrorHandler(app);
 }
 
@@ -182,17 +220,17 @@ describe('validate middleware — multi-schema (body + query)', () => {
 
 // Non-Zod error propagation: schema throws a plain Error → next(err) rather than 400
 function buildThrowingApp() {
-  const throwingSchema = {
-    parse: () => {
-      throw new Error('unexpected schema failure');
-    },
-  } as unknown as z.ZodType;
+  const throwingSchema = z.unknown().transform(() => {
+    throw new Error('unexpected schema failure');
+  });
 
   const app = express();
+
   app.use(express.json());
   app.post('/throw', validate({ body: throwingSchema }), (_req, res) => {
     res.json({ ok: true });
   });
+
   return withErrorHandler(app);
 }
 

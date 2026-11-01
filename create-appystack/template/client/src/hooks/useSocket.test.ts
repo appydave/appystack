@@ -27,12 +27,15 @@ describe('useSocket', () => {
 
   it('returns connected true when socket is already connected', () => {
     mockSocket.connected = true;
+
     const { result } = renderHook(() => useSocket());
+
     expect(result.current.connected).toBe(true);
   });
 
   it('removes listeners on unmount', () => {
     const { unmount } = renderHook(() => useSocket());
+
     unmount();
     expect(mockSocket.off).toHaveBeenCalledWith('connect', expect.any(Function));
     expect(mockSocket.off).toHaveBeenCalledWith('disconnect', expect.any(Function));
@@ -41,7 +44,18 @@ describe('useSocket', () => {
   it('updates connected state on connect event', () => {
     const { result } = renderHook(() => useSocket());
     const connectHandler = mockSocket.on.mock.calls.find((c) => c[0] === 'connect')?.[1];
+
+    mockSocket.connected = true;
     act(() => connectHandler?.());
     expect(result.current.connected).toBe(true);
+  });
+
+  it('does not re-register listeners when the component re-renders', () => {
+    const { rerender } = renderHook(() => useSocket());
+
+    rerender();
+    rerender();
+    expect(mockSocket.on).toHaveBeenCalledTimes(2);
+    expect(mockSocket.off).not.toHaveBeenCalled();
   });
 });

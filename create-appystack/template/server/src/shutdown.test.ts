@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterAll, beforeEach } from 'vitest';
 import { httpServer } from './index.js';
+import { mockProcessExit } from './test/looseFn.js';
 
 describe('signal handler registration', () => {
   it('registers a SIGTERM listener on the process', () => {
@@ -15,7 +16,8 @@ describe('graceful shutdown', () => {
   let exitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as () => never);
+    exitSpy = mockProcessExit();
+    exitSpy.mockClear();
   });
 
   afterAll(() => {
@@ -32,77 +34,49 @@ describe('graceful shutdown', () => {
     });
   });
 
-  it('calls process.exit(0) when SIGTERM is emitted', () =>
-    new Promise<void>((resolve, reject) => {
-      // Give the close callback time to fire after SIGTERM triggers shutdown
-      const originalClose = httpServer.close.bind(httpServer);
-      const closeSpy = vi
-        .spyOn(httpServer, 'close')
-        .mockImplementation((cb?: (err?: Error) => void) => {
-          // Invoke the real close so handles are released, but call cb immediately
-          if (cb) cb();
-          return originalClose();
-        });
+  function stubClose() {
+    const originalClose = httpServer.close.bind(httpServer);
 
-      exitSpy.mockImplementation((() => {
-        try {
-          expect(exitSpy).toHaveBeenCalledWith(0);
-          closeSpy.mockRestore();
-          resolve();
-        } catch (err) {
-          closeSpy.mockRestore();
-          reject(err);
-        }
-      }) as () => never);
+    // Invoke the real close so handles are released, but call cb immediately
+    return vi.spyOn(httpServer, 'close').mockImplementation((cb?: (err?: Error) => void) => {
+      if (cb) {
+        cb();
+      }
 
+      return originalClose();
+    });
+  }
+
+  it('calls process.exit(0) when SIGTERM is emitted', async () => {
+    const closeSpy = stubClose();
+
+    try {
       process.emit('SIGTERM');
-    }));
+      await vi.waitFor(() => expect(exitSpy).toHaveBeenCalledWith(0));
+    } finally {
+      closeSpy.mockRestore();
+    }
+  });
 
-  it('calls process.exit(0) when SIGINT is emitted', () =>
-    new Promise<void>((resolve, reject) => {
-      const originalClose = httpServer.close.bind(httpServer);
-      const closeSpy = vi
-        .spyOn(httpServer, 'close')
-        .mockImplementation((cb?: (err?: Error) => void) => {
-          if (cb) cb();
-          return originalClose();
-        });
+  it('calls process.exit(0) when SIGINT is emitted', async () => {
+    const closeSpy = stubClose();
 
-      exitSpy.mockImplementation((() => {
-        try {
-          expect(exitSpy).toHaveBeenCalledWith(0);
-          closeSpy.mockRestore();
-          resolve();
-        } catch (err) {
-          closeSpy.mockRestore();
-          reject(err);
-        }
-      }) as () => never);
-
+    try {
       process.emit('SIGINT');
-    }));
+      await vi.waitFor(() => expect(exitSpy).toHaveBeenCalledWith(0));
+    } finally {
+      closeSpy.mockRestore();
+    }
+  });
 
-  it('passes 0 as the exit code to process.exit', () =>
-    new Promise<void>((resolve, reject) => {
-      const originalClose = httpServer.close.bind(httpServer);
-      const closeSpy = vi
-        .spyOn(httpServer, 'close')
-        .mockImplementation((cb?: (err?: Error) => void) => {
-          if (cb) cb();
-          return originalClose();
-        });
+  it('passes 0 as the exit code to process.exit', async () => {
+    const closeSpy = stubClose();
 
-      exitSpy.mockImplementation(((code: number) => {
-        try {
-          expect(code).toBe(0);
-          closeSpy.mockRestore();
-          resolve();
-        } catch (err) {
-          closeSpy.mockRestore();
-          reject(err);
-        }
-      }) as () => never);
-
+    try {
       process.emit('SIGTERM');
-    }));
+      await vi.waitFor(() => expect(exitSpy.mock.calls.at(-1)?.[0]).toBe(0));
+    } finally {
+      closeSpy.mockRestore();
+    }
+  });
 });

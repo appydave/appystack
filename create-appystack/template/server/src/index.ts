@@ -10,6 +10,7 @@ import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { HTTP_STATUS } from './helpers/httpStatus.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { onListenError } from './listenError.js';
 import { registerSocketHandlers } from './socket.js';
@@ -47,6 +48,7 @@ app.use(infoRouter);
 // Production static file serving — serve the built client app
 if (env.isProduction) {
   const clientDist = join(__dirname, '../../client/dist');
+
   app.use(express.static(clientDist));
 
   // SPA fallback — serve index.html for all non-API routes
@@ -57,7 +59,7 @@ if (env.isProduction) {
 
 // 404 catch-all — must be after all routes (only reached in non-production for unknown API routes)
 app.use((_req, res) => {
-  res.status(404).json({
+  res.status(HTTP_STATUS.NOT_FOUND).json({
     status: 'error',
     error: 'Not found',
     timestamp: new Date().toISOString(),
