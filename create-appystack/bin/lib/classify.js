@@ -10,6 +10,10 @@ export const CLASSIFICATION = {
     'client/src/hooks/useSocket.ts',
     '.github/workflows/ci.yml',
     'eslint.config.js',
+    'lint/spacing.js', // gate rule imported by eslint.config.js — template-owned
+    'lint/size.js', // gate rule imported by eslint.config.js — template-owned
+    '.oxlintrc.json', // Oxlint gate config; a customized copy is overwritten (stricter gate, accepted)
+    'server/src/helpers/httpStatus.ts', // imported by the auto middleware files
     'server/nodemon.json', // safe infrastructure config — consumers rarely customize, no project-specific values
     'Procfile', // process manager config — generic client/server split, safe to refresh
     'scripts/start.sh', // startup script — reads PORT + CLIENT_URL from .env, port-conflict prompts, health-check browser open; no hardcoded values, safe to auto-update
