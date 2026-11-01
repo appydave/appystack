@@ -71,6 +71,23 @@ describe('G06 cognitive and expression gates, run through the real eslint.config
     expect(await count(COGNITIVE, ifs(9), 'client/src/test/probe.ts')).toBe(0);
   });
 
+  // The block's `files` and `ignores` are pinned from both sides: these paths must be linted ...
+  it.each([
+    'server/src/latest/probe.ts',
+    'server/src/contest.ts',
+    'server/src/protest/probe.ts',
+    'server/src/probe.spec.ts',
+    'client/src/probe.spec.tsx',
+    'client/src/demo/probe.tsx',
+    'client/src/probe.jsx',
+    'scripts/probe.ts',
+    'lint/probe.js',
+    'probe.config.ts',
+  ])('does not exempt %s (only *.test.* and /test/ are out of scope)', async (file) => {
+    // Plain JavaScript source so .js and .jsx parse whatever parser the config gives them.
+    expect(await count(COGNITIVE, ifs(9).replace(': number', ''), file)).toBe(1);
+  });
+
   it('turns on exactly the two reviewed sonarjs rules, and leaves cyclomatic to Oxlint', async () => {
     const config = await eslint.calculateConfigForFile(resolve(root, 'server/src/probe.ts'));
     const on = Object.entries(config.rules ?? {}).filter(([, value]) => {

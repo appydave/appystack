@@ -5,7 +5,12 @@ import { join } from 'node:path';
 import { appendUpgradeTodo } from './diff.js';
 
 export const GATE_SCRIPTS = ['lint', 'lint:fix'];
-export const GATE_DEV_DEPS = ['@stylistic/eslint-plugin', 'eslint-plugin-oxlint', 'oxlint'];
+export const GATE_DEV_DEPS = [
+  '@stylistic/eslint-plugin',
+  'eslint-plugin-oxlint',
+  'eslint-plugin-sonarjs',
+  'oxlint',
+];
 // Template values from before the gates; a consumer still on one of these has not customized it.
 const PRIOR_SCRIPT_VALUES = {
   lint: ['eslint .'],
