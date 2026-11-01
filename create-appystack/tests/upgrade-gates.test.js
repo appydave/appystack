@@ -50,6 +50,7 @@ describe('gate files classify auto', () => {
   it('classifies the Oxlint config and the HTTP_STATUS helper as auto', () => {
     expect(classifyFile('.oxlintrc.json')).toBe('auto');
     expect(classifyFile('server/src/helpers/httpStatus.ts')).toBe('auto');
+    expect(classifyFile('.dependency-cruiser.cjs')).toBe('auto');
   });
 
   it('keeps package.json never', () => {
@@ -65,6 +66,11 @@ describe('the gate lists match the real template package.json', () => {
     for (const d of GATE_DEV_DEPS) expect(real.devDependencies, d).toHaveProperty(d);
   });
 
+  it('lists the dead-code gate: the deadcode script, knip, dependency-cruiser and the root tsx', () => {
+    expect(GATE_SCRIPTS).toContain('deadcode');
+    for (const d of ['knip', 'dependency-cruiser', 'tsx']) expect(GATE_DEV_DEPS).toContain(d);
+  });
+
   it('lists the duplicates gate: the dup script and the jscpd dependency', () => {
     expect(GATE_SCRIPTS).toContain('dup');
     expect(GATE_DEV_DEPS).toContain('jscpd');
@@ -78,14 +84,18 @@ describe('mergeGatePackage', () => {
       lint: 'oxlint && eslint .',
       'lint:fix': 'oxlint --fix && eslint . --fix',
       dup: 'jscpd --config .jscpd.json',
+      deadcode: 'knip',
       build: 'tsc',
     },
     devDependencies: {
       '@stylistic/eslint-plugin': '^5.10.0',
+      'dependency-cruiser': '18.7.0',
       'eslint-plugin-oxlint': '1.90.0',
       'eslint-plugin-sonarjs': '4.2.2',
       jscpd: '5.4.2',
+      knip: '6.44.1',
       oxlint: '1.90.0',
+      tsx: '^4.23.15',
       vitest: '^4',
     },
   };
@@ -119,7 +129,8 @@ describe('mergeGatePackage', () => {
     expect(pkg.devDependencies).not.toHaveProperty('vitest'); // not gate-owned
     expect(pkg.devDependencies.zod).toBe('^3');
     expect(pkg.name).toBe('mine');
-    expect(existsSync(join(consumer, 'UPGRADE_TODO.md'))).toBe(false);
+    // the one generic row: the new gate will report the app's own dead code
+    expect(readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8')).toContain('npm run deadcode');
   });
 
   it('leaves a customized script or pinned dependency and writes an UPGRADE_TODO row', () => {

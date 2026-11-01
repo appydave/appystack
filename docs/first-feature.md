@@ -548,4 +548,4 @@ The pattern is the same for any feature you add: shared contract first, server s
 
 - [api-design.md](./api-design.md) — Route structure, Zod validation, `AppError`, `ApiResponse<T>`, the `api` utility
 - [socket-io.md](./socket-io.md) — Typed events, `SOCKET_EVENTS` constants, listener cleanup, socket auth
-- [testing-guide.md](./testing-guide.md) — Supertest, `renderHook`, `vi.hoisted`, MSW, socket testing
+- [testing-guide.md](./testing-guide.md) — Supertest, `renderHook`, `vi.hoisted`, socket testing

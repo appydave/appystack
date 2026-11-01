@@ -163,20 +163,14 @@ beforeEach(() => {
 ### Component Rendering and User Events
 
 ```typescript
-// template/client/src/components/ContactForm.test.tsx
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+// template/client/src/demo/ContactForm.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react';
 import ContactForm from './ContactForm.js';
 
-it('shows validation error when name is too short', async () => {
-  const user = userEvent.setup(); // use .setup(), not bare userEvent
+it('shows every validation message when sent empty', async () => {
   render(<ContactForm />);
-  await user.type(screen.getByLabelText('Name'), 'A');
-  await user.click(screen.getByRole('button', { name: 'Send' }));
-  await waitFor(() => {
-    const alerts = screen.getAllByRole('alert');
-    expect(alerts.find((el) => el.textContent === 'Name must be at least 2 characters')).toBeTruthy();
-  });
+  fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+  expect(await screen.findByText('Name must be at least 2 characters')).toBeInTheDocument();
 });
 ```
 
@@ -241,62 +235,6 @@ it('fetches /health and sets health state', async () => {
 ```
 
 Full implementation: `template/client/src/hooks/useServerStatus.test.ts`.
-
----
-
-## MSW Usage
-
-### When to Use MSW vs Hook Mocks
-
-- **Hook mocks** (`vi.mock`): component tests in isolation. Fast, no network required.
-- **MSW**: integration testing the full HTTP chain — component → `fetch` → `api.ts` → response.
-
-### MSW is Opt-In Per Test File
-
-The global `setup.ts` stubs `fetch` with `vi.fn()`. MSW's interceptors require the real fetch
-implementation, so the stub must be removed per test file.
-
-```typescript
-// template/client/src/test/msw/msw-example.test.ts
-import { vi, beforeAll, beforeEach, afterEach, afterAll } from 'vitest';
-import { server } from './server.js';
-import { http, HttpResponse } from 'msw';
-
-beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
-
-let realFetch: typeof fetch;
-
-beforeEach(() => {
-  vi.unstubAllGlobals(); // remove vi.fn() stub from setup.ts
-  realFetch = globalThis.fetch;
-});
-afterEach(() => vi.stubGlobal('fetch', vi.fn())); // reinstall for other files
-
-it('intercepts GET /health', async () => {
-  const res = await realFetch('http://localhost/health');
-  expect((await res.json() as { status: string }).status).toBe('ok');
-});
-
-it('allows runtime override with server.use()', async () => {
-  server.use(http.get('*/health', () => HttpResponse.json({ status: 'degraded' }, { status: 503 })));
-  const res = await realFetch('http://localhost/health');
-  expect(res.status).toBe(503);
-});
-```
-
-The MSW node server passes socket.io requests through without interception. Intercepting
-WebSocket upgrade requests causes a libuv assertion failure in the test runner:
-
-```typescript
-// template/client/src/test/msw/server.ts
-const socketIoPassthrough = [
-  http.get('*/socket.io/:rest*', () => passthrough()),
-  http.post('*/socket.io/:rest*', () => passthrough()),
-];
-export const server = setupServer(...socketIoPassthrough, ...handlers);
-```
 
 ---
 
@@ -392,10 +330,6 @@ wrap assertions in `waitFor()`.
 **Call `vi.resetModules()` before the dynamic import** — not after. Clearing the cache after the
 import has no effect on that import. Also use `vi.doMock()` (not `vi.mock()`) inside test bodies;
 `vi.mock()` is hoisted to the top of the file and ignores per-test conditions.
-
-**Call `vi.unstubAllGlobals()` before using MSW** — the global `setup.ts` stubs `fetch` with
-`vi.fn()`. MSW interceptors require the real fetch. Without unstubbing, MSW never sees requests.
-Reinstall the stub in `afterEach` to avoid polluting other test files.
 
 **`env.isTest` guard prevents port conflicts** — `index.ts` only calls `httpServer.listen()` when
 `env.isTest` is false. Without this guard, every test file that imports `index.ts` would try to

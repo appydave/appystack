@@ -42,6 +42,10 @@ jobs:
         run: npm run dup
         working-directory: template
 
+      - name: Dead code and import cycles
+        run: npm run deadcode
+        working-directory: template
+
       - name: Test
         run: npm test
         working-directory: template

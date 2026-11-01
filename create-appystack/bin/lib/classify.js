@@ -15,6 +15,7 @@ export const CLASSIFICATION = {
     '.oxlintrc.json', // Oxlint gate config; a customized copy is overwritten (stricter gate, accepted)
     '.jscpd.json', // duplicates gate, prod profile (run by the dup script)
     '.jscpd.tests.json', // duplicates gate, tests profile
+    '.dependency-cruiser.cjs', // import-cycles gate config (run by the deadcode script)
     'server/src/helpers/httpStatus.ts', // imported by the auto middleware files
     'server/nodemon.json', // safe infrastructure config — consumers rarely customize, no project-specific values
     'Procfile', // process manager config — generic client/server split, safe to refresh
