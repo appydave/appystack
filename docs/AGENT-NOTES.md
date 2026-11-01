@@ -26,8 +26,9 @@ Only what the code cannot tell you. Each entry has its full story in `docs/kdd/l
 - Run `npm test` at the repo root. It runs the `create-appystack` suite, then the template suite. It
   installs either package's deps first if `node_modules` is missing. There is no root workspace; each
   package installs on its own.
-- The template's tests need `shared` built first (`npm run build -w shared` inside `template/`); CI does
-  the same. A fresh checkout without that build fails on unresolved `shared` imports.
+- The template's root `pretest` and `pretypecheck` hooks build `shared`, so `npm test` and `npm run
+  typecheck` work on a fresh checkout. Running a workspace directly (`npm test -w server`) skips the hook and
+  needs `npm run build -w shared` first, else it fails on unresolved `shared` imports.
 - Don't run `npx husky init` in `template/`. It is not a git root, so husky fails. Edit
   `template/.husky/pre-commit` directly; a scaffolded app registers it through its `prepare: husky`
   script. (husky-nested-template)

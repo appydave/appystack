@@ -87,6 +87,8 @@ describe('mergeGatePackage', () => {
       'lint:fix': 'oxlint --fix && eslint . --fix',
       dup: 'jscpd --config .jscpd.json',
       deadcode: 'knip',
+      pretest: 'npm run build -w shared',
+      pretypecheck: 'npm run build -w shared',
       build: 'tsc',
     },
     devDependencies: {
@@ -152,6 +154,26 @@ describe('mergeGatePackage', () => {
     const changed = mergeGatePackage(consumer, template);
     expect(changed).toContain('scripts.deadcode');
     expect(readJson(consumer, 'package.json').scripts.deadcode).toBe(templatePkg.scripts.deadcode);
+  });
+
+  it('adds the pretest and pretypecheck hooks that build shared, and lists a customised one instead of replacing it', () => {
+    const real = readJson(TEMPLATE, 'package.json');
+    expect(real.scripts.pretest).toBe('npm run build -w shared');
+    expect(real.scripts.pretypecheck).toBe('npm run build -w shared');
+    const plain = join(root, 'app-plain');
+    mkdirSync(plain);
+    writeJson(plain, 'package.json', { scripts: { test: 'vitest run' } });
+    const changed = mergeGatePackage(plain, TEMPLATE);
+    expect(changed).toContain('scripts.pretest');
+    expect(changed).toContain('scripts.pretypecheck');
+    expect(readJson(plain, 'package.json').scripts.pretest).toBe(real.scripts.pretest);
+
+    const custom = join(root, 'app-custom');
+    mkdirSync(custom);
+    writeJson(custom, 'package.json', { scripts: { pretest: 'my-own-prep' } });
+    expect(mergeGatePackage(custom, TEMPLATE)).not.toContain('scripts.pretest');
+    expect(readJson(custom, 'package.json').scripts.pretest).toBe('my-own-prep');
+    expect(readFileSync(join(custom, 'UPGRADE_TODO.md'), 'utf-8')).toContain('scripts.pretest');
   });
 
   // The lint script create-appystack 0.5.0 and 0.5.1 shipped (identical in both tarballs): the guard plus
@@ -548,6 +570,7 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
     const up = run('node', [UPGRADE_BIN, '--template-path', TEMPLATE, '--yes'], app);
     expect(up.status, up.stdout + up.stderr).toBe(0);
     expect(readJson(app, 'package.json').scripts.lint).toContain('oxlint');
+    expect(readJson(app, 'package.json').scripts.pretest).toBe('npm run build -w shared');
     // The 0.4.18 server has no @helpers/@test paths and no vitest alias: the tool adds them itself, keeping the rest.
     const todoText = readFileSync(join(app, 'UPGRADE_TODO.md'), 'utf-8');
     expect(readFileSync(join(app, 'server/tsconfig.json'), 'utf-8')).toContain('"@helpers/*": ["src/helpers/*"]');
