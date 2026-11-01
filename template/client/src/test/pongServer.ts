@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { serverPort } from './serverPort.js';
 import { Server } from 'socket.io';
 import { SOCKET_EVENTS } from '@appystack-template/shared';
 
@@ -27,7 +27,7 @@ export function startPongServer(): Promise<PongServer> {
 
   return new Promise((resolve) => {
     httpServer.listen(0, () => {
-      const { port } = httpServer.address() as AddressInfo;
+      const port = serverPort(httpServer);
 
       resolve({
         url: `http://localhost:${port}`,

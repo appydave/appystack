@@ -18,7 +18,7 @@ describe('logger', () => {
   });
 
   it('calling logger.info() does not throw', () => {
-    const spy = vi.spyOn(logger, 'info').mockImplementation(() => undefined as never);
+    const spy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
 
     expect(() => logger.info('test message')).not.toThrow();
     spy.mockRestore();

@@ -42,7 +42,7 @@ describe('api wrapper', () => {
 
     expect(options?.method).toBe('POST');
     expect(options?.body).toBe(JSON.stringify(payload));
-    expect((options?.headers as Record<string, string>)['Content-Type']).toBe('application/json');
+    expect(new Headers(options?.headers).get('Content-Type')).toBe('application/json');
   });
 
   it('api.post throws ApiError on 404', async () => {
@@ -59,8 +59,7 @@ describe('api wrapper', () => {
     }
 
     expect(caught).toBeInstanceOf(ApiError);
-    expect((caught as ApiError).status).toBe(404);
-    expect((caught as ApiError).name).toBe('ApiError');
+    expect(caught).toMatchObject({ status: 404, name: 'ApiError' });
   });
 
   it('AbortSignal is passed through to fetch', async () => {

@@ -191,11 +191,9 @@ describe('validate middleware — multi-schema (body + query)', () => {
 
 // Non-Zod error propagation: schema throws a plain Error → next(err) rather than 400
 function buildThrowingApp() {
-  const throwingSchema = {
-    parse: () => {
-      throw new Error('unexpected schema failure');
-    },
-  } as unknown as z.ZodType;
+  const throwingSchema = z.unknown().transform(() => {
+    throw new Error('unexpected schema failure');
+  });
 
   const app = express();
 
