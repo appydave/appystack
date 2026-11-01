@@ -130,8 +130,8 @@ const OLD_CLIENT_PORT = '5500';
 const OLD_TITLE = 'AppyStack Template';
 const OLD_DESCRIPTION = 'RVETS stack boilerplate (React, Vite, Express, TypeScript, Socket.io)';
 
-/** The template's placeholder values, and what each file swaps them for. */
-function buildEdits({ name, scope, serverPort, clientPort, desc }: Answers): FileEdit[] {
+/** Package manifests: the scope, the root package name and its description. */
+function buildPackageEdits({ name, scope, desc }: Answers): FileEdit[] {
   return [
     {
       file: 'package.json',
@@ -143,6 +143,12 @@ function buildEdits({ name, scope, serverPort, clientPort, desc }: Answers): Fil
     { file: 'shared/package.json', replacements: [[OLD_SCOPE, scope]] },
     { file: 'server/package.json', replacements: [[OLD_SCOPE, scope]] },
     { file: 'client/package.json', replacements: [[OLD_SCOPE, scope]] },
+  ];
+}
+
+/** Ports, page title and start script: what each file swaps the template's placeholders for. */
+function buildConfigEdits({ name, serverPort, clientPort }: Answers): FileEdit[] {
+  return [
     {
       file: '.env.example',
       replacements: [
@@ -194,6 +200,10 @@ function buildEdits({ name, scope, serverPort, clientPort, desc }: Answers): Fil
       ],
     },
   ];
+}
+
+function buildEdits(answers: Answers): FileEdit[] {
+  return [...buildPackageEdits(answers), ...buildConfigEdits(answers)];
 }
 
 function applyEdits(edits: FileEdit[]): void {
