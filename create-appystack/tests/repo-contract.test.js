@@ -104,29 +104,81 @@ describe('Feature: pitfalls the notes say must stay', () => {
 });
 
 describe('Feature: this repo fails its own build on a duplicated-code finding', () => {
-  // template/.github/workflows/ci.yml ships to scaffolds; this is the repo's own workflow.
-  const steps = read('.github/workflows/ci.yml').split('      - name: ');
-  const stepNamed = (name) => steps.findIndex((s) => s.startsWith(`${name}\n`));
-
-  it('Scenario: given the root workflow, when it runs, then Duplicates runs npm run dup in template/ right after Lint', () => {
-    const lint = stepNamed('Lint');
-    const dup = stepNamed('Duplicates');
-
-    expect(lint).toBeGreaterThan(-1);
-    expect(dup).toBe(lint + 1);
-    expect(steps[dup]).toContain('run: npm run dup\n');
-    expect(steps[dup]).toContain('working-directory: template');
-  });
-
-  it('Scenario: given the root workflow, when it runs, then Dead code and import cycles runs npm run deadcode in template/ right after Duplicates', () => {
-    const dead = stepNamed('Dead code and import cycles');
-
-    expect(dead).toBe(stepNamed('Duplicates') + 1);
-    expect(steps[dead]).toContain('run: npm run deadcode\n');
-    expect(steps[dead]).toContain('working-directory: template');
-  });
-
   it('Scenario: given the template, when npm run dup is called there, then the script exists to be run', () => {
     expect(readJson('template/package.json').scripts.dup).toMatch(/jscpd --config/);
+  });
+});
+
+describe('Feature: both CI workflows are pinned step by step', () => {
+  // One entry per step (the first also holds the file head, the last of the first job also holds the
+  // second job's header): every line, trimmed, joined with ' ; '. Dropping, adding, changing or
+  // reordering any line, such as 'continue-on-error: true' or 'if: false', changes the list.
+  // The template pin lives here, not in template/, so it never ships to a scaffolded app.
+  const ROOT_STEPS = [
+    'name: CI ; on: ; push: ; branches: [main] ; pull_request: ; branches: [main] ; jobs: ; ci: ; name: Format, typecheck, lint, test, coverage ; runs-on: ubuntu-latest ; steps:',
+    'uses: actions/checkout@v4',
+    'uses: actions/setup-node@v4 ; with: ; node-version: 24',
+    'name: Install dependencies ; run: npm install ; working-directory: template',
+    'name: Build shared ; run: npm run build --workspace=shared ; working-directory: template',
+    'name: Format ; run: npm run format:check ; working-directory: template',
+    'name: Typecheck ; run: npm run typecheck ; working-directory: template',
+    'name: Lint ; run: npm run lint ; working-directory: template',
+    'name: Duplicates ; run: npm run dup ; working-directory: template',
+    'name: Dead code and import cycles ; run: npm run deadcode ; working-directory: template',
+    'name: Test ; run: npm test ; working-directory: template',
+    'name: create-appystack tests ; run: npm ci && npm test ; working-directory: create-appystack',
+    'name: Coverage thresholds (server, client) ; run: npm run test:coverage ; working-directory: template ; e2e: ; name: Browser tests ; runs-on: ubuntu-latest ; timeout-minutes: 20 ; steps:',
+    'uses: actions/checkout@v4',
+    'uses: actions/setup-node@v4 ; with: ; node-version: 24',
+    'name: Install dependencies ; run: npm install ; working-directory: template',
+    'name: Build shared ; run: npm run build --workspace=shared ; working-directory: template',
+    'name: Install the browser ; run: npx playwright install --with-deps chromium ; working-directory: template',
+    'name: Playwright (starts its own server and client) ; run: npm run test:e2e ; working-directory: template',
+    'name: Keep the failure traces ; if: failure() ; uses: actions/upload-artifact@v4 ; with: ; name: playwright-test-results ; path: template/test-results/ ; if-no-files-found: ignore',
+  ];
+  const TEMPLATE_STEPS = [
+    'name: CI ; on: ; push: ; branches: [main] ; pull_request: ; branches: [main] ; jobs: ; ci: ; name: Format, typecheck, lint, test, coverage ; runs-on: ubuntu-latest ; steps:',
+    'uses: actions/checkout@v4',
+    'uses: actions/setup-node@v4 ; with: ; node-version: 24 ; cache: npm',
+    'name: Install dependencies ; run: npm install',
+    'name: Build shared ; run: npm run build --workspace=shared',
+    'name: Format ; run: npm run format:check',
+    'name: Typecheck ; run: npm run typecheck',
+    'name: Lint ; run: npm run lint',
+    'name: Duplicates ; run: npm run dup',
+    'name: Dead code and import cycles ; run: npm run deadcode',
+    'name: Test ; run: npm test',
+    'name: Coverage thresholds (server, client) ; run: npm run test:coverage ; e2e: ; name: Browser tests ; runs-on: ubuntu-latest ; timeout-minutes: 20 ; steps:',
+    'uses: actions/checkout@v4',
+    'uses: actions/setup-node@v4 ; with: ; node-version: 24 ; cache: npm',
+    'name: Install dependencies ; run: npm install',
+    'name: Build shared ; run: npm run build --workspace=shared',
+    'name: Install the browser ; run: npx playwright install --with-deps chromium',
+    'name: Playwright (starts its own server and client) ; run: npm run test:e2e',
+    'name: Keep the failure traces ; if: failure() ; uses: actions/upload-artifact@v4 ; with: ; name: playwright-test-results ; path: test-results/ ; if-no-files-found: ignore',
+  ];
+  const stepsOf = (file) => {
+    if (!fs.existsSync(path.join(repoRoot, file)))
+      throw new Error(`${file} is missing: restore the workflow, or remove its pin from this test.`);
+
+    return read(file)
+      .split('\n      - ')
+      .map((part) =>
+        part
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .join(' ; '),
+      );
+  };
+
+  it.each([
+    ['.github/workflows/ci.yml', ROOT_STEPS],
+    ['template/.github/workflows/ci.yml', TEMPLATE_STEPS],
+  ])('Scenario: given %s, when it is read, then it is exactly the reviewed workflow', (file, steps) => {
+    expect(
+      stepsOf(file),
+      `${file} no longer matches this pin. A CI step may not be altered without editing the expected steps in this test in the same change: if the edit is deliberate, update them to match; if not, restore the step.`,
+    ).toEqual(steps);
   });
 });
