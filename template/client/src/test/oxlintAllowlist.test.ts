@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -29,5 +30,18 @@ describe('Oxlint config', () => {
         },
       ],
     });
+  });
+
+  // Oxlint discovers a nested .oxlintrc.json on its own and applies it below its folder, which would
+  // switch these rules off there without touching the file pinned above. Tracked or not, there is one.
+  it('is the only .oxlintrc.json in the tree', () => {
+    const found = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], {
+      cwd: resolve(process.cwd(), '..'),
+      encoding: 'utf8',
+    })
+      .split('\n')
+      .filter((file) => file.endsWith('.oxlintrc.json'));
+
+    expect(found).toEqual(['.oxlintrc.json']);
   });
 });
