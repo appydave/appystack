@@ -14,7 +14,9 @@ export default function SocketDemo() {
   const [waiting, setWaiting] = useState(false);
 
   const sendPing = () => {
-    if (!socket || !connected) return;
+    if (!socket || !connected) {
+      return;
+    }
 
     setWaiting(true);
 

@@ -5,7 +5,13 @@ import App from './App.js';
 import ErrorFallback from './components/ErrorFallback.js';
 import './styles/index.css';
 
-createRoot(document.getElementById('root')!).render(
+const root = document.getElementById('root');
+
+if (!root) {
+  throw new Error('Missing #root element in index.html');
+}
+
+createRoot(root).render(
   <StrictMode>
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <App />

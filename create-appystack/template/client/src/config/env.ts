@@ -3,10 +3,12 @@
  * Throws at module load time if missing.
  */
 export function requireEnv(key: string): string {
-  const value = import.meta.env[key] as string | undefined;
+  const value: string | undefined = import.meta.env[key];
+
   if (!value) {
     throw new Error(`Missing required environment variable: ${key}`);
   }
+
   return value;
 }
 
@@ -14,7 +16,9 @@ export function requireEnv(key: string): string {
  * Read an optional environment variable with a fallback default.
  */
 export function optionalEnv(key: string, defaultValue: string): string {
-  return (import.meta.env[key] as string | undefined) ?? defaultValue;
+  const value: string | undefined = import.meta.env[key];
+
+  return value ?? defaultValue;
 }
 
 /**

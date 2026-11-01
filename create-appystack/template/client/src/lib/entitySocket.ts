@@ -11,7 +11,7 @@ let _socket: AppSocket | null = null;
  * Set VITE_SOCKET_URL to bypass Vite WebSocket proxy upgrade issues.
  */
 export function getSocketUrl(): string {
-  return (import.meta.env.VITE_SOCKET_URL as string | undefined) ?? window.location.origin;
+  return import.meta.env.VITE_SOCKET_URL ?? window.location.origin;
 }
 
 /**
@@ -28,5 +28,6 @@ export function getEntitySocket(): AppSocket {
       reconnectionDelayMax: 3000,
     });
   }
+
   return _socket;
 }

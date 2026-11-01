@@ -36,6 +36,7 @@ const AppContext = createContext<AppContextValue | null>(null);
  */
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }
 
@@ -45,8 +46,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
  */
 export function useApp(): AppContextValue {
   const ctx = useContext(AppContext);
+
   if (!ctx) {
     throw new Error('useApp must be used within an AppProvider');
   }
+
   return ctx;
 }

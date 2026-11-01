@@ -5,9 +5,11 @@ import pino from 'pino';
 import { prettyFactory } from 'pino-pretty';
 import { requestLogger, createRequestLogger } from './requestLogger.js';
 import { logger } from '../config/logger.js';
+import { looseFn } from '../test/looseFn.js';
 
 function buildApp() {
   const app = express();
+
   app.use(requestLogger);
   app.get('/ok', (_req, res) => {
     res.json({ ok: true });
@@ -34,23 +36,27 @@ function buildApp() {
   app.get('/healthcheck-ish', (_req, res) => {
     res.json({ ok: true });
   });
+
   return app;
 }
 
 describe('requestLogger middleware', () => {
   it('allows a successful request to pass through', async () => {
     const res = await request(buildApp()).get('/ok');
+
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
   });
 
   it('does not block 4xx responses', async () => {
     const res = await request(buildApp()).get('/client-error');
+
     expect(res.status).toBe(404);
   });
 
   it('does not block 5xx responses', async () => {
     const res = await request(buildApp()).get('/server-error');
+
     expect(res.status).toBe(500);
   });
 
@@ -58,6 +64,7 @@ describe('requestLogger middleware', () => {
     const app = buildApp();
     const res1 = await request(app).get('/ok');
     const res2 = await request(app).get('/ok');
+
     // Both requests succeed; id is internal but pino-http attaches nothing to body
     expect(res1.status).toBe(200);
     expect(res2.status).toBe(200);
@@ -87,9 +94,7 @@ describe('requestLogger customLogLevel', () => {
     };
     // child().child() may be called too — wire up nested child to same mock
     childMock.child.mockReturnValue(childMock);
-    vi.spyOn(logger, 'child').mockReturnValue(
-      childMock as unknown as ReturnType<typeof logger.child>
-    );
+    vi.spyOn(logger, 'child').mockImplementation(looseFn(() => childMock));
   });
 
   afterEach(() => {
@@ -151,9 +156,7 @@ describe('requestLogger high-frequency endpoint suppression', () => {
       child: vi.fn(),
     };
     childMock.child.mockReturnValue(childMock);
-    vi.spyOn(logger, 'child').mockReturnValue(
-      childMock as unknown as ReturnType<typeof logger.child>
-    );
+    vi.spyOn(logger, 'child').mockImplementation(looseFn(() => childMock));
   });
 
   afterEach(() => {
@@ -190,11 +193,13 @@ describe('requestLogger high-frequency endpoint suppression', () => {
 function captureLogger() {
   const lines: string[] = [];
   const log = pino({ level: 'debug' }, { write: (chunk: string) => void lines.push(chunk) });
-  return { log, lines, json: () => lines.map((l) => JSON.parse(l) as Record<string, unknown>) };
+
+  return { log, lines, json: () => lines.map((l): Record<string, unknown> => JSON.parse(l)) };
 }
 
 function appWith(mw: ReturnType<typeof createRequestLogger>) {
   const app = express();
+
   app.use(express.json());
   app.use(mw);
   app.get('/ok', (_req, res) => {
@@ -212,17 +217,20 @@ function appWith(mw: ReturnType<typeof createRequestLogger>) {
   app.post('/api/call', (req, res) => {
     res.status(req.body?.name === 'broken' ? 500 : 200).json({ ok: true });
   });
+
   return app;
 }
 
 describe('requestLogger structured mode (production/test)', () => {
   it('emits only id/method/url and statusCode — never full headers', async () => {
     const cap = captureLogger();
+
     await request(appWith(createRequestLogger({ oneLine: false, logger: cap.log }))).get('/ok');
 
     const [entry] = cap.json();
-    expect(Object.keys(entry.req as object).sort()).toEqual(['id', 'method', 'url']);
-    expect(Object.keys(entry.res as object)).toEqual(['statusCode']);
+
+    expect(Object.keys(Object(entry.req)).sort()).toEqual(['id', 'method', 'url']);
+    expect(Object.keys(Object(entry.res))).toEqual(['statusCode']);
     expect(entry.responseTime).toEqual(expect.any(Number));
     expect(JSON.stringify(entry)).not.toContain('content-security-policy');
   });
@@ -231,10 +239,13 @@ describe('requestLogger structured mode (production/test)', () => {
 describe('requestLogger one-line mode (development)', () => {
   it('writes exactly one entry per request, with no req/res/responseTime objects', async () => {
     const cap = captureLogger();
+
     await request(appWith(createRequestLogger({ oneLine: true, logger: cap.log }))).get('/ok?x=1');
 
     expect(cap.lines).toHaveLength(1);
+
     const [entry] = cap.json();
+
     expect(entry).not.toHaveProperty('req');
     expect(entry).not.toHaveProperty('res');
     expect(entry).not.toHaveProperty('responseTime');
@@ -243,20 +254,25 @@ describe('requestLogger one-line mode (development)', () => {
 
   it('renders as a single line through pino-pretty', async () => {
     const cap = captureLogger();
+
     await request(appWith(createRequestLogger({ oneLine: true, logger: cap.log }))).get('/ok');
 
     const format = prettyFactory({ colorize: false, ignore: 'pid,hostname' });
-    const text = format(cap.lines[0]) as string;
+    const text = format(cap.lines[0]);
+
     expect(text.trimEnd().split('\n')).toHaveLength(1);
     expect(text).toMatch(/INFO.*GET \/ok 200 \d+ms/);
   });
 
   it('logs a 4xx at warn as one line', async () => {
     const cap = captureLogger();
+
     await request(appWith(createRequestLogger({ oneLine: true, logger: cap.log }))).get(
       '/client-error'
     );
+
     const [entry] = cap.json();
+
     expect(cap.lines).toHaveLength(1);
     expect(entry.level).toBe(40);
     expect(entry.msg).toMatch(/^GET \/client-error 404 \d+ms$/);
@@ -264,10 +280,13 @@ describe('requestLogger one-line mode (development)', () => {
 
   it('logs a 5xx at error as one line, with no err object', async () => {
     const cap = captureLogger();
+
     await request(appWith(createRequestLogger({ oneLine: true, logger: cap.log }))).get(
       '/server-error'
     );
+
     const [entry] = cap.json();
+
     expect(cap.lines).toHaveLength(1);
     expect(entry.level).toBe(50);
     expect(entry).not.toHaveProperty('err');
@@ -276,15 +295,19 @@ describe('requestLogger one-line mode (development)', () => {
 
   it('writes nothing for a successful /health', async () => {
     const cap = captureLogger();
+
     await request(appWith(createRequestLogger({ oneLine: true, logger: cap.log }))).get('/health');
     expect(cap.lines).toHaveLength(0);
   });
 
   it('does not strip objects from non-request logs on the same base logger', () => {
     const cap = captureLogger();
+
     createRequestLogger({ oneLine: true, logger: cap.log });
     cap.log.info({ req: { id: 'x' }, job: 7 }, 'unrelated');
+
     const [entry] = cap.json();
+
     expect(entry.req).toEqual({ id: 'x' });
     expect(entry.job).toBe(7);
   });
@@ -292,10 +315,15 @@ describe('requestLogger one-line mode (development)', () => {
 
 describe('requestLogger isPoll hook', () => {
   const isPoll = (req: { method?: string; url?: string; body?: unknown }) =>
-    req.url === '/api/call' && (req.body as { name?: string } | undefined)?.name === 'recents';
+    req.url === '/api/call' &&
+    typeof req.body === 'object' &&
+    req.body !== null &&
+    'name' in req.body &&
+    req.body.name === 'recents';
 
   it('silences a successful call the hook marks as a poll', async () => {
     const cap = captureLogger();
+
     await request(appWith(createRequestLogger({ oneLine: true, isPoll, logger: cap.log })))
       .post('/api/call')
       .send({ name: 'recents' });
@@ -304,6 +332,7 @@ describe('requestLogger isPoll hook', () => {
 
   it('still logs calls the hook does not mark', async () => {
     const cap = captureLogger();
+
     await request(appWith(createRequestLogger({ oneLine: true, isPoll, logger: cap.log })))
       .post('/api/call')
       .send({ name: 'save' });
@@ -313,6 +342,7 @@ describe('requestLogger isPoll hook', () => {
   it('still logs a FAILING poll', async () => {
     const cap = captureLogger();
     const poll = () => true;
+
     await request(appWith(createRequestLogger({ oneLine: true, isPoll: poll, logger: cap.log })))
       .post('/api/call')
       .send({ name: 'broken' });
