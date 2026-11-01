@@ -330,6 +330,58 @@ export default defineConfig({
     expect(todo()).toContain(VITEST);
   });
 
+  // The judge's two corrupting shapes (cli-a-judge r1) and the low ones.
+  it('adds a path binding when the config only has a NAMED import from node:path', () => {
+    write(VITEST, `import { resolve } from 'node:path';\n${oldVitest}`);
+    mergeServerAliases(consumer);
+    const vitest = read(VITEST);
+    expect(vitest).toContain("import { resolve } from 'node:path';");
+    expect(vitest).toContain("import path from 'node:path';"); // the aliases call path.resolve
+    expect(vitest.indexOf("import path from")).toBeLessThan(vitest.indexOf('path.resolve(__dirname'));
+  });
+
+  it('skips a commented-out "paths" block and patches the real one, keeping the comment as it was', () => {
+    const commented = '    // "paths": { "@old/*": ["x"] }, /* "paths": { */\n';
+    write(TSCONFIG, oldTsconfig.replace('    "baseUrl": ".",\n', `    "baseUrl": ".",\n${commented}`));
+    mergeServerAliases(consumer);
+    const text = read(TSCONFIG);
+    expect(text).toContain(commented);
+    const live = text.replace(/\/\/[^\n]*|\/\*.*?\*\//g, '');
+    expect(Object.keys(JSON.parse(live).compilerOptions.paths)).toEqual(['@helpers/*', '@test/*', '@routes/*', '@config/*']);
+  });
+
+  it('leaves a tsconfig whose only "paths" is commented out untouched and writes a row', () => {
+    const onlyComment = '{ "compilerOptions": {\n  // "paths": {\n  "baseUrl": "." } }';
+    write(TSCONFIG, onlyComment);
+    mergeServerAliases(consumer);
+    expect(read(TSCONFIG)).toBe(onlyComment);
+    expect(todo()).toContain(TSCONFIG);
+  });
+
+  it('skips a commented-out alias object and counts a commented-out alias entry as missing', () => {
+    write(VITEST, oldVitest.replace('test: {', "// resolve: { alias: {\n  // '@helpers': 'x',\n  test: {"));
+    mergeServerAliases(consumer);
+    const vitest = read(VITEST);
+    expect(vitest).toContain("// resolve: { alias: {\n  // '@helpers': 'x',");
+    expect(vitest.match(/^\s*resolve: \{$/gm)).toHaveLength(1); // a real block, after the comment
+    expect(vitest).toContain("'@helpers': path.resolve(__dirname, 'src/helpers'),");
+  });
+
+  it('is not fooled by // inside a string, and keeps a leading triple-slash directive first', () => {
+    write(TSCONFIG, oldTsconfig.replace('"extends": ', '"$schema": "https://json.schemastore.org/tsconfig", "extends": '));
+    write(VITEST, `/// <reference types="vitest" />\n${oldVitest}`);
+    mergeServerAliases(consumer);
+    expect(JSON.parse(read(TSCONFIG)).compilerOptions.paths).toHaveProperty(['@test/*']);
+    expect(read(VITEST).startsWith('/// <reference types="vitest" />\nimport path from')).toBe(true);
+  });
+
+  it('writes CRLF files with CRLF line endings throughout', () => {
+    write(TSCONFIG, oldTsconfig.replaceAll('\n', '\r\n'));
+    write(VITEST, oldVitest.replaceAll('\n', '\r\n'));
+    mergeServerAliases(consumer);
+    for (const rel of [TSCONFIG, VITEST]) expect(read(rel), rel).not.toMatch(/(?<!\r)\n/);
+  });
+
   it('is idempotent: a second run changes nothing and reports nothing', () => {
     write(TSCONFIG, oldTsconfig);
     write(VITEST, oldVitest);
@@ -428,6 +480,13 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
     expect(run('tar', ['-xzf', tarball, '-C', packDir], root).status).toBe(0);
     cpSync(join(packDir, 'package', 'template'), app, { recursive: true });
     renameSync(join(app, 'gitignore'), join(app, '.gitignore'));
+    // Customise the old server vitest config the way an app plausibly does: a named import from node:path
+    // and a commented-out alias block. The merge must still produce a config that loads.
+    const vitestPath = join(app, 'server/vitest.config.ts');
+    writeFileSync(
+      vitestPath,
+      `import { resolve } from 'node:path';\n// resolve: { alias: {\n${readFileSync(vitestPath, 'utf-8')}`,
+    );
     for (const args of [
       ['init', '-q'],
       ['add', '-A'],
@@ -509,6 +568,7 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
     const unit = run('npm', ['test'], app, 170_000);
     const unitOut = unit.stdout + unit.stderr;
     expect(unitOut, `test: ${unitOut.slice(-1500)}`).not.toMatch(/(Cannot find package|Failed to resolve import) ['"]@(config|helpers|test)\//);
+    expect(unitOut, `test: ${unitOut.slice(-1500)}`).not.toMatch(/path is not defined/); // the patched config loaded
     expect(unitOut, `test: ${unitOut.slice(-1500)}`).toMatch(/Test Files .*\(\d+\)/); // vitest ran and printed its summary
     report.vitestRunsWithFailures = (unitOut.match(/(\d+) failed \| \d+ passed \(\d+\)/g) ?? []).length;
     console.log(`0.4.18 app after upgrade: ${JSON.stringify(report)}`);
