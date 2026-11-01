@@ -12,6 +12,19 @@ const JSCPD = resolve(root, 'node_modules/.bin/jscpd');
 const SCOPE = ['client', 'server', 'shared', 'scripts', 'lint', 'e2e'];
 const FORMATS = ['typescript', 'tsx', 'javascript', 'jsx'];
 const OUTPUT_DIRS = ['**/node_modules/**', '**/dist/**', '**/coverage/**'];
+const TYPES = ['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs', 'mts', 'cts'];
+const TEST_TYPES = `{${TYPES.join(',')}}`;
+// Built from parts so this file does not contain the marker it forbids (the guard scans it too).
+const MARKER = ['jscpd', 'ignore'].join(':');
+const SKIP_DIRS = [
+  'node_modules',
+  'dist',
+  'build',
+  'coverage',
+  'playwright-report',
+  'test-results',
+  '.claude',
+];
 const PROD_CONFIG = '.jscpd.json';
 const TESTS_CONFIG = '.jscpd.tests.json';
 
@@ -35,7 +48,7 @@ const TESTS_PROFILE = {
   minTokens: 100,
   threshold: 0,
   reporters: ['console'],
-  pattern: '**/*.{test,spec}.{ts,tsx}',
+  pattern: `**/{*.{test,spec}.${TEST_TYPES},test/**/*.${TEST_TYPES}}`,
   ignore: OUTPUT_DIRS,
 };
 
@@ -47,22 +60,26 @@ describe('the duplicates gate configuration', () => {
     ).toEqual(PROD_PROFILE);
   });
 
-  it('tests profile is exactly: 10 lines / 100 tokens, threshold 0, *.test.* and *.spec.* only', () => {
+  it('tests profile is exactly: 10 lines / 100 tokens, threshold 0, test and spec files plus test/ helpers', () => {
     expect(
       readJson(TESTS_CONFIG),
       'The tests profile changed. Restore it, or update TESTS_PROFILE in this test in the same PR.'
     ).toEqual(TESTS_PROFILE);
   });
 
-  it('`npm run dup` runs the prod profile, then the tests profile', () => {
+  it('`npm run dup` refuses the ignore marker, then runs the prod profile, then the tests profile', () => {
     const manifest: { scripts: { dup: string } } = JSON.parse(
       readFileSync(resolve(root, 'package.json'), 'utf8')
     );
+    const include = TYPES.map((type) => `--include='*.${type}'`).join(' ');
+    const exclude = SKIP_DIRS.map((dir) => `--exclude-dir=${dir}`).join(' ');
 
     expect(
       manifest.scripts.dup,
-      'Restore `jscpd --config .jscpd.json && jscpd --config .jscpd.tests.json` as the dup script.'
-    ).toBe(`jscpd --config ${PROD_CONFIG} && jscpd --config ${TESTS_CONFIG}`);
+      'Restore the dup script: the marker guard, then both jscpd profiles.'
+    ).toBe(
+      `grep -rqF '${MARKER}' ${include} ${exclude} . ; [ $? -eq 1 ] && jscpd --config ${PROD_CONFIG} && jscpd --config ${TESTS_CONFIG}`
+    );
   });
 
   it('pins jscpd to an exact version', () => {
@@ -102,8 +119,8 @@ const pair = (a: string, b: string, block: string): Record<string, string> => ({
   [b]: `export const owner = 'b';\n${block}\n`,
 });
 
-// Runs one profile over a tree that holds only the given files and the two configs.
-function run(config: string, files: Record<string, string>) {
+// Builds a temp tree holding only the given files and the two configs, hands it to `inside`, removes it.
+function inTree<T>(files: Record<string, string>, inside: (dir: string) => T): T {
   const dir = mkdtempSync(join(tmpdir(), 'jscpd-gate-'));
 
   try {
@@ -120,14 +137,20 @@ function run(config: string, files: Record<string, string>) {
       writeFileSync(join(dir, file), content);
     }
 
+    return inside(dir);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function run(config: string, files: Record<string, string>) {
+  return inTree(files, (dir) => {
     const result = spawnSync(JSCPD, ['--config', config], { cwd: dir, encoding: 'utf8' });
     const found = /Found (\d+)(?: exact)? clones/.exec(result.stdout);
 
     // A run that never counted clones (bad path, crash) is not a pass or a catch: clones is undefined.
     return { status: result.status, clones: found ? Number(found[1]) : undefined };
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+  });
 }
 
 const CAUGHT = { status: 1 };
@@ -180,7 +203,7 @@ describe('the prod profile, run for real', () => {
     ['a *.test.ts pair', pair('server/src/a.test.ts', 'server/src/b.test.ts', WIDE(12))],
     ['a *.spec.tsx pair', pair('client/src/a.spec.tsx', 'client/src/b.spec.tsx', WIDE(12))],
     [
-      'a pair in a test/ helper folder',
+      'a pair in a test/ helper folder (the tests profile owns it)',
       pair('server/src/test/a.ts', 'server/src/test/b.ts', WIDE(12)),
     ],
     ['a pair in e2e/', pair('e2e/a.ts', 'e2e/b.ts', WIDE(12))],
@@ -216,6 +239,15 @@ describe('the tests profile, run for real', () => {
       'a test pair across workspaces',
       pair('server/src/a.test.ts', 'client/src/b.test.ts', WIDE(12)),
     ],
+    ['a client test/ helper pair', pair('client/src/test/a.ts', 'client/src/test/b.ts', WIDE(12))],
+    [
+      'a client test/msw/ helper pair',
+      pair('client/src/test/msw/a.ts', 'client/src/test/msw/b.ts', WIDE(12)),
+    ],
+    ['a server test/ helper pair', pair('server/src/test/a.ts', 'server/src/test/b.ts', WIDE(12))],
+    ['a .test.js pair', pair('server/src/a.test.js', 'server/src/b.test.js', WIDE(12))],
+    ['a .test.mjs pair', pair('server/src/a.test.mjs', 'server/src/b.test.mjs', WIDE(12))],
+    ['a .spec.mts pair', pair('server/src/a.spec.mts', 'server/src/b.spec.mts', WIDE(12))],
   ])('fails on %s', (_name, files) => {
     const result = run(TESTS_CONFIG, files);
 
@@ -235,10 +267,6 @@ describe('the tests profile, run for real', () => {
     ],
     ['a production pair', pair('server/src/a.ts', 'server/src/b.ts', WIDE(12))],
     [
-      'a pair in a test/ helper folder',
-      pair('server/src/test/a.ts', 'server/src/test/b.ts', WIDE(12)),
-    ],
-    [
       'a test pair in node_modules',
       pair('server/node_modules/p/a.test.ts', 'server/node_modules/p/b.test.ts', WIDE(12)),
     ],
@@ -250,4 +278,70 @@ describe('the tests profile, run for real', () => {
   ])('passes %s', (_name, files) => {
     expect(run(TESTS_CONFIG, files)).toMatchObject(CLEAN);
   });
+});
+
+// Runs the whole `dup` script (guard, then both profiles) in a temp tree with jscpd on the PATH.
+function runDup(files: Record<string, string>) {
+  const manifest: { scripts: { dup: string } } = JSON.parse(
+    readFileSync(resolve(root, 'package.json'), 'utf8')
+  );
+  const path = `${resolve(root, 'node_modules/.bin')}:${process.env.PATH ?? ''}`;
+
+  return inTree(files, (dir) => ({
+    status: spawnSync('sh', ['-c', manifest.scripts.dup], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: { ...process.env, PATH: path },
+    }).status,
+  }));
+}
+
+// Around a clone it would hide; the guard must fail whatever the file is, wherever it sits.
+const fenced = (a: string, b: string): Record<string, string> => ({
+  [a]: `export const owner = 'a';\n// ${MARKER}-start\n${WIDE(12)}\n// ${MARKER}-end\n`,
+  [b]: `export const owner = 'b';\n// ${MARKER}-start\n${WIDE(12)}\n// ${MARKER}-end\n`,
+});
+
+describe('the ignore-marker guard in `npm run dup`', () => {
+  it('passes a clean tree', () => {
+    expect(runDup({ 'server/src/a.ts': 'export const a = 1;\n' })).toMatchObject({ status: 0 });
+  });
+
+  it('still fails a real clone that has no marker', () => {
+    expect(runDup(pair('server/src/a.ts', 'server/src/b.ts', WIDE(12)))).not.toMatchObject({
+      status: 0,
+    });
+  });
+
+  it.each([
+    ['server .ts', 'server/src/a.ts', 'server/src/b.ts'],
+    ['client .tsx', 'client/src/a.tsx', 'client/src/b.tsx'],
+    ['shared', 'shared/src/a.ts', 'shared/src/b.ts'],
+    ['scripts .js', 'scripts/a.js', 'scripts/b.js'],
+    ['lint .jsx', 'lint/a.jsx', 'lint/b.jsx'],
+    ['e2e spec', 'e2e/a.spec.ts', 'e2e/b.spec.ts'],
+    ['a *.test.ts', 'server/src/a.test.ts', 'server/src/b.test.ts'],
+    ['a test/ helper', 'client/src/test/a.ts', 'client/src/test/b.ts'],
+    ['.mjs', 'server/src/a.mjs', 'server/src/b.mjs'],
+    ['.cjs', 'server/src/a.cjs', 'server/src/b.cjs'],
+    ['.mts', 'server/src/a.mts', 'server/src/b.mts'],
+    ['.cts', 'server/src/a.cts', 'server/src/b.cts'],
+  ])('fails a planted marker around a clone in %s', (_name, a, b) => {
+    expect(runDup(fenced(a, b))).not.toMatchObject({ status: 0 });
+  });
+
+  it('fails a lone marker with no clone at all', () => {
+    expect(
+      runDup({ 'server/src/a.ts': `// ${MARKER}-next-line\nexport const a = 1;\n` })
+    ).not.toMatchObject({ status: 0 });
+  });
+
+  it.each(['node_modules/p', 'dist', 'coverage'])(
+    'ignores a marker inside generated output (%s)',
+    (folder) => {
+      expect(
+        runDup({ [`server/${folder}/a.ts`]: `// ${MARKER}-start\nexport const a = 1;\n` })
+      ).toMatchObject({ status: 0 });
+    }
+  );
 });
