@@ -341,12 +341,12 @@ export default defineConfig({
   });
 
   it('skips a commented-out "paths" block and patches the real one, keeping the comment as it was', () => {
-    const commented = '    // "paths": { "@old/*": ["x"] }, /* "paths": { */\n';
+    const commented = '    // "paths": { "@old/*": ["x"] },\n    /* "paths": {\n       "@x/*": ["y"] } */\n';
     write(TSCONFIG, oldTsconfig.replace('    "baseUrl": ".",\n', `    "baseUrl": ".",\n${commented}`));
     mergeServerAliases(consumer);
     const text = read(TSCONFIG);
     expect(text).toContain(commented);
-    const live = text.replace(/\/\/[^\n]*|\/\*.*?\*\//g, '');
+    const live = text.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
     expect(Object.keys(JSON.parse(live).compilerOptions.paths)).toEqual(['@helpers/*', '@test/*', '@routes/*', '@config/*']);
   });
 
@@ -507,7 +507,9 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
     const todoText = readFileSync(join(app, 'UPGRADE_TODO.md'), 'utf-8');
     expect(readFileSync(join(app, 'server/tsconfig.json'), 'utf-8')).toContain('"@helpers/*": ["src/helpers/*"]');
     expect(readFileSync(join(app, 'server/tsconfig.json'), 'utf-8')).toContain('"@services/*": ["src/services/*"]');
-    expect(readFileSync(join(app, 'server/vitest.config.ts'), 'utf-8')).toContain("'@helpers': path.resolve(");
+    // the alias block must be live code, not text inside the customised config's commented-out `resolve:` line
+    const liveVitest = readFileSync(join(app, 'server/vitest.config.ts'), 'utf-8').replace(/\/\/[^\n]*/g, '');
+    expect(liveVitest).toContain("'@helpers': path.resolve(");
     expect(todoText).not.toContain('server/tsconfig.json');
     expect(todoText).not.toContain('server/vitest.config.ts');
     // errorHandler.ts no longer re-exports AppError, and the 0.4.18 test imports it from there.
