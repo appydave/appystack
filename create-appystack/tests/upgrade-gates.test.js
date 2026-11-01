@@ -40,6 +40,12 @@ describe('gate files classify auto', () => {
     for (const f of files) expect(classifyFile(f), f).toBe('auto');
   });
 
+  it('every .jscpd*.json at the template root is auto (a new profile must be listed)', () => {
+    const files = readdirSync(TEMPLATE).filter((f) => f.startsWith('.jscpd'));
+    expect(files).toEqual(['.jscpd.json', '.jscpd.tests.json']);
+    for (const f of files) expect(classifyFile(f), f).toBe('auto');
+  });
+
   it('classifies the Oxlint config and the HTTP_STATUS helper as auto', () => {
     expect(classifyFile('.oxlintrc.json')).toBe('auto');
     expect(classifyFile('server/src/helpers/httpStatus.ts')).toBe('auto');
@@ -50,18 +56,34 @@ describe('gate files classify auto', () => {
   });
 });
 
+describe('the gate lists match the real template package.json', () => {
+  const real = JSON.parse(readFileSync(join(TEMPLATE, 'package.json'), 'utf-8'));
+
+  it('every gate script and gate dev dependency exists in the template', () => {
+    for (const s of GATE_SCRIPTS) expect(real.scripts, s).toHaveProperty(s);
+    for (const d of GATE_DEV_DEPS) expect(real.devDependencies, d).toHaveProperty(d);
+  });
+
+  it('lists the duplicates gate: the dup script and the jscpd dependency', () => {
+    expect(GATE_SCRIPTS).toContain('dup');
+    expect(GATE_DEV_DEPS).toContain('jscpd');
+  });
+});
+
 describe('mergeGatePackage', () => {
   let root, consumer, template;
   const templatePkg = {
     scripts: {
       lint: 'oxlint && eslint .',
       'lint:fix': 'oxlint --fix && eslint . --fix',
+      dup: 'jscpd --config .jscpd.json',
       build: 'tsc',
     },
     devDependencies: {
       '@stylistic/eslint-plugin': '^5.10.0',
       'eslint-plugin-oxlint': '1.90.0',
       'eslint-plugin-sonarjs': '4.2.2',
+      jscpd: '5.4.2',
       oxlint: '1.90.0',
       vitest: '^4',
     },
@@ -89,7 +111,7 @@ describe('mergeGatePackage', () => {
     });
     const changed = mergeGatePackage(consumer, template);
     const pkg = readJson(consumer, 'package.json');
-    expect(changed).toHaveLength(2 + GATE_DEV_DEPS.length);
+    expect(changed).toHaveLength(GATE_SCRIPTS.length + GATE_DEV_DEPS.length);
     for (const s of GATE_SCRIPTS) expect(pkg.scripts[s]).toBe(templatePkg.scripts[s]);
     for (const d of GATE_DEV_DEPS) expect(pkg.devDependencies[d]).toBe(templatePkg.devDependencies[d]);
     expect(pkg.scripts.build).toBe('custom'); // not gate-owned
@@ -101,7 +123,7 @@ describe('mergeGatePackage', () => {
 
   it('leaves a customized script or pinned dependency and writes an UPGRADE_TODO row', () => {
     writeJson(consumer, 'package.json', {
-      scripts: { lint: 'my-lint', 'lint:fix': 'eslint . --fix' },
+      scripts: { lint: 'my-lint', 'lint:fix': 'eslint . --fix', dup: 'my-dup' },
       devDependencies: { oxlint: '1.50.0' },
     });
     mergeGatePackage(consumer, template);
@@ -109,7 +131,9 @@ describe('mergeGatePackage', () => {
     expect(pkg.scripts.lint).toBe('my-lint');
     expect(pkg.devDependencies.oxlint).toBe('1.50.0');
     const todo = readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8');
+    expect(pkg.scripts.dup).toBe('my-dup');
     expect(todo).toContain('scripts.lint');
+    expect(todo).toContain('scripts.dup');
     expect(todo).toContain('devDependencies.oxlint');
     expect(todo).not.toContain('scripts.lint:fix');
   });
@@ -210,6 +234,17 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
       expect(r.status === 0 || m !== null, `${name}: ${out.slice(-1500)}`).toBe(true);
       report[name] = r.status === 0 ? 0 : m.slice(1).reduce((sum, n) => sum + Number(n), 0);
     }
+
+    // The duplicates gate: its config arrived, the binary installed, and it runs. The app's own demo code may
+    // hold clones, so exit 0 or a clone count is a pass; a crash or missing config prints no count.
+    expect(existsSync(join(app, '.jscpd.json'))).toBe(true);
+    expect(existsSync(join(app, '.jscpd.tests.json'))).toBe(true);
+    expect(readJson(app, 'package.json').scripts.dup).toContain('jscpd');
+    const dup = run('npx', ['--no-install', 'jscpd', '--config', '.jscpd.json'], app, 170_000);
+    const dupOut = dup.stdout + dup.stderr;
+    const clones = dupOut.match(/Found (\d+)(?: exact)? clones/);
+    expect(clones, `jscpd: ${dupOut.slice(-1500)}`).not.toBeNull();
+    report.jscpd = Number(clones[1]);
     console.log(`0.4.18 app after upgrade: ${JSON.stringify(report)}`);
   });
 });

@@ -1,0 +1,10 @@
+{
+  "path": ["client", "server", "shared", "scripts", "lint", "e2e"],
+  "format": ["typescript", "tsx", "javascript", "jsx"],
+  "minLines": 10,
+  "minTokens": 100,
+  "threshold": 0,
+  "reporters": ["console"],
+  "pattern": "**/*.{test,spec}.{ts,tsx}",
+  "ignore": ["**/node_modules/**", "**/dist/**", "**/coverage/**"]
+}
