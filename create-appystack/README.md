@@ -55,6 +55,16 @@ New apps now ship with quality gates that fail the build: spacing, Prettier, Oxl
 - If `npm install` fails with `ERESOLVE`, run `npm install --legacy-peer-deps` once. Later plain installs work.
 - The upgrade overwrites `.oxlintrc.json` and the template-owned `lint/` rules, and adds the gate scripts and devDependencies to `package.json`. Values you already set there are kept; a customised `lint` script is left alone and listed in `UPGRADE_TODO.md`.
 
+## Upgrading to 0.5.2
+
+New apps now also enforce complexity limits, duplicate code, no `../` imports, dead code and import cycles, and no re-exports. `npm run dup` and `npm run deadcode` are new scripts; `npm run lint` and `npm test` cover the rest.
+
+- **`AppError` moved.** Import it from `@helpers/AppError.js`; `errorHandler.js` no longer re-exports it. The template also dropped `AppContext` and `msw`.
+- **Server aliases.** `npx appystack-upgrade` adds the `@config`, `@helpers` and `@test` aliases to `server/tsconfig.json` and `server/vitest.config.ts`, and carries the 0.5.x `lint` script across. Anything it cannot patch is listed in `UPGRADE_TODO.md`.
+- **`--port` now rewrites `.vscode/launch.json`** as well as the app's config.
+- **`--yes` and non-interactive runs** either create the app or exit with an error naming the missing flag. `--yes` defaults: scope `@myorg`, ports `5500` / `5501`, no GitHub repo; the app name has no default.
+- **A 0.4.x app still needs `@appydave/core` and `@testing-library/dom` added by hand** after the upgrade. If `npm install` fails with `ERESOLVE`, run `npm install --legacy-peer-deps` once.
+
 ## Stack
 
 **R**eact · **V**ite · **E**xpress · **T**ypeScript · **S**ocket.io
