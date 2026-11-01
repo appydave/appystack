@@ -18,12 +18,36 @@ const loaded: { default: Linter.Config[] } = await import(
   pathToFileURL(resolve(root, 'eslint.config.js')).href
 );
 const gateBlocks = loaded.default.filter((block) => block.name?.startsWith('quality/'));
+const exemptBlocks = gateBlocks.filter((block) => block.name?.endsWith('-exempt'));
 const gateRules = [...new Set(gateBlocks.flatMap((block) => Object.keys(block.rules ?? {})))];
 const reviewed = new ESLint({ cwd: root, overrideConfigFile: true, overrideConfig: gateBlocks });
 const actual = new ESLint({ cwd: root });
 const files = treeFiles(root).filter((file) => LINTABLE.test(file));
 
+// The blocks vouch for themselves, so they are held too: only a block named `*-exempt` may switch a
+// gate rule off, and where those apply is this literal. A new exemption is a deliberate edit here.
+const EXEMPT_SCOPES = {
+  'quality/magic-numbers-env-exempt': ['server/src/config/env.ts'],
+  'quality/root-imports-config-exempt': ['client/vitest.config.ts', 'server/vitest.config.ts'],
+  'quality/no-reexport-entry-exempt': ['shared/src/index.ts'],
+};
+
 describe('the effective ESLint config of every lintable file in the tree', () => {
+  it('lets only the named -exempt blocks, at their pinned files, loosen a gate rule', () => {
+    const loosened = gateBlocks
+      .filter((block) => !exemptBlocks.includes(block))
+      .flatMap((block) =>
+        Object.entries(block.rules ?? {}).map(([rule, value]) => ({ block, rule, value }))
+      )
+      .filter(({ value }) => (Array.isArray(value) ? value[0] : value) !== 'error')
+      .map(({ block, rule }) => `${block.name}: ${rule}`);
+
+    expect(loosened).toEqual([]);
+    expect(Object.fromEntries(exemptBlocks.map((block) => [block.name, block.files]))).toEqual(
+      EXEMPT_SCOPES
+    );
+  });
+
   it('reads the gate rules and the file list (non-vacuous), every gate rule at error in production code', async () => {
     const config = await reviewed.calculateConfigForFile(resolve(root, 'server/src/index.ts'));
     const notError = gateRules.filter((rule) => {
