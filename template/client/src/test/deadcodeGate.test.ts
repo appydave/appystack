@@ -37,15 +37,26 @@ const guard = ['gre', 'p'].join('') + ` -rqE '@(${TAGS.join('|')})'`;
 const script = (flag = CRUISE_FLAG): string =>
   `${guard} ${include} ${exclude} . ; [ $? -eq 1 ] && knip && ${WORKSPACES.map((w) => cruise(w, flag)).join(' && ')}`;
 
-// Knip reads a config from any of these names, or a "knip" key in package.json. One with ignore: ['**'] hides everything.
-const KNIP_NAMES = ['json', 'jsonc', 'ts', 'js', 'mjs', 'cjs', 'mts', 'cts'].flatMap((ext) => [
-  `knip.${ext}`,
-  `.knip.${ext}`,
-  `.config/knip.${ext}`,
+// Knip reads a config from its own list of names (read from the installed package, so a new Knip
+// cannot add a name this pin misses), or a "knip" key in package.json. One with ignore: ['**'] hides everything.
+const knipOwnNames = (): string[] => {
+  const constants = readFileSync(resolve(root, 'node_modules/knip/dist/constants.js'), 'utf8');
+  const list = /KNIP_CONFIG_LOCATIONS = \[([^\]]*)\]/.exec(constants)?.[1] ?? '';
+
+  return [...list.matchAll(/'([^']+)'/g)].map((match) => match[1] ?? '');
+};
+
+const KNIP_NAMES = new Set([
+  ...knipOwnNames(),
+  ...['json', 'jsonc', 'ts', 'js', 'mjs', 'cjs', 'mts', 'cts'].flatMap((ext) => [
+    `knip.${ext}`,
+    `.knip.${ext}`,
+    `.config/knip.${ext}`,
+  ]),
 ]);
 const knipConfigs = (dir: string): string[] => {
   const found = ['.', ...WORKSPACES].flatMap((where) => {
-    const named = KNIP_NAMES.filter((name) => existsSync(join(dir, where, name)));
+    const named = [...KNIP_NAMES].filter((name) => existsSync(join(dir, where, name)));
     const pkg = join(dir, where, 'package.json');
     const keyed = existsSync(pkg) && 'knip' in JSON.parse(readFileSync(pkg, 'utf8'));
 
@@ -93,10 +104,28 @@ describe('the deadcode gate configuration', () => {
     ).toEqual([]);
   });
 
+  it('the Knip config check sees every name Knip itself reads', () => {
+    expect(knipOwnNames()).toEqual(expect.arrayContaining(['knip.json', 'knip.config.ts']));
+
+    for (const name of knipOwnNames()) {
+      const dir = mkdtempSync(join(tmpdir(), 'knip-own-'));
+
+      try {
+        writeFileSync(join(dir, name), '{}');
+
+        expect(knipConfigs(dir), name).toEqual([name]);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }
+  });
+
   it.each([
     ['knip.json', '.', 'knip.json'],
     ['knip.jsonc', '.', 'knip.jsonc'],
     ['knip.ts', '.', 'knip.ts'],
+    ['knip.config.ts', '.', 'knip.config.ts'],
+    ['a workspace knip.config.js', 'shared', 'knip.config.js'],
     ['.knip.json', '.', '.knip.json'],
     ['.config/knip.mjs', '.', '.config/knip.mjs'],
     ['a workspace knip.json', 'server', 'knip.json'],
