@@ -9,21 +9,33 @@ import { sizePlugin, sizeRules } from './lint/size.js';
 const COGNITIVE_MAX = 8;
 const EXPRESSION_MAX = 3;
 
-// G10: a parent-relative specifier ('..' or '../x'). Filesystem strings are not matched: only the
-// specifier of an import, export-from, dynamic import() or a vi.mock-style call is.
-const PARENT = String.raw`/^\.\.(\/|$)/`;
-const MOCKS = 'mock|doMock|importActual|importMock';
+// G10: a parent-relative specifier: '..', '../x', './..', './/../x', as a string or a template literal.
+// Caught: import / import type, export from, import(), typeof import(), import x = require(),
+// require(), and vi.mock / doMock / unmock / doUnmock / importActual / importMock / requireActual /
+// requireMock. NOT caught (the gate lints only these forms): import.meta.glob('../x'), a vi that
+// has been aliased, a specifier built at run time, and a backslash path ('..\\x', invalid in ESM).
+// Filesystem strings such as join(__dirname, '../..') are not specifiers and stay allowed.
+const PARENT = String.raw`/^(\.\/+)*\.\.(\/|$)/`;
+const MOCKS = 'mock|doMock|unmock|doUnmock|importActual|importMock|requireActual|requireMock';
 const PARENT_IMPORT_MESSAGE =
   "No '../' imports: use an alias. Client: @/ @hooks @components @pages @utils @contexts @config. Server: @config/ @helpers/ @routes/ @middleware/ @services/ @test/.";
 // no-restricted-syntax has one options array per file: G04's member-count selectors (lint/size.js)
 // and G10's must be listed together, or the later block silently replaces the earlier.
 const sizeSelectors = sizeRules['no-restricted-syntax'].slice(1);
+const parentSpecifier = (node, path) =>
+  `${node}:matches([${path}.value=${PARENT}], [${path}.quasis.0.value.cooked=${PARENT}])`;
 const parentImportSelectors = [
-  `ImportDeclaration[source.value=${PARENT}]`,
-  `ExportAllDeclaration[source.value=${PARENT}]`,
-  `ExportNamedDeclaration[source.value=${PARENT}]`,
-  `ImportExpression[source.value=${PARENT}]`,
-  `CallExpression[callee.object.name='vi'][callee.property.name=/^(${MOCKS})$/][arguments.0.value=${PARENT}]`,
+  parentSpecifier('ImportDeclaration', 'source'),
+  parentSpecifier('ExportAllDeclaration', 'source'),
+  parentSpecifier('ExportNamedDeclaration', 'source'),
+  parentSpecifier('ImportExpression', 'source'),
+  parentSpecifier('TSImportType', 'argument.literal'),
+  parentSpecifier('TSExternalModuleReference', 'expression'),
+  parentSpecifier("CallExpression[callee.name='require']", 'arguments.0'),
+  parentSpecifier(
+    `CallExpression[callee.object.name='vi'][callee.property.name=/^(${MOCKS})$/]`,
+    'arguments.0'
+  ),
 ];
 
 export default [
