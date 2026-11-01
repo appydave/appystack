@@ -21,6 +21,28 @@ export default [
     plugins: { size: sizePlugin },
     rules: sizeRules,
   },
+  // G05 magic numbers. Tests are out of scope. Object properties and default parameters are not
+  // checked (detectObjects false, ignoreDefaultValues true): the gate does not catch them.
+  // Oxlint also has no-magic-numbers; it is off in .oxlintrc.json (oxlintAllowlist.test.ts pins
+  // that), so ESLint is the sole owner.
+  {
+    name: 'quality/magic-numbers',
+    files: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
+    ignores: ['**/*.test.*', '**/test/**'],
+    rules: {
+      'no-magic-numbers': [
+        'error',
+        { ignore: [-1, 0, 1, 2], detectObjects: false, ignoreDefaultValues: true },
+      ],
+    },
+  },
+  {
+    // The scaffold tools (create-appystack/bin/index.js and scripts/customize.ts) rewrite the exact
+    // text `PORT: z.coerce.number().default(5501)`. Naming the number would make them silently no-op.
+    name: 'quality/magic-numbers-env-exempt',
+    files: ['server/src/config/env.ts'],
+    rules: { 'no-magic-numbers': 'off' },
+  },
   // Last: switch off in ESLint every rule that .oxlintrc.json turns on, so each rule has one owner.
   ...oxlint.buildFromOxlintConfigFile(fileURLToPath(new URL('./.oxlintrc.json', import.meta.url))),
 ];
