@@ -34,6 +34,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Duplicates
+        run: npm run dup
+
+      - name: Dead code and import cycles
+        run: npm run deadcode
+
       - name: Test
         run: npm test
 

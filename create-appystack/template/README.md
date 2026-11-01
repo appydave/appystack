@@ -36,18 +36,20 @@ Both processes start concurrently. The client dev server proxies all `/api`, `/h
 
 ## Scripts
 
-| Script                  | What it does                                     |
-| ----------------------- | ------------------------------------------------ |
-| `npm run dev`           | Start client + server concurrently               |
-| `npm run build`         | Build shared → server → client                   |
-| `npm test`              | Run all tests (server + client)                  |
-| `npm run test:coverage` | Run tests with coverage report                   |
-| `npm run lint`          | ESLint across all workspaces                     |
-| `npm run lint:fix`      | ESLint with auto-fix                             |
-| `npm run format`        | Prettier — write all files                       |
-| `npm run format:check`  | Prettier — check only                            |
-| `npm run typecheck`     | TypeScript check across all workspaces           |
-| `npm run clean`         | Remove all `node_modules` and `dist` directories |
+| Script                  | What it does                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| `npm run dev`           | Start client + server concurrently                                                    |
+| `npm run build`         | Build shared → server → client                                                        |
+| `npm test`              | Run all tests (server + client)                                                       |
+| `npm run test:coverage` | Run tests with coverage report                                                        |
+| `npm run lint`          | Disable-comment guard, Oxlint, ESLint (rules in `.oxlintrc.json`, `eslint.config.js`) |
+| `npm run lint:fix`      | Oxlint and ESLint with auto-fix                                                       |
+| `npm run dup`           | Duplicate-code gate (`.jscpd.json`, `.jscpd.tests.json`)                              |
+| `npm run deadcode`      | Dead-code and import-cycle gate (Knip, dependency-cruiser)                            |
+| `npm run format`        | Prettier — write all files                                                            |
+| `npm run format:check`  | Prettier — check only                                                                 |
+| `npm run typecheck`     | TypeScript check across all workspaces                                                |
+| `npm run clean`         | Remove all `node_modules` and `dist` directories                                      |
 
 ---
 

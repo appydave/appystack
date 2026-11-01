@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { startPongServer, type PongServer } from '../test/pongServer.js';
+import { startPongServer, type PongServer } from '@/test/pongServer.js';
 import SocketDemo from './SocketDemo.js';
 
 let server: PongServer;

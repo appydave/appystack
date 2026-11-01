@@ -3,11 +3,17 @@
   "plugins": ["typescript", "react"],
   "ignorePatterns": ["**/dist/**", "**/build/**", "**/coverage/**", "**/node_modules/**"],
   "rules": {
+    "complexity": ["error", { "max": 6 }],
     "typescript/no-explicit-any": "error",
     "typescript/no-non-null-assertion": "error",
     "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }]
   },
   "overrides": [
+    {
+      // G06: tests are out of scope for the complexity gate.
+      "files": ["**/*.test.*", "**/test/**"],
+      "rules": { "complexity": "off" }
+    },
     {
       // res.json() is untyped at the HTTP boundary; the one cast the template allows.
       "files": ["client/src/utils/api.ts"],

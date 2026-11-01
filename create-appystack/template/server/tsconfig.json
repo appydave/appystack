@@ -8,7 +8,9 @@
       "@routes/*": ["src/routes/*"],
       "@middleware/*": ["src/middleware/*"],
       "@config/*": ["src/config/*"],
-      "@services/*": ["src/services/*"]
+      "@services/*": ["src/services/*"],
+      "@helpers/*": ["src/helpers/*"],
+      "@test/*": ["src/test/*"]
     }
   },
   "include": ["src/**/*"],

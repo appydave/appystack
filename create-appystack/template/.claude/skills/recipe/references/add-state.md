@@ -32,7 +32,40 @@ Does `client/src/store/appStore.ts` exist? If yes → Zustand is already install
 
 ## What You Currently Have
 
-`AppContext.tsx` with `useReducer`, plus potentially separate contexts for nav, toasts, theme, etc.
+The template ships no context. This recipe assumes your app has grown one or more of its own (an app-state context, plus perhaps nav, toasts, theme). A typical app-state context, `client/src/contexts/AppContext.tsx`, is a `useReducer` behind a provider and a hook:
+
+```tsx
+import { createContext, useContext, useReducer, type Dispatch, type ReactNode } from 'react';
+
+interface State {
+  count: number;
+}
+type Action = { type: 'increment' } | { type: 'reset' };
+interface AppContextValue {
+  state: State;
+  dispatch: Dispatch<Action>;
+}
+
+const initialState: State = { count: 0 };
+const AppContext = createContext<AppContextValue | null>(null);
+
+function reducer(state: State, action: Action): State {
+  return action.type === 'increment' ? { count: state.count + 1 } : initialState;
+}
+
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
+}
+
+export function useApp(): AppContextValue {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error('useApp must be used within an AppProvider');
+  return ctx;
+}
+```
+
+If your app has no context yet, you do not need one first: skip to "What Gets Added" and start with the store.
 
 **Works well for:**
 - Simple global state with one or two contexts
@@ -258,4 +291,4 @@ Zustand is for **client-owned UI state** that has nothing to do with the server.
 - **Don't use one giant flat state object** — organise into slices. Makes it easier to find state, easier to test slices independently, and easier to persist only the right fields.
 - **Don't forget `useShallow` when subscribing to multiple values** — without it, every store update re-renders the component even if the subscribed values didn't change.
 - **Don't persist everything** — toasts, loading states, modal open/closed should never go in localStorage. Only persist user preferences and navigation state.
-- **Don't delete AppContext.tsx before testing** — migrate one consumer at a time, then delete the context file when all consumers are migrated.
+- **Don't delete a context file before testing** — migrate one consumer at a time, then delete the context file (for example your `AppContext.tsx`) when all consumers are migrated.
