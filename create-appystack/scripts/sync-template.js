@@ -13,10 +13,12 @@ const src = resolve(__dirname, '../../template');
 const dest = resolve(__dirname, '../template');
 
 const EXCLUDE = new Set(['node_modules', 'dist', 'coverage', 'test-results', '.git']);
+// Publisher-disk files: a shipped lockfile pins stale deps (ERESOLVE in new apps).
+const isLeak = (name) => name === 'package-lock.json' || name.endsWith('.tsbuildinfo');
 
 function filter(src) {
   const segment = src.split('/').pop();
-  return !EXCLUDE.has(segment);
+  return !EXCLUDE.has(segment) && !isLeak(segment);
 }
 
 if (existsSync(dest)) {
