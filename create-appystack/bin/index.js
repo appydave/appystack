@@ -11,7 +11,12 @@
  *   --github-org   GitHub org or user to create the repo under
  *   --public       Make the GitHub repo public (default: private)
  *   --no-github    Skip GitHub repo creation entirely
- *   --yes          Skip all interactive confirmations (auto-accept)
+ *   --yes          Skip every prompt and confirmation: flags not given take their
+ *                  defaults (scope @myorg, ports 5500/5501, no GitHub repo).
+ *                  The project name has no default and is always required.
+ *
+ * With no terminal on stdin (CI, a pipe) nothing can be asked: a missing value
+ * is an error, never a silent exit 0. Pass the flag, or --yes for defaults.
  */
 import { intro, outro, text, select, confirm, cancel, isCancel, spinner, note } from '@clack/prompts';
 import { readFileSync, writeFileSync, cpSync, existsSync, rmSync, readdirSync, statSync, renameSync } from 'node:fs';
@@ -47,6 +52,19 @@ function isPortInUse(port) {
     conn.on('connect', () => { conn.destroy(); resolve(true); });
     conn.on('error', () => resolve(false));
   });
+}
+
+// A prompt that cannot be asked: --yes answers it with the default, no terminal fails loudly.
+function skipPrompt(cli, flag, fallback) {
+  if (cli.yes) return fallback;
+  needTerminal(flag);
+  return undefined;
+}
+
+function needTerminal(flag) {
+  if (process.stdin.isTTY) return;
+  console.error(`Error: no terminal to ask for ${flag}. Pass ${flag}, or --yes to accept the defaults.`);
+  process.exit(1);
 }
 
 function hasGhCli() {
@@ -142,6 +160,12 @@ function applyCustomizations(root, { name, scope, serverPort, clientPort, desc }
   playwrightConfig = replaceAll(playwrightConfig, `const SERVER_PORT = ${oldServerPort};`, `const SERVER_PORT = ${serverPort};`);
   writeFile(root, 'playwright.config.ts', playwrightConfig);
 
+  // .vscode/launch.json — debug configs carry both ports
+  let launchJson = readFile(root, '.vscode/launch.json');
+  launchJson = replaceAll(launchJson, `"PORT": "${oldServerPort}"`, `"PORT": "${serverPort}"`);
+  launchJson = replaceAll(launchJson, `localhost:${oldClientPort}`, `localhost:${clientPort}`);
+  writeFile(root, '.vscode/launch.json', launchJson);
+
   // client/index.html
   let indexHtml = readFile(root, 'client/index.html');
   indexHtml = replaceAll(indexHtml, `<title>${oldTitle}</title>`, `<title>${name}</title>`);
@@ -218,6 +242,7 @@ async function main() {
     }
     projectName = cli.name.trim();
   } else {
+    needTerminal('the project name');
     const result = await text({
       message: 'Project name',
       placeholder: 'my-app',
@@ -235,6 +260,7 @@ async function main() {
   let mergeMode = false;
   if (existsSync(targetDir)) {
     if (!cli.yes) {
+      needTerminal('--yes (directory exists)');
       const doMerge = await confirm({
         message: `Directory "${projectName}" already exists. Scaffold into it (keeps existing files)?`,
       });
@@ -252,6 +278,8 @@ async function main() {
       process.exit(1);
     }
     packageScope = s;
+  } else if (skipPrompt(cli, '--scope', '@myorg')) {
+    packageScope = '@myorg';
   } else {
     const result = await text({
       message: 'Package scope',
@@ -275,6 +303,8 @@ async function main() {
       process.exit(1);
     }
     clientPort = String(p);
+  } else if (skipPrompt(cli, '--port', '5500')) {
+    clientPort = '5500';
   } else {
     const inUse = await isPortInUse(5500);
     const result = await text({
@@ -304,6 +334,8 @@ async function main() {
       process.exit(1);
     }
     serverPort = String(p);
+  } else if (skipPrompt(cli, '--server-port', defaultServerPort)) {
+    serverPort = defaultServerPort;
   } else {
     const inUse = await isPortInUse(Number(defaultServerPort));
     const result = await text({
@@ -326,6 +358,8 @@ async function main() {
   let description;
   if (cli.description) {
     description = cli.description.trim();
+  } else if (skipPrompt(cli, '--description', 'An AppyStack app')) {
+    description = 'An AppyStack app';
   } else {
     const result = await text({
       message: 'Project description',
@@ -345,6 +379,8 @@ async function main() {
   if (ghAvailable) {
     if (cli.githubOrg) {
       githubOrg = cli.githubOrg.trim();
+    } else if (skipPrompt(cli, '--github-org (or --no-github)', null) === null) {
+      githubOrg = null;
     } else {
       const result = await text({
         message: 'GitHub org or user (for repo creation)',
@@ -356,7 +392,8 @@ async function main() {
       githubOrg = result.trim() || null;
     }
 
-    if (githubOrg && !cli.public) {
+    if (githubOrg && !cli.public && !cli.yes) {
+      needTerminal('--public (or --yes for a private repo)');
       const result = await select({
         message: 'Repository visibility',
         options: [
@@ -407,6 +444,7 @@ async function main() {
   }
 
   if (!cli.yes) {
+    needTerminal('--yes');
     const go = await confirm({ message: mergeMode ? 'Scaffold into existing directory?' : 'Create project?' });
     if (isCancel(go) || !go) { cancel('Cancelled.'); process.exit(0); }
   }
