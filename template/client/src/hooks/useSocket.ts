@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import { getEntitySocket } from '../lib/entitySocket.js';
 
 /**
@@ -9,8 +9,9 @@ import { getEntitySocket } from '../lib/entitySocket.js';
  */
 export function useSocket() {
   const socket = getEntitySocket();
-  const connected = useSyncExternalStore(
-    (notify) => {
+  // Stable identity: a new subscribe function each render makes React unsubscribe and resubscribe.
+  const subscribe = useCallback(
+    (notify: () => void) => {
       socket.on('connect', notify);
       socket.on('disconnect', notify);
 
@@ -19,8 +20,9 @@ export function useSocket() {
         socket.off('disconnect', notify);
       };
     },
-    () => socket.connected
+    [socket]
   );
+  const connected = useSyncExternalStore(subscribe, () => socket.connected);
 
   return { socket, connected };
 }

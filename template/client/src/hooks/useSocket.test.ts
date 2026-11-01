@@ -49,4 +49,13 @@ describe('useSocket', () => {
     act(() => connectHandler?.());
     expect(result.current.connected).toBe(true);
   });
+
+  it('does not re-register listeners when the component re-renders', () => {
+    const { rerender } = renderHook(() => useSocket());
+
+    rerender();
+    rerender();
+    expect(mockSocket.on).toHaveBeenCalledTimes(2);
+    expect(mockSocket.off).not.toHaveBeenCalled();
+  });
 });
