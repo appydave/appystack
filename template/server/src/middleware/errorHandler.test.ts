@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import express, { type Request, type Response, type NextFunction } from 'express';
-import { AppError, errorHandler } from './errorHandler.js';
+import { AppError } from '@helpers/AppError.js';
+import { errorHandler } from './errorHandler.js';
 
 function buildApp(thrower: (req: Request, res: Response, next: NextFunction) => void) {
   const app = express();
