@@ -16,15 +16,10 @@ const TYPES = ['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs', 'mts', 'cts'];
 const TEST_TYPES = `{${TYPES.join(',')}}`;
 // Built from parts so this file does not contain the marker it forbids (the guard scans it too).
 const MARKER = ['jscpd', 'ignore'].join(':');
-const SKIP_DIRS = [
-  'node_modules',
-  'dist',
-  'build',
-  'coverage',
-  'playwright-report',
-  'test-results',
-  '.claude',
-];
+// The guard may skip only what both profiles ignore, or a marker there would hide a clone jscpd scans.
+const SKIP_DIRS = OUTPUT_DIRS.map((glob) => glob.replace(/^\*\*\/|\/\*\*$/g, ''));
+// jscpd also scans .es and .es6 as javascript (probed), so the guard reads them too.
+const GUARD_TYPES = [...TYPES, 'es', 'es6'];
 const PROD_CONFIG = '.jscpd.json';
 const TESTS_CONFIG = '.jscpd.tests.json';
 
@@ -71,7 +66,7 @@ describe('the duplicates gate configuration', () => {
     const manifest: { scripts: { dup: string } } = JSON.parse(
       readFileSync(resolve(root, 'package.json'), 'utf8')
     );
-    const include = TYPES.map((type) => `--include='*.${type}'`).join(' ');
+    const include = GUARD_TYPES.map((type) => `--include='*.${type}'`).join(' ');
     const exclude = SKIP_DIRS.map((dir) => `--exclude-dir=${dir}`).join(' ');
 
     expect(
@@ -326,6 +321,16 @@ describe('the ignore-marker guard in `npm run dup`', () => {
     ['.cjs', 'server/src/a.cjs', 'server/src/b.cjs'],
     ['.mts', 'server/src/a.mts', 'server/src/b.mts'],
     ['.cts', 'server/src/a.cts', 'server/src/b.cts'],
+    ['.es', 'server/src/a.es', 'server/src/b.es'],
+    ['.es6', 'server/src/a.es6', 'server/src/b.es6'],
+    ['a test-results/ folder', 'server/src/test-results/a.ts', 'server/src/test-results/b.ts'],
+    [
+      'a playwright-report/ folder',
+      'server/playwright-report/a.ts',
+      'server/playwright-report/b.ts',
+    ],
+    ['a .claude/ folder', 'server/.claude/a.ts', 'server/.claude/b.ts'],
+    ['a build/ folder', 'server/build/a.ts', 'server/build/b.ts'],
   ])('fails a planted marker around a clone in %s', (_name, a, b) => {
     expect(runDup(fenced(a, b))).not.toMatchObject({ status: 0 });
   });
