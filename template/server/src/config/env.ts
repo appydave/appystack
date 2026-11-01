@@ -9,6 +9,7 @@ import { z } from 'zod';
 //    ON), or the server can silently bind the wrong port.
 //    See docs/kdd/learnings/dotenv-override-clobbers-env-tests.md for the full rationale.
 const underTest = process.env.VITEST === 'true' || process.env.NODE_ENV === 'test';
+
 dotenv.config({ path: path.resolve(process.cwd(), '..', '.env'), override: !underTest });
 
 const envSchema = z.object({

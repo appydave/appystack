@@ -28,5 +28,6 @@ export function getEntitySocket(): AppSocket {
       reconnectionDelayMax: 3000,
     });
   }
+
   return _socket;
 }

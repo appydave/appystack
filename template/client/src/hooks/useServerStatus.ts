@@ -48,6 +48,7 @@ export function useServerStatus() {
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
+
         setStatus((prev) => ({
           ...prev,
           loading: false,

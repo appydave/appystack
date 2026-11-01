@@ -47,6 +47,7 @@ app.use(infoRouter);
 // Production static file serving — serve the built client app
 if (env.isProduction) {
   const clientDist = join(__dirname, '../../client/dist');
+
   app.use(express.static(clientDist));
 
   // SPA fallback — serve index.html for all non-API routes

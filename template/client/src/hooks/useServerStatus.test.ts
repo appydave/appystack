@@ -50,6 +50,7 @@ beforeEach(() => {
       typeof input === 'string' && input.startsWith('/')
         ? `http://localhost:${serverPort}${input}`
         : input;
+
     return nativeFetch(url, init);
   };
 });
@@ -63,6 +64,7 @@ afterAll(() => {
 describe('useServerStatus', () => {
   it('starts with loading=true', () => {
     const { result } = renderHook(() => useServerStatus());
+
     expect(result.current.loading).toBe(true);
     expect(result.current.health).toBeNull();
     expect(result.current.info).toBeNull();
@@ -100,6 +102,7 @@ describe('useServerStatus', () => {
   it('sets error state when server returns 500', async () => {
     // Temporarily override fetch to return 500 for both endpoints
     const savedFetch = globalThis.fetch;
+
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
@@ -119,6 +122,7 @@ describe('useServerStatus', () => {
   it('sets error state when server is unreachable', async () => {
     // Temporarily override fetch to simulate network failure
     const savedFetch = globalThis.fetch;
+
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('Failed to fetch'));
 
     const { result } = renderHook(() => useServerStatus());

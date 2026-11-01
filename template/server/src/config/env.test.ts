@@ -66,6 +66,7 @@ describe('env config', () => {
 
   it('exits with code 1 when NODE_ENV is an invalid value', async () => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as () => never);
+
     process.env.NODE_ENV = 'staging';
     vi.resetModules();
     // env.ts calls process.exit(1) on failure but the mock does not stop execution,
@@ -75,12 +76,14 @@ describe('env config', () => {
     } catch {
       // expected: module throws after mocked exit because parsed.data is undefined
     }
+
     expect(exitSpy).toHaveBeenCalledWith(1);
     exitSpy.mockRestore();
   });
 
   it('exits with code 1 when PORT is not a number', async () => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as () => never);
+
     process.env.NODE_ENV = 'test';
     process.env.PORT = 'not-a-number';
     vi.resetModules();
@@ -91,6 +94,7 @@ describe('env config', () => {
     } catch {
       // expected: module throws after mocked exit because parsed.data is undefined
     }
+
     expect(exitSpy).toHaveBeenCalledWith(1);
     exitSpy.mockRestore();
   });

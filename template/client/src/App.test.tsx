@@ -14,6 +14,7 @@ beforeAll(
   () =>
     new Promise<void>((resolve) => {
       const app = express();
+
       app.get('/health', (_, res) =>
         res.json({ status: 'ok', timestamp: new Date().toISOString() })
       );
@@ -36,6 +37,7 @@ beforeEach(() => {
       typeof input === 'string' && input.startsWith('/')
         ? `http://localhost:${serverPort}${input}`
         : input;
+
     return nativeFetch(url, init);
   };
 });
@@ -62,8 +64,10 @@ describe('App', () => {
     await waitFor(() => expect(screen.getByTestId('status-grid')).toBeInTheDocument(), {
       timeout: 5000,
     });
+
     // Verify actual content is rendered inside the status grid, not just its presence
     const grid = screen.getByTestId('status-grid');
+
     expect(grid.textContent).toMatch(/API Health/);
     expect(grid.textContent).toMatch(/WebSocket/);
   });

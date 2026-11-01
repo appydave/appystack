@@ -8,6 +8,7 @@ describe('api wrapper', () => {
 
   it('api.get returns parsed JSON on success', async () => {
     const data = { id: 1, name: 'test' };
+
     vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify(data), { status: 200 }));
 
     const result = await api.get<typeof data>('/test');
@@ -26,15 +27,19 @@ describe('api wrapper', () => {
 
   it('api.post sends correct method, body, and Content-Type header', async () => {
     const responseData = { created: true };
+
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify(responseData), { status: 201 })
     );
 
     const payload = { name: 'new item' };
+
     await api.post('/items', payload);
 
     expect(fetch).toHaveBeenCalledOnce();
+
     const [, options] = vi.mocked(fetch).mock.calls[0];
+
     expect(options?.method).toBe('POST');
     expect(options?.body).toBe(JSON.stringify(payload));
     expect((options?.headers as Record<string, string>)['Content-Type']).toBe('application/json');
@@ -46,6 +51,7 @@ describe('api wrapper', () => {
     );
 
     let caught: unknown;
+
     try {
       await api.post('/missing', { data: 'value' });
     } catch (err) {
@@ -61,9 +67,11 @@ describe('api wrapper', () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 200 }));
 
     const controller = new AbortController();
+
     await api.get('/test', controller.signal);
 
     const [, options] = vi.mocked(fetch).mock.calls[0];
+
     expect(options?.signal).toBe(controller.signal);
   });
 
@@ -71,9 +79,11 @@ describe('api wrapper', () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 200 }));
 
     const controller = new AbortController();
+
     await api.post('/test', { x: 1 }, controller.signal);
 
     const [, options] = vi.mocked(fetch).mock.calls[0];
+
     expect(options?.signal).toBe(controller.signal);
   });
 });

@@ -25,11 +25,16 @@ async function main(): Promise<void> {
     message: 'Project name (e.g. my-app)',
     placeholder: 'my-app',
     validate(value) {
-      if (!value || value.trim().length === 0) return 'Project name is required';
-      if (!/^[a-z0-9-]+$/.test(value.trim()))
+      if (!value || value.trim().length === 0) {
+        return 'Project name is required';
+      }
+
+      if (!/^[a-z0-9-]+$/.test(value.trim())) {
         return 'Use lowercase letters, numbers, and hyphens only';
+      }
     },
   });
+
   if (isCancel(projectName)) {
     cancel('Customization cancelled.');
     process.exit(0);
@@ -39,11 +44,20 @@ async function main(): Promise<void> {
     message: 'Package scope (e.g. @myorg)',
     placeholder: '@myorg',
     validate(value) {
-      if (!value || value.trim().length === 0) return 'Package scope is required';
-      if (!value.trim().startsWith('@')) return 'Scope must start with @';
-      if (!/^@[a-z0-9-]+$/.test(value.trim())) return 'Use @lowercase-letters-numbers-hyphens only';
+      if (!value || value.trim().length === 0) {
+        return 'Package scope is required';
+      }
+
+      if (!value.trim().startsWith('@')) {
+        return 'Scope must start with @';
+      }
+
+      if (!/^@[a-z0-9-]+$/.test(value.trim())) {
+        return 'Use @lowercase-letters-numbers-hyphens only';
+      }
     },
   });
+
   if (isCancel(packageScope)) {
     cancel('Customization cancelled.');
     process.exit(0);
@@ -55,10 +69,13 @@ async function main(): Promise<void> {
     initialValue: '5501',
     validate(value) {
       const port = Number(value);
-      if (!Number.isInteger(port) || port < 1 || port > 65535)
+
+      if (!Number.isInteger(port) || port < 1 || port > 65535) {
         return 'Enter a valid port number (1–65535)';
+      }
     },
   });
+
   if (isCancel(serverPortInput)) {
     cancel('Customization cancelled.');
     process.exit(0);
@@ -70,10 +87,13 @@ async function main(): Promise<void> {
     initialValue: '5500',
     validate(value) {
       const port = Number(value);
-      if (!Number.isInteger(port) || port < 1 || port > 65535)
+
+      if (!Number.isInteger(port) || port < 1 || port > 65535) {
         return 'Enter a valid port number (1–65535)';
+      }
     },
   });
+
   if (isCancel(clientPortInput)) {
     cancel('Customization cancelled.');
     process.exit(0);
@@ -83,9 +103,12 @@ async function main(): Promise<void> {
     message: 'Project description',
     placeholder: 'My awesome app',
     validate(value) {
-      if (!value || value.trim().length === 0) return 'Description is required';
+      if (!value || value.trim().length === 0) {
+        return 'Description is required';
+      }
     },
   });
+
   if (isCancel(description)) {
     cancel('Customization cancelled.');
     process.exit(0);
@@ -106,27 +129,32 @@ async function main(): Promise<void> {
 
   // --- Root package.json ---
   let rootPkg = readFile('package.json');
+
   rootPkg = replaceAll(rootPkg, oldRootName, `${scope}/${name}`);
   rootPkg = replaceAll(rootPkg, oldDescription, desc);
   writeFile('package.json', rootPkg);
 
   // --- shared/package.json ---
   let sharedPkg = readFile('shared/package.json');
+
   sharedPkg = replaceAll(sharedPkg, oldScope, scope);
   writeFile('shared/package.json', sharedPkg);
 
   // --- server/package.json ---
   let serverPkg = readFile('server/package.json');
+
   serverPkg = replaceAll(serverPkg, oldScope, scope);
   writeFile('server/package.json', serverPkg);
 
   // --- client/package.json ---
   let clientPkg = readFile('client/package.json');
+
   clientPkg = replaceAll(clientPkg, oldScope, scope);
   writeFile('client/package.json', clientPkg);
 
   // --- .env.example ---
   let envExample = readFile('.env.example');
+
   envExample = replaceAll(envExample, `PORT=${oldServerPort}`, `PORT=${serverPort}`);
   envExample = replaceAll(
     envExample,
@@ -137,6 +165,7 @@ async function main(): Promise<void> {
 
   // --- server/src/config/env.ts ---
   let envTs = readFile('server/src/config/env.ts');
+
   envTs = replaceAll(
     envTs,
     `PORT: z.coerce.number().default(${oldServerPort})`,
@@ -151,6 +180,7 @@ async function main(): Promise<void> {
 
   // --- client/vite.config.ts ---
   let viteConfig = readFile('client/vite.config.ts');
+
   viteConfig = replaceAll(viteConfig, `port: ${oldClientPort}`, `port: ${clientPort}`);
   viteConfig = replaceAll(
     viteConfig,
@@ -161,11 +191,13 @@ async function main(): Promise<void> {
 
   // --- client/index.html ---
   let indexHtml = readFile('client/index.html');
+
   indexHtml = replaceAll(indexHtml, `<title>${oldTitle}</title>`, `<title>${name}</title>`);
   writeFile('client/index.html', indexHtml);
 
   // --- scripts/start.sh ---
   let startSh = readFile('scripts/start.sh');
+
   startSh = replaceAll(startSh, `:${oldServerPort}`, `:${serverPort}`);
   startSh = replaceAll(startSh, `localhost:${oldClientPort}`, `localhost:${clientPort}`);
   startSh = replaceAll(
