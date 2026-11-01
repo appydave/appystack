@@ -12,6 +12,7 @@
   "scripts": {
     "dev": "npm run build -w shared && concurrently --kill-others -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w shared && npm run build -w server && npm run build -w client",
+    "pretest": "npm run build -w shared",
     "test": "npm run test -w server -w client",
     "test:coverage": "npm run test:coverage -w server -w client",
     "test:e2e": "playwright test",
@@ -21,6 +22,7 @@
     "deadcode": "grep -rqE '@(public|internal|beta|alias)' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.cjs' --include='*.mts' --include='*.cts' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=coverage . ; [ $? -eq 1 ] && knip && (cd client && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src) && (cd server && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src) && (cd shared && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src) && depcruise -c .dependency-cruiser.cjs -x '^(client|server|shared|dist|build|coverage|playwright-report|test-results)/|(^|/)node_modules/' .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "pretypecheck": "npm run build -w shared",
     "typecheck": "npm run typecheck -w shared -w server -w client",
     "clean": "rm -rf node_modules shared/dist server/dist client/dist",
     "prepare": "husky",

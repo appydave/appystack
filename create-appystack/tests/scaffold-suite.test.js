@@ -56,16 +56,11 @@ describe('a scaffolded app passes its own suite', () => {
   });
 
   it(
-    'builds shared, typechecks and passes npm test',
+    'typechecks and passes npm test with no manual build of shared',
     () => {
-      // Build shared first: a fresh scaffold's `npm test` and typecheck fail (unresolved `@scope/shared`,
-      // TS2307) until `npm run build -w shared` runs. A known 0.5.1 gap, parked for 0.5.3 (pretest and
-      // pretypecheck hooks); remove this build step when that lands.
-      const built = run(app, 'npm', ['run', 'build', '-w', 'shared'], SUITE_MS);
       const typecheck = run(app, 'npm', ['run', 'typecheck'], SUITE_MS);
       const tests = run(app, 'npm', ['test'], SUITE_MS);
 
-      expect(built.status, output(built)).toBe(0);
       expect(typecheck.status, output(typecheck)).toBe(0);
       expect(tests.status, output(tests).slice(-4000)).toBe(0);
     },
