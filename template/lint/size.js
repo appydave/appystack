@@ -9,10 +9,15 @@ import { builtinRules } from 'eslint/use-at-your-own-risk';
 const MAX_MEMBERS = 30;
 const coreMaxLinesPerFunction = builtinRules.get('max-lines-per-function');
 
-// describe(...), describe.skip/only(...), describe.each([...])(...) all start from `describe`.
+// describe(...), describe.skip/only(...), describe.each([...])(...) and describe.each`...`(...)
+// all start from `describe`.
 function startsFromDescribe(callee) {
   if (callee.type === 'CallExpression') {
     return startsFromDescribe(callee.callee);
+  }
+
+  if (callee.type === 'TaggedTemplateExpression') {
+    return startsFromDescribe(callee.tag);
   }
 
   if (callee.type === 'MemberExpression') {

@@ -52,6 +52,7 @@ describe('G04 size gate, run through the real eslint.config.js', () => {
       ["describe.skip('x', () => {", '});'],
       ["describe.only('x', () => {", '});'],
       ["describe.each([1, 2])('x', () => {", '});'],
+      ["describe.each`a`('x', () => {", '});'],
       ["describe('x', function () {", '});'],
     ])('allows a 61-line %s callback', async (opener, closer) => {
       const ids = await ruleIdsFor(wrapped(opener, closer, 61), TEST_FILE);
