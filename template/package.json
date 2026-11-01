@@ -15,7 +15,7 @@
     "test": "npm run test -w server -w client",
     "test:coverage": "npm run test:coverage -w server -w client",
     "test:e2e": "playwright test",
-    "lint": "oxlint --deny-warnings && eslint .",
+    "lint": "! git grep -nE --untracked '(eslint|oxlint)-disable' -- client server shared scripts && oxlint --deny-warnings && eslint .",
     "lint:fix": "oxlint --fix && eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
