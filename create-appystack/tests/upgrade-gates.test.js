@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { classifyFile } from '../bin/lib/classify.js';
 import { mergeGatePackage, GATE_SCRIPTS, GATE_DEV_DEPS } from '../bin/lib/gate-package.js';
+import { appendServerAliasTodo } from '../bin/lib/alias-todo.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '../..');
@@ -147,6 +148,56 @@ describe('mergeGatePackage', () => {
   });
 });
 
+// G10: the template's server code imports through @config/@helpers/@test; an upgraded app keeps its old
+// (never-tier) tsconfig and vitest config, so the tool writes the exact lines to add.
+describe('appendServerAliasTodo', () => {
+  let consumer;
+  beforeEach(() => {
+    consumer = mkdtempSync(join(tmpdir(), 'alias-todo-'));
+  });
+  afterEach(() => removeScratch(consumer));
+
+  const oldTsconfig = '{ "compilerOptions": { "paths": { "@config/*": ["src/config/*"] } } }';
+  const oldVitest = "import { defineConfig } from 'vitest/config';\nexport default defineConfig({ test: {} });\n";
+  const write = (rel, text) => {
+    mkdirSync(dirname(join(consumer, rel)), { recursive: true });
+    writeFileSync(join(consumer, rel), text);
+  };
+
+  it('writes the exact missing paths and aliases for a 0.4.x server, and the ../ rewrite row', () => {
+    write('server/tsconfig.json', oldTsconfig);
+    write('server/vitest.config.ts', oldVitest);
+    expect(appendServerAliasTodo(consumer)).toBe(true);
+    const todo = readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8');
+    expect(todo).toContain('`"@helpers/*": ["src/helpers/*"]`, `"@test/*": ["src/test/*"]`');
+    expect(todo).not.toContain('"@config/*"');
+    expect(todo).toContain("`'@config': path.resolve(__dirname, 'src/config')`");
+    expect(todo).toContain("`'@helpers': path.resolve(__dirname, 'src/helpers')`");
+    expect(todo).toContain("`'@test': path.resolve(__dirname, 'src/test')`");
+    expect(todo).toContain('Rewrite each to an alias');
+  });
+
+  it('writes nothing for an app that already has them, and nothing without a server', () => {
+    expect(appendServerAliasTodo(consumer)).toBe(false);
+    write(
+      'server/tsconfig.json',
+      '{ "paths": { "@config/*": [], "@helpers/*": [], "@test/*": [] } }',
+    );
+    write('server/vitest.config.ts', "alias: { '@config': 1, '@helpers': 2, '@test': 3 }");
+    expect(appendServerAliasTodo(consumer)).toBe(false);
+    expect(existsSync(join(consumer, 'UPGRADE_TODO.md'))).toBe(false);
+  });
+
+  it('does not repeat a row when run twice', () => {
+    write('server/tsconfig.json', oldTsconfig);
+    write('server/vitest.config.ts', oldVitest);
+    appendServerAliasTodo(consumer);
+    const once = readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8');
+    appendServerAliasTodo(consumer);
+    expect(readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8')).toBe(once);
+  });
+});
+
 // The proof: a real 0.4.18 template, upgraded by this branch, installs and runs both linters.
 // Not established: that this equals real CLI scaffold output, or cold-cache install time in CI.
 const run = (cmd, args, cwd, timeout = 150_000) =>
@@ -202,6 +253,10 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
     const up = run('node', [UPGRADE_BIN, '--template-path', TEMPLATE, '--yes'], app);
     expect(up.status, up.stdout + up.stderr).toBe(0);
     expect(readJson(app, 'package.json').scripts.lint).toContain('oxlint');
+    // The 0.4.18 server has no @helpers/@test paths and no vitest alias: the tool must say what to add.
+    const todoText = readFileSync(join(app, 'UPGRADE_TODO.md'), 'utf-8');
+    expect(todoText).toContain('server/tsconfig.json');
+    expect(todoText).toContain('server/vitest.config.ts');
 
     // A plain `npm install` on the stale 0.4.18 lockfile fails ERESOLVE (oxlint's optional vite-plus peer pulls vitest 5);
     // once --legacy-peer-deps has regenerated the lockfile, plain installs work. upgrade.js tells the user this.
