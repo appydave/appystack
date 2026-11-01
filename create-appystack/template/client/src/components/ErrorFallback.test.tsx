@@ -55,9 +55,7 @@ describe('ErrorFallback', () => {
     const resetErrorBoundary = vi.fn();
 
     // FallbackProps expects error to be an Error, but component handles non-Error via String()
-    render(
-      <ErrorFallback error={error as unknown as Error} resetErrorBoundary={resetErrorBoundary} />
-    );
+    render(<ErrorFallback error={error} resetErrorBoundary={resetErrorBoundary} />);
 
     expect(screen.getByText('plain string error')).toBeInTheDocument();
   });

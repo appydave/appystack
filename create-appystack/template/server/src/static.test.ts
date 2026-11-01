@@ -13,6 +13,7 @@ import { app } from './index.js';
 describe('404 catch-all', () => {
   it('returns 404 JSON for an unknown route', async () => {
     const res = await request(app).get('/does-not-exist');
+
     expect(res.status).toBe(404);
     expect(res.body).toMatchObject({ status: 'error', error: 'Not found' });
     expect(typeof res.body.timestamp).toBe('string');
@@ -20,6 +21,7 @@ describe('404 catch-all', () => {
 
   it('returns JSON not HTML for unknown /api routes', async () => {
     const res = await request(app).get('/api/unknown');
+
     expect(res.status).toBe(404);
     expect(res.headers['content-type']).toMatch(/json/);
   });
@@ -28,6 +30,7 @@ describe('404 catch-all', () => {
     // If the SPA wildcard were registered it would call sendFile against a
     // missing dist/ directory and return 500. A clean 404 confirms it's not.
     const res = await request(app).get('/dashboard/settings');
+
     expect(res.status).toBe(404);
     expect(res.body.status).toBe('error');
   });

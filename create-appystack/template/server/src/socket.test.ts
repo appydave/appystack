@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { createServer } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { serverPort as portOf } from './test/serverPort.js';
 import { Server } from 'socket.io';
 import { io as ioc } from 'socket.io-client';
 import type { Socket as ClientSocket } from 'socket.io-client';
@@ -15,6 +15,7 @@ function waitFor<T>(fn: () => T | Promise<T>, timeoutMs = 3000): Promise<T> {
     const check = async () => {
       try {
         const result = await fn();
+
         resolve(result);
       } catch (err) {
         if (Date.now() - start > timeoutMs) {
@@ -24,6 +25,7 @@ function waitFor<T>(fn: () => T | Promise<T>, timeoutMs = 3000): Promise<T> {
         }
       }
     };
+
     check();
   });
 }
@@ -43,7 +45,7 @@ describe('Socket.io event handlers', () => {
       registerSocketHandlers(io);
 
       httpServer.listen(0, () => {
-        serverPort = (httpServer.address() as AddressInfo).port;
+        serverPort = portOf(httpServer);
         resolve();
       });
     });
@@ -162,7 +164,7 @@ describe('Socket.io event handlers', () => {
           try {
             expect(socket.id).toBeDefined();
             expect(typeof socket.id).toBe('string');
-            expect(socket.id!.length).toBeGreaterThan(0);
+            expect(socket.id?.length).toBeGreaterThan(0);
             socket.disconnect();
             resolve();
           } catch (err) {
