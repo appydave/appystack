@@ -49,7 +49,7 @@ npm run typecheck    # TypeScript check across all workspaces
 
 **0.5.1** fixes 0.5.0 shipping a stale lockfile (new 0.5.0 apps failed `npm install` with `ERESOLVE`).
 
-New apps now ship with quality gates that fail the build: spacing rules, Prettier, Oxlint (no `any`, no type assertions, no `!`), a ban on inline `eslint-disable` / `oxlint-disable` comments, size limits (function 60 lines / 4 parameters / file 300 lines / 30 members) and no magic numbers.
+New apps now ship with quality gates that fail the build: spacing, Prettier, Oxlint, a ban on inline `eslint-disable` / `oxlint-disable` comments, size, magic numbers, complexity, duplicate code, root imports, dead code and cycles, and no re-exports. The rules and thresholds live in the app's `.oxlintrc.json`, `eslint.config.js`, `lint/`, `.jscpd*.json` and `.dependency-cruiser.cjs`; read those, not this page.
 
 - **`npm run lint` will probably fail after `npx appystack-upgrade` on an existing app.** The gates are finding real issues in your code (a 0.4.18 app showed 164 ESLint + 37 Oxlint findings). `npm run lint:fix` clears the spacing ones; the rest are real fixes.
 - If `npm install` fails with `ERESOLVE`, run `npm install --legacy-peer-deps` once. Later plain installs work.

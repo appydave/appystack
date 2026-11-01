@@ -108,7 +108,9 @@ npm run dev
 | `npm run dev` | Start client + server concurrently |
 | `npm run build` | Build shared → server → client |
 | `npm test` | Run all tests |
-| `npm run lint` | ESLint across all workspaces |
+| `npm run lint` | Guard against disable comments, then Oxlint, then ESLint (rules: `.oxlintrc.json`, `eslint.config.js`) |
+| `npm run dup` | Duplicate-code gate (jscpd) |
+| `npm run deadcode` | Dead-code and import-cycle gate (Knip, dependency-cruiser) |
 | `npm run typecheck` | TypeScript across all workspaces |
 
 ---

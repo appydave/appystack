@@ -157,10 +157,12 @@ my-app/
 |---|---|
 | `npm run dev` | Start client + server (hot reload) |
 | `npm run build` | Build shared → server → client |
-| `npm test` | Run all unit tests (81 tests) |
+| `npm test` | Run all unit tests |
 | `npm run test:coverage` | Run tests with coverage report |
 | `npm run test:e2e` | Run Playwright smoke tests |
-| `npm run lint` | ESLint across all workspaces |
+| `npm run lint` | Guard against disable comments, then Oxlint, then ESLint (rules: `.oxlintrc.json`, `eslint.config.js`) |
+| `npm run dup` | Duplicate-code gate (jscpd) |
+| `npm run deadcode` | Dead-code and import-cycle gate (Knip, dependency-cruiser) |
 | `npm run format` | Prettier across all workspaces |
 | `npm run typecheck` | TypeScript check across all workspaces |
 | `npm run customize` | Re-run the customisation script |

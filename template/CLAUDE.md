@@ -90,7 +90,9 @@ overmind stop            # stop all processes
 npm run dev           # Start both client + server (concurrently)
 npm run build         # Build shared → server → client
 npm test              # Run server + client tests
-npm run lint          # ESLint 9 flat config
+npm run lint          # disable-comment guard + Oxlint + ESLint 9 flat config
+npm run dup           # duplicate-code gate (jscpd)
+npm run deadcode      # dead code and import cycles (Knip, dependency-cruiser)
 npm run format:check  # Prettier check
 npm run typecheck     # TypeScript across all workspaces
 ```
