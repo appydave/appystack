@@ -1,15 +1,21 @@
-import { resolve } from 'node:path';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
 
 // vitest runs with the client workspace as cwd; eslint.config.js sits one level up, at the template root.
 const root = resolve(process.cwd(), '..');
+const ERROR = 2;
 const eslint = new ESLint({ cwd: root });
 
 async function ruleIdsFor(source: string, file = 'client/src/probe.ts'): Promise<string[]> {
   const [result] = await eslint.lintText(source, { filePath: resolve(root, file) });
 
-  return (result?.messages ?? []).map((message) => message.ruleId ?? 'parse-error');
+  // Only errors count: a rule downgraded to a warning prints but does not fail the build.
+  return (result?.messages ?? [])
+    .filter((message) => message.severity === ERROR)
+    .map((message) => message.ruleId ?? 'parse-error');
 }
 
 const statements = (count: number) =>
@@ -162,6 +168,101 @@ describe('G04 size gate, run through the real eslint.config.js', () => {
 
       expect(await memberErrors(make(30))).toHaveLength(0);
       expect(await memberErrors(make(31))).toHaveLength(1);
+    });
+  });
+  // The gates run on every workspace, not only the client. A rule switched off for one folder must fail here.
+  describe.each(['client/src', 'server/src', 'shared/src'])('in %s', (dir) => {
+    const at = (name: string) => `${dir}/${name}`;
+    const memberLines = (count: number) =>
+      Array.from({ length: count }, (_, index) => `  m${index}: number;`).join('\n');
+
+    it('rejects a function over 60 lines', async () => {
+      const source = wrapped('export function f() {', '}', 61);
+
+      expect(only(await ruleIdsFor(source, at('probe.ts')), FUNCTION_RULE)).toHaveLength(1);
+    });
+
+    it('rejects five parameters', async () => {
+      const source = 'export const f = (a: 1, b: 2, c: 3, d: 4, e: 5) => a;\n';
+
+      expect(only(await ruleIdsFor(source, at('probe.ts')), 'max-params')).toHaveLength(1);
+    });
+
+    it('rejects a 301-line file', async () => {
+      const ids = await ruleIdsFor(`${statements(301)}\n`, at('probe.ts'));
+
+      expect(only(ids, 'max-lines')).toHaveLength(1);
+    });
+
+    it('rejects an interface with 31 members', async () => {
+      const source = `export interface I {\n${memberLines(31)}\n}\n`;
+
+      expect(only(await ruleIdsFor(source, at('probe.ts')), 'no-restricted-syntax')).toHaveLength(
+        1
+      );
+    });
+  });
+
+  // The matcher in lint/size.js decides which files may hold a long describe callback. It is
+  // pinned as it stands: widening it (spec files, tests/ folders) is a ruling, not a quiet edit.
+  describe('which files count as test files for the describe exemption', () => {
+    const longDescribe = wrapped("describe('x', () => {", '});', 61);
+    const exempt = async (file: string) =>
+      only(await ruleIdsFor(longDescribe, file), FUNCTION_RULE).length === 0;
+
+    it.each(['ts', 'tsx', 'js', 'mjs', 'cjs', 'mts'])('exempts *.test.%s', async (ext) => {
+      expect(await exempt(`client/src/probe.test.${ext}`)).toBe(true);
+    });
+
+    it.each([
+      'client/src/test/a.ts',
+      'server/src/test/a.ts',
+      'e2e/test/a.ts',
+      'client/src/test/a.tsx',
+    ])('exempts a file under a folder named exactly test: %s', async (file) => {
+      expect(await exempt(file)).toBe(true);
+    });
+
+    it.each([
+      'client/src/probe.spec.ts',
+      'client/src/probe.spec.tsx',
+      'e2e/probe.spec.ts',
+      'client/src/tests/a.ts',
+      'client/src/__tests__/a.ts',
+      'client/src/probe.tests.ts',
+      'client/src/test.ts',
+      'client/src/probe.test.d.ts',
+      'client/src/test.test/a.ts',
+      'client/src/atest/a.ts',
+      'client/src/Probe.TEST.ts',
+      'client/src/probe.test.ts.ts',
+    ])('does not exempt %s', async (file) => {
+      expect(await exempt(file)).toBe(false);
+    });
+
+    // The folder rule looks at the path from the lint root, not the whole path: a checkout that
+    // happens to live under a folder named `test` must not turn the exemption on for every file.
+    it('judges the path from the lint root, not from the filesystem root', async () => {
+      const base = mkdtempSync(join(tmpdir(), 'size-root-'));
+
+      try {
+        const checkout = join(base, 'test', 'app');
+
+        mkdirSync(join(checkout, 'client', 'src'), { recursive: true });
+
+        const nested = new ESLint({
+          cwd: checkout,
+          overrideConfigFile: resolve(root, 'eslint.config.js'),
+        });
+        const [result] = await nested.lintText(longDescribe, {
+          filePath: join(checkout, 'client', 'src', 'probe.ts'),
+        });
+        const ids = (result?.messages ?? []).map((message) => message.ruleId);
+
+        expect(ids).toContain(FUNCTION_RULE);
+      } finally {
+        rmSync(base, { recursive: true, force: true });
+      }
     });
   });
 });
