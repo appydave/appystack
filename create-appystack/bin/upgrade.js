@@ -10,7 +10,7 @@ import { handleAutoFile } from './lib/diff.js';
 import * as diffModule from './lib/diff.js';
 import { handleRecipeFile } from './lib/recipe.js';
 import { mergeGatePackage } from './lib/gate-package.js';
-import { appendServerAliasTodo } from './lib/alias-todo.js';
+import { mergeServerAliases } from './lib/alias-merge.js';
 import { appendAppErrorTodo } from './lib/reexport-todo.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -174,8 +174,8 @@ async function main() {
     prompts.note(`${merged.join('\n')}\n\nRun npm install --legacy-peer-deps once (the lockfile is not touched; a stale one fails plain npm install).`, 'package.json gate entries merged');
   }
 
-  if (appendServerAliasTodo(cwd)) {
-    prompts.note('The server needs path aliases the template now uses. See UPGRADE_TODO.md for the exact lines.', 'Server aliases');
+  if (mergeServerAliases(cwd)) {
+    prompts.note('Added the @config/@helpers/@test aliases the template now uses to server/tsconfig.json and server/vitest.config.ts (UPGRADE_TODO.md lists any file it could not patch).', 'Server aliases');
   }
 
   if (appendAppErrorTodo(cwd)) {
