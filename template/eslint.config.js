@@ -5,6 +5,7 @@ import sonarjs from 'eslint-plugin-sonarjs';
 import stylistic from '@stylistic/eslint-plugin';
 import { spacingRules } from './lint/spacing.js';
 import { sizePlugin, sizeRules } from './lint/size.js';
+import { exportsPlugin, exportsRules } from './lint/exports.js';
 
 const COGNITIVE_MAX = 8;
 const EXPRESSION_MAX = 3;
@@ -107,6 +108,19 @@ export default [
     name: 'quality/root-imports-config-exempt',
     files: ['client/vitest.config.ts', 'server/vitest.config.ts'],
     rules: { 'no-restricted-syntax': ['error', ...sizeSelectors] },
+  },
+  // G16 re-exports: a module exports only what it declares (tests included). The package's public
+  // entry, shared/src/index.ts, is exempt by name: it is the one barrel the apps import through.
+  {
+    name: 'quality/no-reexport',
+    files: ['**/*.{ts,tsx,js,jsx,mjs,cjs,mts,cts}'],
+    plugins: { exports: exportsPlugin },
+    rules: exportsRules,
+  },
+  {
+    name: 'quality/no-reexport-entry-exempt',
+    files: ['shared/src/index.ts'],
+    rules: { 'exports/no-reexport': 'off' },
   },
   // Last: switch off in ESLint every rule that .oxlintrc.json turns on, so each rule has one owner.
   ...oxlint.buildFromOxlintConfigFile(fileURLToPath(new URL('./.oxlintrc.json', import.meta.url))),
