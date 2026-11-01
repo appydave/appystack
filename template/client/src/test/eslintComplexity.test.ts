@@ -1,7 +1,10 @@
+// @vitest-environment node
+// eslint.config.js builds file URLs, which jsdom's URL cannot do.
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { ESLint } from 'eslint';
 import { afterAll, describe, expect, it } from 'vitest';
 
@@ -69,6 +72,25 @@ describe('G06 cognitive and expression gates, run through the real eslint.config
     expect(await count(COGNITIVE, ifs(9), 'server/src/probe.test.ts')).toBe(0);
     expect(await count(EXPRESSION, chain(5), 'client/src/probe.test.tsx')).toBe(0);
     expect(await count(COGNITIVE, ifs(9), 'client/src/test/probe.ts')).toBe(0);
+  });
+
+  // The whole block is pinned, so a widened ignore on a directory no probe names cannot slip through.
+  // Changing the block now takes two edits: eslint.config.js and this expected value.
+  it('is exactly the reviewed quality/complexity block', async () => {
+    const { default: config } = await import(pathToFileURL(resolve(root, 'eslint.config.js')).href);
+    const block = config.find((entry: { name?: string }) => entry.name === 'quality/complexity');
+    const { plugins, ...rest } = block ?? {};
+
+    expect(rest).toEqual({
+      name: 'quality/complexity',
+      files: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
+      ignores: ['**/*.test.*', '**/test/**'],
+      rules: {
+        [COGNITIVE]: ['error', 8],
+        [EXPRESSION]: ['error', { max: 3 }],
+      },
+    });
+    expect(Object.keys(plugins ?? {})).toEqual(['sonarjs']);
   });
 
   // The block's `files` and `ignores` are pinned from both sides: these paths must be linted ...
