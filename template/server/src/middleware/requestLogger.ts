@@ -17,7 +17,7 @@ import { HTTP_STATUS } from '@helpers/httpStatus.js';
  * (~21 MB/day), where a single status endpoint was ~50% of all lines; and on
  * FliStudio 2026-10-19 — 950 MB in 16 days. Add your app's own polled routes here.
  */
-export const HIGH_FREQUENCY_PATHS = [
+const HIGH_FREQUENCY_PATHS = [
   '/health',
   '/healthz',
   '/api/health',
@@ -48,7 +48,7 @@ export interface RequestLoggerOptions {
   logger?: Logger;
 }
 
-export function isHighFrequency(url: string | undefined): boolean {
+function isHighFrequency(url: string | undefined): boolean {
   if (!url) {
     return false;
   }

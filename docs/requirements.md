@@ -102,7 +102,7 @@ Install in client workspace:
 ```bash
 npm install --save-dev vitest@^4.1.10 @vitest/ui@^4.1.10 @vitest/coverage-v8@^4.1.10 \
   @testing-library/react@^16.3.2 @testing-library/jest-dom@^6.9.1 \
-  @testing-library/user-event@^14.6.1 jsdom@^29.1.1 -w client
+  jsdom@^29.1.1 -w client
 ```
 
 Install in server workspace:
