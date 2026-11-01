@@ -17,7 +17,11 @@ export const GATE_DEV_DEPS = [
 ];
 // Template values from before the gates; a consumer still on one of these has not customized it.
 const PRIOR_SCRIPT_VALUES = {
-  lint: ['eslint .'],
+  lint: [
+    'eslint .',
+    // 0.5.0 and 0.5.1 shipped the same lint script, before `--max-warnings 0`
+    "grep -rqE '(eslint|oxlint)-disable' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.cjs' --include='*.mts' --include='*.cts' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build --exclude-dir=coverage --exclude-dir=playwright-report --exclude-dir=test-results --exclude-dir=.claude . ; [ $? -eq 1 ] && oxlint --deny-warnings && eslint .",
+  ],
   'lint:fix': ['eslint . --fix'],
   dup: [], // new with the duplicates gate: no earlier template value to recognise
   deadcode: [

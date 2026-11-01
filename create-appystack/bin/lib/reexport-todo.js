@@ -28,7 +28,7 @@ export function appendAppErrorTodo(consumerDir) {
     appendUpgradeTodo(
       consumerDir,
       path,
-      `\`errorHandler.js\` no longer re-exports \`AppError\` (lint rejects re-exports). Import it from its own file: \`${NEW_IMPORT}\` (needs the @helpers alias, see the server aliases row)`,
+      `\`errorHandler.js\` no longer re-exports \`AppError\` (lint rejects re-exports). Import it from its own file: \`${NEW_IMPORT}\` (needs the server @helpers alias: the upgrade adds it, or lists it in this file)`,
     );
     wrote = true;
   }

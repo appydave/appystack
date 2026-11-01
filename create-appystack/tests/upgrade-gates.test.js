@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { classifyFile } from '../bin/lib/classify.js';
 import { mergeGatePackage, GATE_SCRIPTS, GATE_DEV_DEPS } from '../bin/lib/gate-package.js';
-import { appendServerAliasTodo } from '../bin/lib/alias-todo.js';
+import { mergeServerAliases } from '../bin/lib/alias-merge.js';
 import { appendAppErrorTodo } from '../bin/lib/reexport-todo.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -153,6 +153,34 @@ describe('mergeGatePackage', () => {
     expect(readJson(consumer, 'package.json').scripts.deadcode).toBe(templatePkg.scripts.deadcode);
   });
 
+  // The lint script create-appystack 0.5.0 and 0.5.1 shipped (identical in both tarballs): the guard plus
+  // Oxlint and ESLint, before `--max-warnings 0`. Written out here, not imported, so it pins the old value.
+  const LINT_050 =
+    "grep -rqE '(eslint|oxlint)-disable' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.cjs' --include='*.mts' --include='*.cts' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build --exclude-dir=coverage --exclude-dir=playwright-report --exclude-dir=test-results --exclude-dir=.claude . ; [ $? -eq 1 ] && oxlint --deny-warnings && eslint .";
+
+  it('gives a 0.5.0 or 0.5.1 app the current lint script, with --max-warnings 0 and the guard', () => {
+    const real = readJson(TEMPLATE, 'package.json');
+    for (const version of ['0.5.0', '0.5.1']) {
+      const app = join(root, `app-${version}`);
+      mkdirSync(app);
+      writeJson(app, 'package.json', { scripts: { lint: LINT_050, 'lint:fix': 'oxlint --fix && eslint . --fix' } });
+      const changed = mergeGatePackage(app, TEMPLATE);
+      expect(changed, version).toContain('scripts.lint');
+      const lint = readJson(app, 'package.json').scripts.lint;
+      expect(lint, version).toBe(real.scripts.lint);
+      expect(lint, version).toContain('eslint . --max-warnings 0');
+      expect(lint, version).toContain("grep -rqE '(eslint|oxlint)-disable'");
+      expect(changed, version).not.toContain('scripts.lint:fix'); // already current
+    }
+  });
+
+  it('leaves a 0.5.x lint script the app has edited and writes a row', () => {
+    writeJson(consumer, 'package.json', { scripts: { lint: `${LINT_050} --quiet` } });
+    mergeGatePackage(consumer, template);
+    expect(readJson(consumer, 'package.json').scripts.lint).toBe(`${LINT_050} --quiet`);
+    expect(readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8')).toContain('scripts.lint');
+  });
+
   it('leaves a customized script or pinned dependency and writes an UPGRADE_TODO row', () => {
     writeJson(consumer, 'package.json', {
       scripts: { lint: 'my-lint', 'lint:fix': 'eslint . --fix', dup: 'my-dup' },
@@ -180,76 +208,135 @@ describe('mergeGatePackage', () => {
 });
 
 // G10: the template's server code imports through @config/@helpers/@test; an upgraded app keeps its old
-// (never-tier) tsconfig and vitest config, so the tool writes the exact lines to add.
-describe('appendServerAliasTodo', () => {
+// (never-tier) tsconfig and vitest config, so the tool adds the missing aliases into them and nothing else.
+describe('mergeServerAliases', () => {
   let consumer;
   beforeEach(() => {
-    consumer = mkdtempSync(join(tmpdir(), 'alias-todo-'));
+    consumer = mkdtempSync(join(tmpdir(), 'alias-merge-'));
   });
   afterEach(() => removeScratch(consumer));
 
-  const oldTsconfig = '{ "compilerOptions": { "paths": { "@config/*": ["src/config/*"] } } }';
-  const oldVitest = "import { defineConfig } from 'vitest/config';\nexport default defineConfig({ test: {} });\n";
+  const oldTsconfig = `{
+  "extends": "@appydave/appystack-config/typescript/node.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@routes/*": ["src/routes/*"],
+      "@config/*": ["src/config/*"]
+    }
+  },
+  "include": ["src/**/*"]
+}
+`;
+  const oldVitest = `import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    testTimeout: 10000,
+    coverage: { thresholds: { lines: 80 } },
+  },
+});
+`;
   const write = (rel, text) => {
     mkdirSync(dirname(join(consumer, rel)), { recursive: true });
     writeFileSync(join(consumer, rel), text);
   };
+  const read = (rel) => readFileSync(join(consumer, rel), 'utf-8');
+  const todo = () => read('UPGRADE_TODO.md');
+  const TSCONFIG = 'server/tsconfig.json';
+  const VITEST = 'server/vitest.config.ts';
 
-  it('writes the exact missing paths and aliases for a 0.4.x server, and the ../ rewrite row', () => {
-    write('server/tsconfig.json', oldTsconfig);
-    write('server/vitest.config.ts', oldVitest);
-    expect(appendServerAliasTodo(consumer)).toBe(true);
-    const todo = readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8');
-    expect(todo).toContain('`"@helpers/*": ["src/helpers/*"]`, `"@test/*": ["src/test/*"]`');
-    expect(todo).not.toContain('"@config/*"');
-    expect(todo).toContain("`'@config': path.resolve(__dirname, 'src/config')`");
-    expect(todo).toContain("`'@helpers': path.resolve(__dirname, 'src/helpers')`");
-    expect(todo).toContain("`'@test': path.resolve(__dirname, 'src/test')`");
-    expect(todo).toContain('Rewrite each to an alias');
+  it('adds the missing paths and aliases to a 0.4.x server and keeps every other value', () => {
+    write(TSCONFIG, oldTsconfig);
+    write(VITEST, oldVitest);
+    expect(mergeServerAliases(consumer)).toBe(true);
+    const tsconfig = JSON.parse(read(TSCONFIG));
+    expect(tsconfig.compilerOptions.paths).toEqual({
+      '@helpers/*': ['src/helpers/*'],
+      '@test/*': ['src/test/*'],
+      '@routes/*': ['src/routes/*'],
+      '@config/*': ['src/config/*'],
+    });
+    expect(tsconfig.extends).toBe('@appydave/appystack-config/typescript/node.json');
+    expect(tsconfig.include).toEqual(['src/**/*']);
+    const vitest = read(VITEST);
+    expect(vitest).toContain("import path from 'node:path';");
+    for (const [name, dir] of [['@config', 'src/config'], ['@helpers', 'src/helpers'], ['@test', 'src/test']]) {
+      expect(vitest).toContain(`'${name}': path.resolve(__dirname, '${dir}')`);
+    }
+    expect(vitest).toContain('testTimeout: 10000,\n    coverage: { thresholds: { lines: 80 } },');
+    // merged files need no row of their own; the app's own ../ imports still do
+    expect(todo()).not.toContain(TSCONFIG);
+    expect(todo()).not.toContain(VITEST);
+    expect(todo()).toContain('Rewrite each to an alias');
   });
 
   it('writes nothing for an app that already has them, and nothing without a server', () => {
-    expect(appendServerAliasTodo(consumer)).toBe(false);
-    write(
-      'server/tsconfig.json',
-      '{ "paths": { "@config/*": [], "@helpers/*": [], "@test/*": [] } }',
-    );
-    write('server/vitest.config.ts', "alias: { '@config': 1, '@helpers': 2, '@test': 3 }");
-    expect(appendServerAliasTodo(consumer)).toBe(false);
+    expect(mergeServerAliases(consumer)).toBe(false);
+    const tsconfig = '{ "compilerOptions": { "paths": { "@config/*": [], "@helpers/*": [], "@test/*": [] } } }';
+    const vitest = "export default defineConfig({ resolve: { alias: { '@config': 1, '@helpers': 2, '@test': 3 } } });";
+    write(TSCONFIG, tsconfig);
+    write(VITEST, vitest);
+    expect(mergeServerAliases(consumer)).toBe(false);
+    expect([read(TSCONFIG), read(VITEST)]).toEqual([tsconfig, vitest]);
     expect(existsSync(join(consumer, 'UPGRADE_TODO.md'))).toBe(false);
   });
 
-  it('only asks for what is missing in each file', () => {
-    write('server/vitest.config.ts', oldVitest); // no tsconfig at all: no paths row
-    appendServerAliasTodo(consumer);
-    const todo = readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8');
-    expect(todo).not.toContain('server/tsconfig.json');
-    expect(todo).toContain('server/vitest.config.ts');
-    removeScratch(consumer);
-    consumer = mkdtempSync(join(tmpdir(), 'alias-todo-'));
-    write('server/tsconfig.json', oldTsconfig); // no vitest config at all: no alias row
-    appendServerAliasTodo(consumer);
-    expect(readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8')).not.toContain('vitest.config');
+  it('adds into an existing alias object rather than a second resolve block', () => {
+    write(VITEST, oldVitest.replace('test: {', "resolve: { alias: { '@config': 'x' } },\n  test: {"));
+    expect(mergeServerAliases(consumer)).toBe(true);
+    const vitest = read(VITEST);
+    expect(vitest.match(/resolve\s*:/g)).toHaveLength(1);
+    expect(vitest).toContain("'@config': 'x'");
+    expect(vitest).toContain("'@helpers': path.resolve(__dirname, 'src/helpers')");
+    expect(vitest).not.toContain("'@config': path.resolve");
   });
 
-  it('reads the vitest aliases by exact name, in either quote style', () => {
-    write('server/tsconfig.json', '{ "paths": { "@config/*": [], "@helpers/*": [], "@testing/*": [] } }');
-    write('server/vitest.config.ts', 'import { env } from "@config/env.js";\nalias: { "@helpers": 2, "@test": 3 }');
-    expect(appendServerAliasTodo(consumer)).toBe(true); // an import of @config/ is not the alias
-    const todo = readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8');
-    expect(todo).toContain('Add to compilerOptions.paths: `"@test/*": ["src/test/*"]` |'); // @testing/* is not @test/*
-    expect(todo).toContain("`'@config': path.resolve");
-    expect(todo).not.toContain("`'@helpers': path.resolve");
-    expect(todo).not.toContain("`'@test': path.resolve");
+  it('reuses an existing path import and fills an empty paths object with valid JSON', () => {
+    write(VITEST, `import path from 'path';\n${oldVitest}`);
+    write(TSCONFIG, '{ "compilerOptions": { "paths": {} } }');
+    mergeServerAliases(consumer);
+    expect(read(VITEST).match(/import path/g)).toHaveLength(1);
+    expect(Object.keys(JSON.parse(read(TSCONFIG)).compilerOptions.paths)).toEqual(['@config/*', '@helpers/*', '@test/*']);
   });
 
-  it('does not repeat a row when run twice', () => {
-    write('server/tsconfig.json', oldTsconfig);
-    write('server/vitest.config.ts', oldVitest);
-    appendServerAliasTodo(consumer);
-    const once = readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8');
-    appendServerAliasTodo(consumer);
-    expect(readFileSync(join(consumer, 'UPGRADE_TODO.md'), 'utf-8')).toBe(once);
+  it('reads the aliases by exact name', () => {
+    write(TSCONFIG, '{ "compilerOptions": { "paths": { "@config/*": [], "@helpers/*": [], "@testing/*": [] } } }');
+    write(VITEST, `import { env } from "@config/env.js";\n${oldVitest.replace('test: {', 'resolve: { alias: { "@helpers": 2, "@test": 3 } },\n  test: {')}`);
+    expect(mergeServerAliases(consumer)).toBe(true); // an import of @config/ is not the alias
+    expect(JSON.parse(read(TSCONFIG)).compilerOptions.paths).toHaveProperty(['@test/*'], ['src/test/*']); // @testing/* is not @test/*
+    expect(read(VITEST)).toContain("'@config': path.resolve");
+    expect(read(VITEST)).not.toContain("'@helpers': path.resolve");
+    expect(read(VITEST)).not.toContain("'@test': path.resolve");
+  });
+
+  it('leaves a file it cannot patch safely untouched and writes the exact lines in a row', () => {
+    const noPaths = '{ "compilerOptions": { "baseUrl": "." } }';
+    const arrayAlias = "export default defineConfig({ resolve: { alias: [] } });";
+    write(TSCONFIG, noPaths);
+    write(VITEST, arrayAlias);
+    expect(mergeServerAliases(consumer)).toBe(true);
+    expect([read(TSCONFIG), read(VITEST)]).toEqual([noPaths, arrayAlias]);
+    expect(todo()).toContain('`"@config/*": ["src/config/*"]`, `"@helpers/*": ["src/helpers/*"]`, `"@test/*": ["src/test/*"]`');
+    expect(todo()).toContain("`'@config': path.resolve(__dirname, 'src/config')`");
+    expect(todo()).toContain('Rewrite each to an alias');
+  });
+
+  it('does not touch a vitest config that has resolve but no defineConfig call to patch', () => {
+    const custom = "const config = { resolve: { alias } };\nexport default config;\n";
+    write(VITEST, custom);
+    expect(mergeServerAliases(consumer)).toBe(true);
+    expect(read(VITEST)).toBe(custom);
+    expect(todo()).toContain(VITEST);
+  });
+
+  it('is idempotent: a second run changes nothing and reports nothing', () => {
+    write(TSCONFIG, oldTsconfig);
+    write(VITEST, oldVitest);
+    mergeServerAliases(consumer);
+    const once = [read(TSCONFIG), read(VITEST), todo()];
+    expect(mergeServerAliases(consumer)).toBe(false);
+    expect([read(TSCONFIG), read(VITEST), todo()]).toEqual(once);
   });
 });
 
@@ -323,7 +410,7 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
   });
   afterEach(() => removeScratch(root));
 
-  it('installs and runs ESLint and Oxlint without a load error', { timeout: 180_000 }, (ctx) => {
+  it('installs, lints, typechecks and tests without an upgrade-caused load error', { timeout: 180_000 }, (ctx) => {
     const pack = run(
       'npm',
       ['pack', 'create-appystack@0.4.18', '--pack-destination', packDir, '--silent'],
@@ -357,10 +444,13 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
     const up = run('node', [UPGRADE_BIN, '--template-path', TEMPLATE, '--yes'], app);
     expect(up.status, up.stdout + up.stderr).toBe(0);
     expect(readJson(app, 'package.json').scripts.lint).toContain('oxlint');
-    // The 0.4.18 server has no @helpers/@test paths and no vitest alias: the tool must say what to add.
+    // The 0.4.18 server has no @helpers/@test paths and no vitest alias: the tool adds them itself, keeping the rest.
     const todoText = readFileSync(join(app, 'UPGRADE_TODO.md'), 'utf-8');
-    expect(todoText).toContain('server/tsconfig.json');
-    expect(todoText).toContain('server/vitest.config.ts');
+    expect(readFileSync(join(app, 'server/tsconfig.json'), 'utf-8')).toContain('"@helpers/*": ["src/helpers/*"]');
+    expect(readFileSync(join(app, 'server/tsconfig.json'), 'utf-8')).toContain('"@services/*": ["src/services/*"]');
+    expect(readFileSync(join(app, 'server/vitest.config.ts'), 'utf-8')).toContain("'@helpers': path.resolve(");
+    expect(todoText).not.toContain('server/tsconfig.json');
+    expect(todoText).not.toContain('server/vitest.config.ts');
     // errorHandler.ts no longer re-exports AppError, and the 0.4.18 test imports it from there.
     expect(todoText).toContain('| `server/src/middleware/errorHandler.test.ts` |');
 
@@ -406,6 +496,21 @@ describe('appystack-upgrade carries the gates to a 0.4.18 app', () => {
     const clones = dupOut.match(/Found (\d+)(?: exact)? clones/);
     expect(clones, `jscpd: ${dupOut.slice(-1500)}`).not.toBeNull();
     report.jscpd = Number(clones[1]);
+
+    // Typecheck and tests must load and run. The old app's own code has findings the upgrade cannot fix (its server
+    // lacks @appydave/core, its client lacks @testing-library/dom, one test imports AppError from errorHandler):
+    // those are counted and reported. An alias that did not resolve is the upgrade's fault and fails here.
+    expect(run('npm', ['run', 'build', '-w', 'shared'], app, 170_000).status).toBe(0);
+    const tc = run('npm', ['run', 'typecheck'], app, 170_000);
+    const tcOut = tc.stdout + tc.stderr;
+    expect(tcOut, `typecheck: ${tcOut.slice(-1500)}`).not.toMatch(/TS2307: Cannot find module '@(config|helpers|test)\//);
+    expect(tc.status === 0 || /error TS\d+/.test(tcOut), `typecheck: ${tcOut.slice(-1500)}`).toBe(true);
+    report.typecheck = (tcOut.match(/error TS\d+/g) ?? []).length;
+    const unit = run('npm', ['test'], app, 170_000);
+    const unitOut = unit.stdout + unit.stderr;
+    expect(unitOut, `test: ${unitOut.slice(-1500)}`).not.toMatch(/(Cannot find package|Failed to resolve import) ['"]@(config|helpers|test)\//);
+    expect(unitOut, `test: ${unitOut.slice(-1500)}`).toMatch(/Test Files .*\(\d+\)/); // vitest ran and printed its summary
+    report.vitestRunsWithFailures = (unitOut.match(/(\d+) failed \| \d+ passed \(\d+\)/g) ?? []).length;
     console.log(`0.4.18 app after upgrade: ${JSON.stringify(report)}`);
   });
 });
