@@ -9,6 +9,23 @@ import { sizePlugin, sizeRules } from './lint/size.js';
 const COGNITIVE_MAX = 8;
 const EXPRESSION_MAX = 3;
 
+// G10: a parent-relative specifier ('..' or '../x'). Filesystem strings are not matched: only the
+// specifier of an import, export-from, dynamic import() or a vi.mock-style call is.
+const PARENT = String.raw`/^\.\.(\/|$)/`;
+const MOCKS = 'mock|doMock|importActual|importMock';
+const PARENT_IMPORT_MESSAGE =
+  "No '../' imports: use an alias. Client: @/ @hooks @components @pages @utils @contexts @config. Server: @config/ @helpers/ @routes/ @middleware/ @services/ @test/.";
+// no-restricted-syntax has one options array per file: G04's member-count selectors (lint/size.js)
+// and G10's must be listed together, or the later block silently replaces the earlier.
+const sizeSelectors = sizeRules['no-restricted-syntax'].slice(1);
+const parentImportSelectors = [
+  `ImportDeclaration[source.value=${PARENT}]`,
+  `ExportAllDeclaration[source.value=${PARENT}]`,
+  `ExportNamedDeclaration[source.value=${PARENT}]`,
+  `ImportExpression[source.value=${PARENT}]`,
+  `CallExpression[callee.object.name='vi'][callee.property.name=/^(${MOCKS})$/][arguments.0.value=${PARENT}]`,
+];
+
 export default [
   ...appyConfig,
   // Inline disable comments are ignored: a gate the code can switch off is not a gate.
@@ -60,6 +77,24 @@ export default [
       'sonarjs/cognitive-complexity': ['error', COGNITIVE_MAX],
       'sonarjs/expression-complexity': ['error', { max: EXPRESSION_MAX }],
     },
+  },
+  // G10 root imports. Tests are in scope. The vitest configs import ../vitest.shared.js before any
+  // alias exists (Vite loads a config without tsconfig paths), so they are exempt by name.
+  {
+    name: 'quality/root-imports',
+    files: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...sizeSelectors,
+        ...parentImportSelectors.map((selector) => ({ selector, message: PARENT_IMPORT_MESSAGE })),
+      ],
+    },
+  },
+  {
+    name: 'quality/root-imports-config-exempt',
+    files: ['client/vitest.config.ts', 'server/vitest.config.ts'],
+    rules: { 'no-restricted-syntax': ['error', ...sizeSelectors] },
   },
   // Last: switch off in ESLint every rule that .oxlintrc.json turns on, so each rule has one owner.
   ...oxlint.buildFromOxlintConfigFile(fileURLToPath(new URL('./.oxlintrc.json', import.meta.url))),
