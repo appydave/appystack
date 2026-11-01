@@ -45,6 +45,14 @@ npm run build        # Production build
 npm run typecheck    # TypeScript check across all workspaces
 ```
 
+## Upgrading to 0.5.0
+
+New apps now ship with quality gates that fail the build: spacing rules, Prettier, Oxlint (no `any`, no type assertions, no `!`), a ban on inline `eslint-disable` / `oxlint-disable` comments, size limits (function 60 lines / 4 parameters / file 300 lines / 30 members) and no magic numbers.
+
+- **`npm run lint` will probably fail after `npx appystack-upgrade` on an existing app.** The gates are finding real issues in your code (a 0.4.18 app showed 164 ESLint + 37 Oxlint findings). `npm run lint:fix` clears the spacing ones; the rest are real fixes.
+- If `npm install` fails with `ERESOLVE`, run `npm install --legacy-peer-deps` once. Later plain installs work.
+- The upgrade overwrites `.oxlintrc.json` and the template-owned `lint/` rules, and adds the gate scripts and devDependencies to `package.json`. Values you already set there are kept; a customised `lint` script is left alone and listed in `UPGRADE_TODO.md`.
+
 ## Stack
 
 **R**eact · **V**ite · **E**xpress · **T**ypeScript · **S**ocket.io
