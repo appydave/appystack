@@ -18,6 +18,7 @@
     "lint": "grep -rqE '(eslint|oxlint)-disable' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.cjs' --include='*.mts' --include='*.cts' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build --exclude-dir=coverage --exclude-dir=playwright-report --exclude-dir=test-results --exclude-dir=.claude . ; [ $? -eq 1 ] && oxlint --deny-warnings && eslint . --max-warnings 0",
     "lint:fix": "oxlint --fix && eslint . --fix",
     "dup": "grep -rqF 'jscpd:ignore' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.cjs' --include='*.mts' --include='*.cts' --include='*.es' --include='*.es6' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=coverage . ; [ $? -eq 1 ] && jscpd --config .jscpd.json && jscpd --config .jscpd.tests.json",
+    "deadcode": "grep -rqE '@(public|internal|beta|alias)' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.cjs' --include='*.mts' --include='*.cts' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=coverage . ; [ $? -eq 1 ] && knip && (cd client && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src) && (cd server && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src) && (cd shared && depcruise -c ../.dependency-cruiser.cjs --ts-config tsconfig.json src)",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "npm run typecheck -w shared -w server -w client",
@@ -34,6 +35,7 @@
     "@typescript-eslint/eslint-plugin": "^8.72.1",
     "@typescript-eslint/parser": "^8.72.1",
     "concurrently": "^10.0.6",
+    "dependency-cruiser": "18.7.0",
     "eslint": "^9.39.5",
     "eslint-plugin-oxlint": "1.90.0",
     "eslint-plugin-react": "^7.37.5",
@@ -42,9 +44,11 @@
     "globals": "^15.15.0",
     "husky": "^9.1.7",
     "jscpd": "5.4.2",
+    "knip": "6.44.1",
     "lint-staged": "^17.6.0",
     "oxlint": "1.90.0",
     "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   },
   "lint-staged": {

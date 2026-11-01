@@ -118,6 +118,14 @@ describe('Feature: this repo fails its own build on a duplicated-code finding', 
     expect(steps[dup]).toContain('working-directory: template');
   });
 
+  it('Scenario: given the root workflow, when it runs, then Dead code and import cycles runs npm run deadcode in template/ right after Duplicates', () => {
+    const dead = stepNamed('Dead code and import cycles');
+
+    expect(dead).toBe(stepNamed('Duplicates') + 1);
+    expect(steps[dead]).toContain('run: npm run deadcode\n');
+    expect(steps[dead]).toContain('working-directory: template');
+  });
+
   it('Scenario: given the template, when npm run dup is called there, then the script exists to be run', () => {
     expect(readJson('template/package.json').scripts.dup).toMatch(/jscpd --config/);
   });

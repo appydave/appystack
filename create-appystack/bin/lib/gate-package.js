@@ -4,19 +4,23 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { appendUpgradeTodo } from './diff.js';
 
-export const GATE_SCRIPTS = ['lint', 'lint:fix', 'dup'];
+export const GATE_SCRIPTS = ['lint', 'lint:fix', 'dup', 'deadcode'];
 export const GATE_DEV_DEPS = [
   '@stylistic/eslint-plugin',
+  'dependency-cruiser',
   'eslint-plugin-oxlint',
   'eslint-plugin-sonarjs',
   'jscpd',
+  'knip',
   'oxlint',
+  'tsx', // the root customize script runs it; it used to live only in server/
 ];
 // Template values from before the gates; a consumer still on one of these has not customized it.
 const PRIOR_SCRIPT_VALUES = {
   lint: ['eslint .'],
   'lint:fix': ['eslint . --fix'],
   dup: [], // new with the duplicates gate: no earlier template value to recognise
+  deadcode: [], // new with the dead-code and cycles gate
 };
 
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf-8'));
@@ -45,6 +49,10 @@ export function mergeGatePackage(consumerDir, templateDir) {
 
   for (const name of GATE_SCRIPTS) apply('scripts', name, (v) => PRIOR_SCRIPT_VALUES[name].includes(v));
   for (const name of GATE_DEV_DEPS) apply('devDependencies', name, () => false);
+
+  if (changed.includes('scripts.deadcode')) {
+    appendUpgradeTodo(consumerDir, 'npm run deadcode', 'Run it and fix what it reports: your own dead code and import cycles surface now');
+  }
 
   if (changed.length > 0) {
     if (consumer.devDependencies) {
