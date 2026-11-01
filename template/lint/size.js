@@ -2,11 +2,14 @@
  * G04 size limits: a function is at most 60 lines, takes at most 4 parameters, a file is at
  * most 300 lines (blank lines and comments are not counted), and a class, interface or object
  * type declares at most 30 members. `describe` callbacks are exempt from the function limit:
- * they hold a whole suite, and each `it` inside is still checked.
+ * they hold a whole suite, and each `it` inside is still checked. The exemption applies to
+ * test files only (`*.test.*` or under a `test/` folder).
  */
+import { relative, sep } from 'node:path';
 import { builtinRules } from 'eslint/use-at-your-own-risk';
 
 const MAX_MEMBERS = 30;
+const TEST_NAME = /\.test\.[cm]?[jt]sx?$/;
 const coreMaxLinesPerFunction = builtinRules.get('max-lines-per-function');
 
 // describe(...), describe.skip/only(...), describe.each([...])(...) and describe.each`...`(...)
@@ -27,6 +30,13 @@ function startsFromDescribe(callee) {
   return callee.type === 'Identifier' && callee.name === 'describe';
 }
 
+// A test file is `*.test.*`, or anything under a `test/` folder (path taken from the lint root).
+function isTestFile(context) {
+  const path = relative(context.cwd, context.filename);
+
+  return TEST_NAME.test(path) || path.split(sep).includes('test');
+}
+
 function isDescribeCallback(node) {
   const call = node.parent;
 
@@ -43,7 +53,10 @@ const maxLinesPerFunction = {
     const filtered = Object.create(context, {
       report: {
         value: (descriptor) => {
-          if (!descriptor.node || !isDescribeCallback(descriptor.node)) {
+          const exempt =
+            isTestFile(context) && descriptor.node && isDescribeCallback(descriptor.node);
+
+          if (!exempt) {
             context.report(descriptor);
           }
         },

@@ -33,6 +33,18 @@ describe('G04 size gate, run through the real eslint.config.js', () => {
       expect(only(sixtyOne, FUNCTION_RULE)).toHaveLength(1);
     });
 
+    it.each(['probe.js', 'probe.mjs', 'probe.tsx'])('also checks %s files', async (name) => {
+      const source = wrapped('export function f() {', '}', 61);
+
+      expect(only(await ruleIdsFor(source, `client/src/${name}`), FUNCTION_RULE)).toHaveLength(1);
+    });
+
+    it('checks an IIFE', async () => {
+      const source = wrapped('(() => {', '})();', 61);
+
+      expect(only(await ruleIdsFor(source), FUNCTION_RULE)).toHaveLength(1);
+    });
+
     it('does not count blank lines or comments', async () => {
       const padded = `export function f() {\n${statements(29)}\n\n// c\n\n/* b */\n${statements(29)}\n}\n`;
 
@@ -58,6 +70,35 @@ describe('G04 size gate, run through the real eslint.config.js', () => {
       const ids = await ruleIdsFor(wrapped(opener, closer, 61), TEST_FILE);
 
       expect(only(ids, FUNCTION_RULE)).toHaveLength(0);
+    });
+
+    it('exempts a describe callback in a test file only', async () => {
+      const source = wrapped("describe('x', () => {", '});', 61);
+
+      expect(only(await ruleIdsFor(source, TEST_FILE), FUNCTION_RULE)).toHaveLength(0);
+      expect(only(await ruleIdsFor(source), FUNCTION_RULE)).toHaveLength(1);
+    });
+
+    it('exempts files under a test/ folder', async () => {
+      const source = wrapped("describe('x', () => {", '});', 61);
+
+      expect(
+        only(await ruleIdsFor(source, 'client/src/test/probe.ts'), FUNCTION_RULE)
+      ).toHaveLength(0);
+    });
+
+    it('does not exempt a production function named describe', async () => {
+      const source = wrapped('export function describe(name: string, fn: () => void) {', '}', 61);
+
+      expect(only(await ruleIdsFor(source, TEST_FILE), FUNCTION_RULE)).toHaveLength(1);
+    });
+
+    it('does not exempt a describe callback in production code', async () => {
+      const source = wrapped("describe('x', () => {", '});', 61);
+
+      expect(
+        only(await ruleIdsFor(source, 'server/src/latest/probe.ts'), FUNCTION_RULE)
+      ).toHaveLength(1);
     });
 
     it('does not exempt other calls that take a callback', async () => {
