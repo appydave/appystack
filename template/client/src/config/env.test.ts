@@ -6,7 +6,7 @@ describe('requireEnv', () => {
   });
 
   it('throws with "Missing required environment variable: KEY" when key is absent', async () => {
-    vi.stubEnv('VITE_MISSING_KEY', undefined as unknown as string);
+    vi.stubEnv('VITE_MISSING_KEY', undefined);
 
     const { requireEnv } = await import(/* @vite-ignore */ './env.ts');
 
@@ -32,7 +32,7 @@ describe('optionalEnv', () => {
   });
 
   it('returns the default when key is absent', async () => {
-    vi.stubEnv('VITE_ABSENT_KEY', undefined as unknown as string);
+    vi.stubEnv('VITE_ABSENT_KEY', undefined);
 
     const { optionalEnv } = await import(/* @vite-ignore */ './env.ts');
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { mockProcessExit } from '../test/looseFn.js';
 
 describe('env config', () => {
   const originalEnv = process.env;
@@ -65,7 +66,7 @@ describe('env config', () => {
   });
 
   it('exits with code 1 when NODE_ENV is an invalid value', async () => {
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as () => never);
+    const exitSpy = mockProcessExit();
 
     process.env.NODE_ENV = 'staging';
     vi.resetModules();
@@ -82,7 +83,7 @@ describe('env config', () => {
   });
 
   it('exits with code 1 when PORT is not a number', async () => {
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as () => never);
+    const exitSpy = mockProcessExit();
 
     process.env.NODE_ENV = 'test';
     process.env.PORT = 'not-a-number';

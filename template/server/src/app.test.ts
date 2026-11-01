@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
-import type { AddressInfo } from 'node:net';
+import { serverPort } from './test/serverPort.js';
 import { io as ioc } from 'socket.io-client';
 import { SOCKET_EVENTS } from '@appystack-template/shared';
 import { app, httpServer } from './index.js';
@@ -38,7 +38,7 @@ describe('Socket.io via httpServer export', () => {
       await new Promise<void>((resolve) => httpServer.listen(0, resolve));
     }
 
-    port = (httpServer.address() as AddressInfo).port;
+    port = serverPort(httpServer);
   });
 
   afterAll(async () => {

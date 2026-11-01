@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from
 import { render, screen, waitFor } from '@testing-library/react';
 import express from 'express';
 import type { Server } from 'node:http';
+import { serverPort as portOf } from './test/serverPort.js';
 import App from './App.js';
 
 // Capture the native fetch at module load time, before any test setup stubs it
@@ -25,7 +26,7 @@ beforeAll(
         })
       );
       server = app.listen(0, () => {
-        serverPort = (server.address() as { port: number }).port;
+        serverPort = portOf(server);
         resolve();
       });
     })

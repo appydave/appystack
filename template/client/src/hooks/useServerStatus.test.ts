@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vites
 import { renderHook, waitFor } from '@testing-library/react';
 import express from 'express';
 import type { Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { serverPort as portOf } from '../test/serverPort.js';
 import { useServerStatus } from './useServerStatus.js';
 
 // Capture the native fetch at module load time, before any test setup stubs it
@@ -37,7 +37,7 @@ beforeAll(() => {
     });
 
     server = app.listen(0, () => {
-      serverPort = (server.address() as AddressInfo).port;
+      serverPort = portOf(server);
       resolve();
     });
   });
