@@ -17,6 +17,10 @@ describe('classifyFile — auto', () => {
     expect(classifyFile('server/src/config/logger.ts')).toBe('auto');
   });
 
+  it('classifies the useSocket test with its hook, so an upgraded app is not left with a test for code it no longer has', () => {
+    expect(classifyFile('client/src/hooks/useSocket.test.ts')).toBe('auto');
+  });
+
   it('classifies useSocket hook as auto', () => {
     expect(classifyFile('client/src/hooks/useSocket.ts')).toBe('auto');
   });

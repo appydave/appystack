@@ -28,7 +28,7 @@ export function appendRuntimeDepsTodo(consumerDir) {
     appendUpgradeTodo(
       consumerDir,
       'server/package.json',
-      'The upgraded server code imports `@appydave/core`, which needs zod 4. Run `npm install -w server @appydave/core@^0.2.0 zod@^4 --legacy-peer-deps` (a plain install fails `ERESOLVE` on a 0.4.x lockfile), then a plain `npm install`',
+      'The upgraded server code imports `@appydave/core`, which needs zod 4 (your zod 3 must move to 4). Run `npm install -w server @appydave/core@^0.2.0 zod@^4 --legacy-peer-deps`, then a plain `npm install`. The `ERESOLVE` on a plain install is not zod: the gate tools the upgrade added (the optional vite-plus peer of oxlint) pull vitest 5 against the vitest 4 in your lockfile, and `--legacy-peer-deps` skips that check',
     );
     wrote = true;
   }

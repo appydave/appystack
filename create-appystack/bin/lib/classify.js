@@ -8,6 +8,7 @@ export const CLASSIFICATION = {
     'server/src/middleware/validate.ts',
     'server/src/config/logger.ts',
     'client/src/hooks/useSocket.ts',
+    'client/src/hooks/useSocket.test.ts', // the test for the auto file above: overwriting one without the other leaves a failing app test
     '.github/workflows/ci.yml',
     'eslint.config.js',
     'lint/spacing.js', // gate rule imported by eslint.config.js — template-owned

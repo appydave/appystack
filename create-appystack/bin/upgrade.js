@@ -13,6 +13,7 @@ import { mergeGatePackage } from './lib/gate-package.js';
 import { mergeServerAliases } from './lib/alias-merge.js';
 import { appendAppErrorTodo } from './lib/reexport-todo.js';
 import { appendRuntimeDepsTodo } from './lib/runtime-deps-todo.js';
+import { appendEnvTestTodo } from './lib/app-tests-todo.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -181,6 +182,10 @@ async function main() {
 
   if (appendAppErrorTodo(cwd)) {
     prompts.note('errorHandler.ts no longer re-exports AppError. See UPGRADE_TODO.md for the files to change.', 'AppError import');
+  }
+
+  if (appendEnvTestTodo(cwd)) {
+    prompts.note('server/src/config/env.test.ts expects the template default ports, not yours. See UPGRADE_TODO.md.', 'env.test.ts ports');
   }
 
   if (appendRuntimeDepsTodo(cwd)) {

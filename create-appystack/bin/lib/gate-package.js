@@ -62,6 +62,14 @@ export function mergeGatePackage(consumerDir, templateDir) {
   for (const name of GATE_SCRIPTS) apply('scripts', name, (v) => PRIOR_SCRIPT_VALUES[name].includes(v));
   for (const name of GATE_DEV_DEPS) apply('devDependencies', name, () => false);
 
+  if (changed.includes('scripts.lint')) {
+    appendUpgradeTodo(
+      consumerDir,
+      'npm run format',
+      'Run it once, in its own commit: `npm run format:check` fails on files a 0.4.x scaffold left unformatted (about 34 on a stock 0.4.18 app: scaffold docs, skills and a few sources)',
+    );
+  }
+
   if (changed.includes('scripts.deadcode')) {
     appendUpgradeTodo(consumerDir, 'npm run deadcode', 'Run it and fix what it reports: your own dead code and import cycles surface now');
   }
